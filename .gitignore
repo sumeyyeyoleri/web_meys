@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local storage (uploads and generated media)
+server/storage/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.log

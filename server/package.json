@@ -1,0 +1,28 @@
+{
+  "name": "@painter/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@painter/shared": "*",
+    "@prisma/client": "~6.19.3",
+    "argon2": "^0.45.1",
+    "dotenv": "^18.0.8",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "prisma": "~6.19.3",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

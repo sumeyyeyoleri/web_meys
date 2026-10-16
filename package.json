@@ -1,0 +1,30 @@
+{
+  "name": "painter-website",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Multilingual portfolio and custom order service for an independent painter.",
+  "type": "module",
+  "workspaces": [
+    "packages/shared",
+    "server"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run db:generate -w server --",
+    "db:migrate": "npm run db:migrate -w server --",
+    "db:deploy": "npm run db:deploy -w server --",
+    "db:seed": "npm run db:seed -w server --",
+    "db:reset": "npm run db:reset -w server --"
+  },
+  "allowScripts": {
+    "argon2@0.45.1": true,
+    "esbuild@0.28.2": true,
+    "prisma@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "@prisma/client@6.19.3": true
+  }
+}
