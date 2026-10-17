@@ -16,7 +16,7 @@ export interface EmailRecipient {
 interface Deps {
   mailer: Mailer;
   repos: Repositories;
-  config: Pick<AppConfig, 'webOrigin' | 'isProduction'>;
+  config: Pick<AppConfig, 'webOrigin' | 'env'>;
 }
 
 /**
@@ -45,7 +45,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
     async sendPasswordReset(recipient: { email: string; locale: Locale }, token: string): Promise<boolean> {
       const link = `${config.webOrigin}/reset-password?token=${encodeURIComponent(token)}`;
       if (!mailer.configured) {
-        if (!config.isProduction) {
+        if (config.env === 'development') {
           // Development aid only: SMTP is not configured, so the link is printed instead of emailed.
           console.log(`\n[dev] Password reset link (SMTP not configured): ${link}\n`);
         } else {
