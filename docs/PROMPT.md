@@ -208,3 +208,14 @@ Prerequisites (Node 20+, Docker Desktop or local PostgreSQL 16, Git), setup step
 - Ask me before making destructive changes outside this project folder.
 - Don't leave TODOs, stubs or fake buttons. If something depends on an unconfigured external service, show a clear message instead.
 - Keep commits focused; never commit secrets, `.env`, `node_modules`, `dist` or uploaded files.
+
+## 17. Device & browser support (permanent requirement)
+
+The site must work without problems on phones and computers:
+
+- **Phones:** iPhone Safari and Android Chrome (latest 2 versions).
+- **Computers:** Chrome, Safari, Firefox and Edge (latest 2 versions).
+- **Touch:** everything must be usable with a finger (no hover-only interactions; touch targets at least 44×44px).
+- **No zoom on iPhone form fields:** the font size of every input, select and textarea is at least 16px, so tapping a field never zooms the page.
+- **Safe areas:** the iPhone notch and the bottom home bar must never cover content or controls (use `viewport-fit=cover` with `env(safe-area-inset-*)` padding on fixed and full-screen elements).
+- **Mobile keyboard:** when the on-screen keyboard opens, the focused form field stays visible and is not hidden behind the keyboard or behind fixed bars.
