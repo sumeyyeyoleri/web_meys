@@ -28,7 +28,7 @@ export function FloatingNav() {
   const businessName = site?.settings.businessName ?? '';
 
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-4 z-40 px-4 sm:top-7">
+    <header className="safe-x pointer-events-none fixed inset-x-0 top-[calc(16px+env(safe-area-inset-top))] z-40 sm:top-[calc(28px+env(safe-area-inset-top))]">
       <div
         className={cx(
           'pointer-events-auto mx-auto flex h-16 max-w-[760px] items-center gap-2 rounded-2xl border bg-surface-2 pr-2 pl-5 transition-[background-color,border-color,box-shadow] duration-500',

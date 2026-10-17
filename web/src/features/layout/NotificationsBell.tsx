@@ -68,7 +68,7 @@ export function NotificationsBell() {
           id="notifications-panel"
           role="region"
           aria-label={t('notifications.title')}
-          className="fixed inset-x-4 top-24 z-50 rounded-[var(--radius-card)] border border-border bg-surface-2 shadow-2xl shadow-black/70 sm:absolute sm:inset-x-auto sm:top-[calc(100%+12px)] sm:right-0 sm:w-96"
+          className="fixed top-[calc(96px+env(safe-area-inset-top))] right-[max(16px,env(safe-area-inset-right))] left-[max(16px,env(safe-area-inset-left))] z-50 rounded-[var(--radius-card)] border border-border bg-surface-2 shadow-2xl shadow-black/70 sm:absolute sm:inset-x-auto sm:top-[calc(100%+12px)] sm:right-0 sm:w-96"
         >
           <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2">
             <h2 className="font-sans text-sm font-semibold">{t('notifications.title')}</h2>

@@ -78,7 +78,7 @@ export function Footer() {
           </ul>
         </div>
       </div>
-      <div className="container-content flex flex-col gap-2 border-t border-border py-6 text-sm text-text-subtle sm:flex-row sm:items-center sm:justify-between">
+      <div className="container-content flex pb-[max(24px,env(safe-area-inset-bottom))] flex-col gap-2 border-t border-border pt-6 text-sm text-text-subtle sm:flex-row sm:items-center sm:justify-between">
         <p>{t('footer.rights', { year: new Date().getFullYear(), name: settings?.businessName ?? '' })}</p>
         {hasSamples ? <p>{t('footer.examplesNote')}</p> : null}
       </div>

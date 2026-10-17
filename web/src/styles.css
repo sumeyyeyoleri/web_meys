@@ -57,6 +57,22 @@
     overflow-x: hidden;
   }
 
+  /*
+   * Fixed navigation sits on top of the page: keep focused fields and anchor targets clear
+   * of it, and of the iPhone home bar / on-screen keyboard (PROMPT.md §17).
+   */
+  html {
+    scroll-padding-top: calc(112px + env(safe-area-inset-top));
+    scroll-padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  input,
+  select,
+  textarea {
+    scroll-margin-top: calc(112px + env(safe-area-inset-top));
+    scroll-margin-bottom: 24px;
+  }
+
   h1,
   h2,
   h3 {
@@ -115,13 +131,29 @@
     width: 100%;
     max-width: var(--container-content);
     margin-inline: auto;
-    padding-inline: 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
 
   @media (min-width: 768px) {
     .container-content {
-      padding-inline: 32px;
+      padding-left: max(32px, env(safe-area-inset-left));
+      padding-right: max(32px, env(safe-area-inset-right));
     }
+  }
+
+  /* iPhone notch / home bar: keep fixed and full-screen UI inside the safe area. */
+  .safe-x {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .safe-pt {
+    padding-top: max(16px, env(safe-area-inset-top));
+  }
+
+  .safe-pb {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 
   .section {

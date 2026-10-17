@@ -68,7 +68,7 @@ export function Dialog({ open, onClose, title, description, children, footer, va
         <div
           className={cx(
             'flex w-full flex-col overflow-y-auto border border-border bg-surface-2',
-            variant === 'modal' ? 'rounded-[var(--radius-panel)] p-6 sm:p-8' : 'min-h-full bg-bg p-4 sm:p-8',
+            variant === 'modal' ? 'rounded-[var(--radius-panel)] p-6 sm:p-8' : 'safe-x safe-pt safe-pb min-h-full bg-bg sm:p-8',
             className,
           )}
         >

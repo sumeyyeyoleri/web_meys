@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <section
         aria-label={t('toast.region')}
-        className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:items-end"
+        className="safe-x pointer-events-none fixed inset-x-0 bottom-[calc(16px+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:bottom-[calc(24px+env(safe-area-inset-bottom))] sm:items-end"
       >
         {/* Polite live region: screen readers announce new messages without interrupting. */}
         <ol aria-live="polite" className="flex w-full flex-col gap-2 sm:w-96">
