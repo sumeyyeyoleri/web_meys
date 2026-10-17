@@ -141,6 +141,8 @@ export interface OrderDetailDto extends OrderSummaryDto {
   serviceId: string | null;
   customRequest: string | null;
   inspiration: InspirationDto | null;
+  /** Requested changes compared to the inspiration example. */
+  additionalSpecs: string | null;
   isWallService: boolean;
   width: number;
   height: number;

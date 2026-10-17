@@ -200,6 +200,7 @@ const schemas: Record<string, Json> = {
         description: 'All submitted data, attachments, status history and allowed transitions for the viewer.',
         properties: {
           inspiration: ref('Inspiration'),
+          additionalSpecs: { ...nstr, description: 'Requested changes compared to the inspiration example' },
           width: num,
           height: num,
           unit: str,

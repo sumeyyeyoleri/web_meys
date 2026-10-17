@@ -48,12 +48,19 @@ describe('orders inspired by a catalog item', () => {
     const client = await signedIn(ctx.app, CUSTOMER_A);
     const res = await submitOrder(
       client,
-      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.wallServiceId, customRequest: '', communicationLocale: 'tr' }),
+      orderPayload({
+        inspirationItemId: item.id,
+        additionalSpecs: ' Graag met een vos in plaats van de maan. ',
+        serviceId: ctx.ids.wallServiceId,
+        customRequest: '',
+        communicationLocale: 'tr',
+      }),
       [pngFile()],
     ).expect(201);
 
     const expected = { id: item.id, title: 'Ay ışığında tepeler', imageUrl: '/media/portfolio/moon.svg' };
     expect(res.body.order.inspiration).toEqual(expected);
+    expect(res.body.order.additionalSpecs).toBe('Graag met een vos in plaats van de maan.');
     // The catalog item is a reference, not an upload: it does not use an attachment slot.
     expect(res.body.order.attachments).toHaveLength(1);
 
@@ -102,8 +109,10 @@ describe('orders inspired by a catalog item', () => {
   it('returns null when there is no inspiration, and after the item is deleted', async () => {
     const item = await createItem();
     const client = await signedIn(ctx.app, CUSTOMER_A);
-    const plain = await submitOrder(client, orderPayload()).expect(201);
+    // additionalSpecs only belongs with an example, so it is dropped without one.
+    const plain = await submitOrder(client, orderPayload({ additionalSpecs: 'ignored' })).expect(201);
     expect(plain.body.order.inspiration).toBeNull();
+    expect(plain.body.order.additionalSpecs).toBeNull();
 
     const inspired = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
     const admin = await signedIn(ctx.app, ADMIN);

@@ -36,6 +36,8 @@ export const serviceStepShape = {
   customRequest: optionalString(2000),
   /** Catalog item the order starts from ("Request something similar"). */
   inspirationItemId: optionalUuid,
+  /** What the customer wants changed compared to the catalog example. */
+  additionalSpecs: optionalString(2000),
 };
 
 /** A service, a free-text request or a catalog example — at least one is needed. */
@@ -227,6 +229,7 @@ export const adminOrderUpdateSchema = z
   .object({
     serviceId: serviceStepShape.serviceId,
     customRequest: serviceStepShape.customRequest,
+    additionalSpecs: serviceStepShape.additionalSpecs,
     ...dimensionsStepShape,
     ...detailsStepShape,
     ...contactStepShape,

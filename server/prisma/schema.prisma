@@ -167,6 +167,8 @@ model Order {
   customRequest     String?
   /// Catalog item the customer started from ("Request something similar").
   inspirationItemId String? @db.Uuid
+  /// "What would you like to change compared to the example?" (only with an inspiration item).
+  additionalSpecs   String?
 
   // Step 2 — dimensions
   width               Decimal       @db.Decimal(10, 2)

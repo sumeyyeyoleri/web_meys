@@ -81,6 +81,8 @@ function orderData(input: CreateOrderInput, customerId: string, reference: strin
     serviceId: input.serviceId ?? null,
     customRequest: input.customRequest ?? null,
     inspirationItemId: input.inspirationItemId ?? null,
+    // Only meaningful relative to an example; ignored without one.
+    additionalSpecs: input.inspirationItemId ? (input.additionalSpecs ?? null) : null,
     width: new Prisma.Decimal(input.width),
     height: new Prisma.Decimal(input.height),
     unit: input.unit,

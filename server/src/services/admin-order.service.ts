@@ -55,6 +55,7 @@ export function createAdminOrderService({
       await repos.adminOrders.update(id, {
         serviceId: input.serviceId ?? null,
         customRequest: input.customRequest ?? null,
+        additionalSpecs: input.additionalSpecs ?? null,
         width: new Prisma.Decimal(input.width),
         height: new Prisma.Decimal(input.height),
         unit: input.unit,

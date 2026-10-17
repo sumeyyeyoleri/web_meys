@@ -69,6 +69,7 @@ export function toOrderDetailDto(
     serviceId: order.serviceId,
     customRequest: order.customRequest,
     inspiration: toInspirationDto(order),
+    additionalSpecs: order.additionalSpecs,
     isWallService: order.service?.isWallService ?? false,
     width: toNumber(order.width),
     height: toNumber(order.height),
