@@ -1,0 +1,148 @@
+{
+  "skipToContent": "İçeriğe geç",
+  "nav": {
+    "main": "Ana menü",
+    "home": "Ana sayfa",
+    "catalog": "Katalog",
+    "services": "Hizmetler",
+    "contact": "Hakkında ve iletişim",
+    "order": "Sipariş ver",
+    "openMenu": "Menüyü aç",
+    "closeMenu": "Menüyü kapat",
+    "account": "Hesap",
+    "accountMenu": "Hesap menüsü",
+    "login": "Giriş yap",
+    "register": "Hesap oluştur",
+    "myOrders": "Siparişlerim",
+    "profile": "Profilim",
+    "admin": "Yönetim paneli",
+    "logout": "Çıkış yap",
+    "signedInAs": "{{email}} olarak giriş yapıldı"
+  },
+  "language": {
+    "label": "Dil",
+    "choose": "Dilinizi seçin",
+    "nl-BE": "Nederlands",
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "actions": {
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "İleri",
+    "previous": "Önceki",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "remove": "Kaldır",
+    "retry": "Tekrar dene",
+    "confirm": "Onayla",
+    "send": "Gönder",
+    "goHome": "Ana sayfaya dön",
+    "reload": "Sayfayı yenile",
+    "viewAll": "Tümünü gör"
+  },
+  "labels": {
+    "example": "Örnek",
+    "personalQuote": "Kişisel teklif",
+    "optional": "isteğe bağlı",
+    "loading": "Yükleniyor…",
+    "opensInNewTab": "(yeni sekmede açılır)"
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "bell_zero": "Bildirimler, okunmamış yok",
+    "bell_one": "Bildirimler, {{count}} okunmamış",
+    "bell_other": "Bildirimler, {{count}} okunmamış",
+    "empty": "Henüz bildiriminiz yok.",
+    "markAllRead": "Tümünü okundu işaretle",
+    "unread": "Okunmadı",
+    "loadError": "Bildirimler yüklenemedi.",
+    "ORDER_SUBMITTED": "Yeni talep: {{reference}}",
+    "ORDER_STATUS_CHANGED": "{{reference}} numaralı sipariş: {{status}}",
+    "ORDER_MESSAGE": "{{reference}} hakkında yeni mesaj"
+  },
+  "status": {
+    "SUBMITTED": "Gönderildi",
+    "UNDER_REVIEW": "İnceleniyor",
+    "AWAITING_CUSTOMER_INFO": "Bilginiz bekleniyor",
+    "QUOTE_SENT": "Teklif gönderildi",
+    "ACCEPTED": "Kabul edildi",
+    "IN_PROGRESS": "Hazırlanıyor",
+    "COMPLETED": "Tamamlandı",
+    "CANCELLED": "İptal edildi"
+  },
+  "category": {
+    "PAINTING": "Tablo",
+    "MURAL": "Duvar resmi",
+    "WALL_PAINTING": "Duvar boyama",
+    "PORTRAIT": "Portre",
+    "OTHER": "Diğer"
+  },
+  "space": {
+    "LIVING_ROOM": "Oturma odası",
+    "BEDROOM": "Yatak odası",
+    "KIDS_ROOM": "Çocuk odası",
+    "KITCHEN": "Mutfak",
+    "CAFE_SHOP": "Kafe / dükkân",
+    "OFFICE": "Ofis",
+    "OUTDOOR": "Dış mekân"
+  },
+  "errors": {
+    "generic": "Bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin.",
+    "NETWORK_ERROR": "Sunucuya ulaşılamadı. Lütfen bağlantınızı kontrol edin.",
+    "VALIDATION_ERROR": "Lütfen işaretli alanları kontrol edin.",
+    "UNAUTHENTICATED": "Devam etmek için lütfen giriş yapın.",
+    "FORBIDDEN": "Bu sayfaya erişiminiz yok.",
+    "NOT_FOUND": "Bulunamadı.",
+    "CONFLICT": "Bu işlem şu anda yapılamıyor.",
+    "CSRF_INVALID": "Oturumunuzun süresi doldu. Sayfayı yenileyip tekrar deneyin.",
+    "RATE_LIMITED": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
+    "INVALID_CREDENTIALS": "E-posta adresi veya şifre hatalı.",
+    "EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",
+    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "Bu e-postayla bir hesap zaten var. Devam etmek için giriş yapın.",
+    "RESET_TOKEN_INVALID": "Bu bağlantı geçersiz veya süresi dolmuş.",
+    "ORDER_INVALID_TRANSITION": "Bu durum değişikliği yapılamıyor (artık mümkün değil).",
+    "ORDER_QUOTE_REQUIRED": "Teklif tutarını girin.",
+    "ORDER_NOT_ARCHIVABLE": "Yalnızca tamamlanmış veya iptal edilmiş siparişler arşivlenebilir.",
+    "SERVICE_IN_USE": "Bu hizmet siparişlerde kullanılıyor. Silmek yerine pasif yapın.",
+    "UPLOAD_TOO_MANY_FILES": "Çok fazla dosya.",
+    "UPLOAD_FILE_TOO_LARGE": "Bir dosya çok büyük.",
+    "UPLOAD_INVALID_TYPE": "Yalnızca JPG, PNG ve WebP görselleri kabul edilir.",
+    "PAYLOAD_TOO_LARGE": "İstek çok büyük.",
+    "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+  },
+  "pages": {
+    "notFound": {
+      "eyebrow": "Hata 404",
+      "title": "Bu salon boş",
+      "body": "Aradığınız sayfa yok ya da kaldırılmış. Belki aradığınızı katalogda bulursunuz.",
+      "catalog": "Kataloğa göz at"
+    },
+    "error": {
+      "eyebrow": "Beklenmeyen hata",
+      "title": "Bir şeyler ters gitti",
+      "body": "Bu sayfa görüntülenemedi. Sayfayı yenileyin ya da daha sonra tekrar deneyin."
+    }
+  },
+  "footer": {
+    "navigation": "Sayfalar",
+    "contact": "İletişim",
+    "privacy": "Gizlilik politikası",
+    "instagram": "Instagram'da takip et",
+    "examplesNote": "Bu sitedeki tüm görseller örnektir.",
+    "rights": "© {{year}} {{name}}"
+  },
+  "pagination": {
+    "label": "Sayfalama",
+    "previous": "Önceki sayfa",
+    "next": "Sonraki sayfa",
+    "status": "Sayfa {{page}} / {{total}}"
+  },
+  "toast": {
+    "region": "Ekran bildirimleri",
+    "dismiss": "Mesajı kapat",
+    "loggedOut": "Çıkış yaptınız."
+  }
+}

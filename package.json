@@ -6,14 +6,15 @@
   "type": "module",
   "workspaces": [
     "packages/shared",
-    "server"
+    "server",
+    "web"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "npm run dev -w server",
-    "build": "npm run build -w server",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build -w server && npm run build -w web",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run db:generate -w server --",

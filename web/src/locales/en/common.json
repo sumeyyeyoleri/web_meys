@@ -1,0 +1,148 @@
+{
+  "skipToContent": "Skip to content",
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "catalog": "Catalog",
+    "services": "Services",
+    "contact": "About & contact",
+    "order": "Order",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "account": "Account",
+    "accountMenu": "Account menu",
+    "login": "Log in",
+    "register": "Create account",
+    "myOrders": "My orders",
+    "profile": "My profile",
+    "admin": "Dashboard",
+    "logout": "Log out",
+    "signedInAs": "Signed in as {{email}}"
+  },
+  "language": {
+    "label": "Language",
+    "choose": "Choose your language",
+    "nl-BE": "Nederlands",
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "edit": "Edit",
+    "delete": "Delete",
+    "remove": "Remove",
+    "retry": "Try again",
+    "confirm": "Confirm",
+    "send": "Send",
+    "goHome": "Go to the home page",
+    "reload": "Reload page",
+    "viewAll": "View all"
+  },
+  "labels": {
+    "example": "Example",
+    "personalQuote": "Personal quote",
+    "optional": "optional",
+    "loading": "Loading…",
+    "opensInNewTab": "(opens in a new tab)"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bell_zero": "Notifications, none unread",
+    "bell_one": "Notifications, {{count}} unread",
+    "bell_other": "Notifications, {{count}} unread",
+    "empty": "You have no notifications yet.",
+    "markAllRead": "Mark all as read",
+    "unread": "Unread",
+    "loadError": "Notifications could not be loaded.",
+    "ORDER_SUBMITTED": "New request {{reference}}",
+    "ORDER_STATUS_CHANGED": "Order {{reference}}: {{status}}",
+    "ORDER_MESSAGE": "New message about {{reference}}"
+  },
+  "status": {
+    "SUBMITTED": "Submitted",
+    "UNDER_REVIEW": "Under review",
+    "AWAITING_CUSTOMER_INFO": "Awaiting your info",
+    "QUOTE_SENT": "Quote sent",
+    "ACCEPTED": "Accepted",
+    "IN_PROGRESS": "In progress",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "category": {
+    "PAINTING": "Painting",
+    "MURAL": "Mural",
+    "WALL_PAINTING": "Wall painting",
+    "PORTRAIT": "Portrait",
+    "OTHER": "Other"
+  },
+  "space": {
+    "LIVING_ROOM": "Living room",
+    "BEDROOM": "Bedroom",
+    "KIDS_ROOM": "Kids' room",
+    "KITCHEN": "Kitchen",
+    "CAFE_SHOP": "Café / shop",
+    "OFFICE": "Office",
+    "OUTDOOR": "Outdoor"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again later.",
+    "NETWORK_ERROR": "Could not reach the server. Please check your connection.",
+    "VALIDATION_ERROR": "Please check the highlighted fields.",
+    "UNAUTHENTICATED": "Please log in to continue.",
+    "FORBIDDEN": "You don't have access to this page.",
+    "NOT_FOUND": "Not found.",
+    "CONFLICT": "This action isn't possible right now.",
+    "CSRF_INVALID": "Your session expired. Reload the page and try again.",
+    "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
+    "INVALID_CREDENTIALS": "Incorrect email address or password.",
+    "EMAIL_IN_USE": "An account with this email address already exists.",
+    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "An account with this email already exists. Please log in to continue.",
+    "RESET_TOKEN_INVALID": "This link is invalid or has expired.",
+    "ORDER_INVALID_TRANSITION": "This status change is not (or no longer) possible.",
+    "ORDER_QUOTE_REQUIRED": "Enter the quote amount.",
+    "ORDER_NOT_ARCHIVABLE": "Only completed or cancelled orders can be archived.",
+    "SERVICE_IN_USE": "This service is used by orders. Deactivate it instead of deleting it.",
+    "UPLOAD_TOO_MANY_FILES": "Too many files.",
+    "UPLOAD_FILE_TOO_LARGE": "A file is too large.",
+    "UPLOAD_INVALID_TYPE": "Only JPG, PNG and WebP images are allowed.",
+    "PAYLOAD_TOO_LARGE": "The request is too large.",
+    "INTERNAL_ERROR": "Something went wrong on our side. Please try again later."
+  },
+  "pages": {
+    "notFound": {
+      "eyebrow": "Error 404",
+      "title": "This room is empty",
+      "body": "The page you are looking for doesn't exist (anymore). Perhaps you'll find what you're looking for in the catalog.",
+      "catalog": "Browse the catalog"
+    },
+    "error": {
+      "eyebrow": "Unexpected error",
+      "title": "Something went wrong",
+      "body": "This page could not be displayed. Reload the page or try again later."
+    }
+  },
+  "footer": {
+    "navigation": "Navigation",
+    "contact": "Contact",
+    "privacy": "Privacy policy",
+    "instagram": "Follow on Instagram",
+    "examplesNote": "All images on this site are examples.",
+    "rights": "© {{year}} {{name}}"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "status": "Page {{page}} of {{total}}"
+  },
+  "toast": {
+    "region": "On-screen messages",
+    "dismiss": "Dismiss message",
+    "loggedOut": "You have been logged out."
+  }
+}

@@ -1,0 +1,152 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens — single source of truth (FRONTEND_DESIGN.md §2).
+ * `--color-accent` and `--color-on-accent` are overridden at runtime on <html>
+ * from the admin's accent setting (see lib/accent.ts).
+ */
+@theme {
+  --color-bg: #050505;
+  --color-surface: #0e0e0e;
+  --color-surface-2: #141414;
+  --color-selected: #121212;
+  --color-border: #262626;
+  --color-border-strong: #333333;
+  --color-text: #f2f2f2;
+  --color-text-muted: #a3a3a3;
+  --color-text-subtle: #8a8a8a;
+  --color-accent: #e8d3a8;
+  --color-on-accent: #0a0a0a;
+
+  --color-status-amber: #d9a441;
+  --color-status-green: #7fb28a;
+  --color-status-blue: #7da2d6;
+  --color-status-red: #e07a6a;
+  --color-status-neutral: #a3a3a3;
+
+  --font-display: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 16px;
+  --radius-panel: 20px;
+  --radius-field: 12px;
+  --radius-art: 5px;
+
+  --spacing-section: 96px;
+  --spacing-section-mobile: 56px;
+  --container-content: 1200px;
+
+  --ease-gallery: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  /* Visible 2px accent focus ring with offset, everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  input,
+  select,
+  textarea {
+    accent-color: var(--color-accent);
+  }
+
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.75);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Small uppercase label: Manrope 12px, 0.12em tracking. */
+  .eyebrow {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-subtle);
+  }
+
+  .container-content {
+    width: 100%;
+    max-width: var(--container-content);
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .container-content {
+      padding-inline: 32px;
+    }
+  }
+
+  .section {
+    padding-block: var(--spacing-section-mobile);
+  }
+
+  @media (min-width: 1024px) {
+    .section {
+      padding-block: var(--spacing-section);
+    }
+  }
+}
+
+/* Fade-in on scroll for section headings (disabled with reduced motion). */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 500ms var(--ease-gallery),
+      transform 500ms var(--ease-gallery);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}

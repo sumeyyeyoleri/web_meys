@@ -1,0 +1,148 @@
+{
+  "skipToContent": "Naar de inhoud",
+  "nav": {
+    "main": "Hoofdnavigatie",
+    "home": "Home",
+    "catalog": "Catalogus",
+    "services": "Diensten",
+    "contact": "Over & contact",
+    "order": "Bestellen",
+    "openMenu": "Menu openen",
+    "closeMenu": "Menu sluiten",
+    "account": "Account",
+    "accountMenu": "Accountmenu",
+    "login": "Aanmelden",
+    "register": "Account aanmaken",
+    "myOrders": "Mijn bestellingen",
+    "profile": "Mijn profiel",
+    "admin": "Beheer",
+    "logout": "Afmelden",
+    "signedInAs": "Aangemeld als {{email}}"
+  },
+  "language": {
+    "label": "Taal",
+    "choose": "Kies uw taal",
+    "nl-BE": "Nederlands",
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "actions": {
+    "save": "Opslaan",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "back": "Terug",
+    "next": "Volgende",
+    "previous": "Vorige",
+    "edit": "Wijzigen",
+    "delete": "Verwijderen",
+    "remove": "Verwijderen",
+    "retry": "Opnieuw proberen",
+    "confirm": "Bevestigen",
+    "send": "Versturen",
+    "goHome": "Naar de startpagina",
+    "reload": "Pagina vernieuwen",
+    "viewAll": "Alles bekijken"
+  },
+  "labels": {
+    "example": "Voorbeeld",
+    "personalQuote": "Persoonlijke offerte",
+    "optional": "optioneel",
+    "loading": "Bezig met laden…",
+    "opensInNewTab": "(opent in een nieuw tabblad)"
+  },
+  "notifications": {
+    "title": "Meldingen",
+    "bell_zero": "Meldingen, geen ongelezen",
+    "bell_one": "Meldingen, {{count}} ongelezen",
+    "bell_other": "Meldingen, {{count}} ongelezen",
+    "empty": "U hebt nog geen meldingen.",
+    "markAllRead": "Alles als gelezen markeren",
+    "unread": "Ongelezen",
+    "loadError": "Meldingen konden niet geladen worden.",
+    "ORDER_SUBMITTED": "Nieuwe aanvraag {{reference}}",
+    "ORDER_STATUS_CHANGED": "Bestelling {{reference}}: {{status}}",
+    "ORDER_MESSAGE": "Nieuw bericht over {{reference}}"
+  },
+  "status": {
+    "SUBMITTED": "Ingediend",
+    "UNDER_REVIEW": "In behandeling",
+    "AWAITING_CUSTOMER_INFO": "Wacht op uw info",
+    "QUOTE_SENT": "Offerte verstuurd",
+    "ACCEPTED": "Aanvaard",
+    "IN_PROGRESS": "In uitvoering",
+    "COMPLETED": "Afgerond",
+    "CANCELLED": "Geannuleerd"
+  },
+  "category": {
+    "PAINTING": "Schilderij",
+    "MURAL": "Muurschildering",
+    "WALL_PAINTING": "Wandafwerking",
+    "PORTRAIT": "Portret",
+    "OTHER": "Andere"
+  },
+  "space": {
+    "LIVING_ROOM": "Woonkamer",
+    "BEDROOM": "Slaapkamer",
+    "KIDS_ROOM": "Kinderkamer",
+    "KITCHEN": "Keuken",
+    "CAFE_SHOP": "Café / winkel",
+    "OFFICE": "Kantoor",
+    "OUTDOOR": "Buiten"
+  },
+  "errors": {
+    "generic": "Er ging iets mis. Probeer het later opnieuw.",
+    "NETWORK_ERROR": "Geen verbinding met de server. Controleer uw internetverbinding.",
+    "VALIDATION_ERROR": "Controleer de gemarkeerde velden.",
+    "UNAUTHENTICATED": "Meld u aan om verder te gaan.",
+    "FORBIDDEN": "U hebt geen toegang tot deze pagina.",
+    "NOT_FOUND": "Niet gevonden.",
+    "CONFLICT": "Deze actie is nu niet mogelijk.",
+    "CSRF_INVALID": "Uw sessie is verlopen. Vernieuw de pagina en probeer opnieuw.",
+    "RATE_LIMITED": "Te veel pogingen. Wacht even en probeer opnieuw.",
+    "INVALID_CREDENTIALS": "E-mailadres of wachtwoord is niet juist.",
+    "EMAIL_IN_USE": "Er bestaat al een account met dit e-mailadres.",
+    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "Er bestaat al een account met dit e-mailadres. Meld u aan om verder te gaan.",
+    "RESET_TOKEN_INVALID": "Deze link is ongeldig of verlopen.",
+    "ORDER_INVALID_TRANSITION": "Deze statuswijziging is niet (meer) mogelijk.",
+    "ORDER_QUOTE_REQUIRED": "Vul het bedrag van de offerte in.",
+    "ORDER_NOT_ARCHIVABLE": "Enkel afgeronde of geannuleerde bestellingen kunnen gearchiveerd worden.",
+    "SERVICE_IN_USE": "Deze dienst wordt gebruikt in bestellingen. Zet hem op inactief in plaats van hem te verwijderen.",
+    "UPLOAD_TOO_MANY_FILES": "Te veel bestanden.",
+    "UPLOAD_FILE_TOO_LARGE": "Een bestand is te groot.",
+    "UPLOAD_INVALID_TYPE": "Enkel JPG-, PNG- en WebP-afbeeldingen zijn toegestaan.",
+    "PAYLOAD_TOO_LARGE": "De aanvraag is te groot.",
+    "INTERNAL_ERROR": "Er ging iets mis aan onze kant. Probeer het later opnieuw."
+  },
+  "pages": {
+    "notFound": {
+      "eyebrow": "Fout 404",
+      "title": "Deze zaal is leeg",
+      "body": "De pagina die u zoekt bestaat niet (meer). Misschien vindt u wat u zoekt in de catalogus.",
+      "catalog": "Naar de catalogus"
+    },
+    "error": {
+      "eyebrow": "Onverwachte fout",
+      "title": "Er ging iets mis",
+      "body": "Deze pagina kon niet getoond worden. Vernieuw de pagina of probeer het later opnieuw."
+    }
+  },
+  "footer": {
+    "navigation": "Navigatie",
+    "contact": "Contact",
+    "privacy": "Privacyverklaring",
+    "instagram": "Volg op Instagram",
+    "examplesNote": "Alle afbeeldingen op deze site zijn voorbeelden.",
+    "rights": "© {{year}} {{name}}"
+  },
+  "pagination": {
+    "label": "Paginering",
+    "previous": "Vorige pagina",
+    "next": "Volgende pagina",
+    "status": "Pagina {{page}} van {{total}}"
+  },
+  "toast": {
+    "region": "Meldingen op het scherm",
+    "dismiss": "Melding sluiten",
+    "loggedOut": "U bent afgemeld."
+  }
+}
