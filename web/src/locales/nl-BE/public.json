@@ -1,5 +1,109 @@
 {
   "meta": {
-    "homeTitle": "Kunst op maat"
+    "homeTitle": "Kunst op maat",
+    "catalogTitle": "Inspiratiecatalogus",
+    "servicesTitle": "Diensten",
+    "contactTitle": "Over & contact",
+    "privacyTitle": "Privacyverklaring"
+  },
+  "carousel": {
+    "label": "Uitgelichte werken",
+    "slide": "{{index}} van {{total}}: {{title}}",
+    "previous": "Vorig werk",
+    "next": "Volgend werk",
+    "counter": "Werk {{current}} van {{total}}",
+    "keyboardHint": "Gebruik de pijltjestoetsen om te bladeren.",
+    "select": "Toon {{title}}"
+  },
+  "work": {
+    "selectedHeading": "Geselecteerd werk",
+    "space": "Ruimte",
+    "size": "Afmetingen voorbeeld",
+    "category": "Soort werk",
+    "year": "Jaar",
+    "price": "Prijs",
+    "requestSimilar": "Iets gelijkaardigs aanvragen",
+    "requestSimilarShort": "Gelijkaardig aanvragen",
+    "requestSimilarFor": "Iets gelijkaardigs aanvragen als ‘{{title}}’",
+    "browseCatalog": "Bekijk de volledige catalogus",
+    "attachNote": "Het gekozen voorbeeld wordt als referentie aan uw aanvraag toegevoegd.",
+    "notSpecified": "—"
+  },
+  "how": {
+    "eyebrow": "Zo werkt het",
+    "title": "Van idee tot kunstwerk",
+    "steps": {
+      "1": {
+        "title": "Stuur uw aanvraag",
+        "body": "Vertel wat u voor ogen hebt, voeg foto’s of voorbeelden toe en geef de afmetingen door."
+      },
+      "2": {
+        "title": "Ik bekijk alles persoonlijk",
+        "body": "Ik lees uw aanvraag zorgvuldig en stel vragen als er iets onduidelijk is."
+      },
+      "3": {
+        "title": "Persoonlijke offerte",
+        "body": "U ontvangt een voorstel op maat. U beslist vrijblijvend of u verdergaat."
+      },
+      "4": {
+        "title": "Creatie",
+        "body": "Na uw akkoord begint het werk. U volgt de voortgang in uw account."
+      }
+    },
+    "cta": "Een aanvraag op maat starten"
+  },
+  "servicesPreview": {
+    "eyebrow": "Diensten",
+    "title": "Wat ik voor u kan maken",
+    "all": "Alle diensten"
+  },
+  "instagram": {
+    "eyebrow": "Instagram",
+    "button": "Bekijk het profiel"
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Laten we praten",
+    "hours": "Openingsuren",
+    "email": "E-mailadres",
+    "phone": "Gsm",
+    "address": "Adres",
+    "orderCta": "Aanvraag op maat starten"
+  },
+  "catalog": {
+    "title": "Inspiratiecatalogus",
+    "intro": "Laat u inspireren door eerder werk en vraag met één klik iets gelijkaardigs aan.",
+    "filterCategory": "Filter op soort werk",
+    "filterSpace": "Filter op ruimte",
+    "all": "Alles",
+    "allSpaces": "Alle ruimtes",
+    "results_zero": "Geen werken",
+    "results_one": "{{count}} werk",
+    "results_other": "{{count}} werken",
+    "emptyTitle": "Nog niets in deze combinatie",
+    "emptyBody": "Probeer een andere filter, of beschrijf uw idee in een aanvraag op maat.",
+    "clearFilters": "Filters wissen",
+    "openDetail": "Bekijk {{title}}"
+  },
+  "lightbox": {
+    "previous": "Vorig werk",
+    "next": "Volgend werk",
+    "position": "{{current}} / {{total}}"
+  },
+  "services": {
+    "title": "Diensten",
+    "intro": "Elk werk wordt op maat gemaakt. Kies een dienst om meteen een aanvraag te starten — u krijgt altijd eerst een persoonlijke offerte.",
+    "request": "Deze dienst aanvragen",
+    "requestFor": "{{name}} aanvragen",
+    "wall": "Op de muur",
+    "empty": "Er zijn momenteel geen diensten beschikbaar.",
+    "customTitle": "Iets anders in gedachten?",
+    "customBody": "Beschrijf uw eigen idee — ook ongewone vragen zijn welkom.",
+    "customCta": "Eigen aanvraag beschrijven"
+  },
+  "privacy": {
+    "title": "Privacyverklaring",
+    "notice": "Deze tekst is een voorbeeld. De zaakvoerder moet hem nakijken en aanpassen vóór de website live gaat. Deze pagina is geen juridisch advies en garandeert geen naleving van de wetgeving.",
+    "empty": "Er is nog geen privacyverklaring ingevuld."
   }
 }

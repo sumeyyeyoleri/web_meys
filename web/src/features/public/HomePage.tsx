@@ -1,19 +1,19 @@
 import { useTranslation } from 'react-i18next';
 import { Skeleton } from '../../components/ui/Spinner';
 import { usePageTitle } from '../../lib/use-page-title';
+import { ContactDetails } from './ContactDetails';
+import { FeaturedGallery } from './FeaturedGallery';
 import { useSite } from './hooks';
+import { AboutSection, HowItWorks, InstagramBand, ServicesPreview } from './HomeSections';
 
-export function HomePage() {
-  const { t } = useTranslation('public');
+function Hero() {
   const { data: site, isPending } = useSite();
-  usePageTitle(t('meta.homeTitle'));
-
   return (
-    <section className="container-content flex min-h-[70vh] flex-col items-center justify-center gap-6 pt-44 pb-20 text-center">
+    <section className="container-content flex flex-col items-center gap-6 pt-40 pb-12 text-center sm:pt-48 sm:pb-16">
       {isPending ? (
         <>
           <Skeleton className="h-4 w-56" />
-          <Skeleton className="h-16 w-full max-w-2xl" />
+          <Skeleton className="h-28 w-full max-w-3xl" />
           <Skeleton className="h-6 w-full max-w-lg" />
         </>
       ) : (
@@ -28,5 +28,23 @@ export function HomePage() {
         </>
       )}
     </section>
+  );
+}
+
+export function HomePage() {
+  const { t } = useTranslation('public');
+  usePageTitle(t('meta.homeTitle'));
+  return (
+    <>
+      <Hero />
+      <FeaturedGallery />
+      <HowItWorks />
+      <AboutSection />
+      <ServicesPreview />
+      <InstagramBand />
+      <section aria-labelledby="contact-title" className="container-content section">
+        <ContactDetails />
+      </section>
+    </>
   );
 }

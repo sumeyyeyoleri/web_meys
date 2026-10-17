@@ -18,6 +18,16 @@ if (!window.localStorage) {
   Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
 }
 
+// jsdom's AbortSignal is not the one Node's fetch Request accepts; React Router builds
+// Request objects on navigation. Tests don't abort navigations, so drop the signal.
+const NodeRequest = globalThis.Request;
+globalThis.Request = class extends NodeRequest {
+  constructor(input: RequestInfo | URL, init?: RequestInit) {
+    const { signal: _signal, ...rest } = init ?? {};
+    super(input, rest);
+  }
+} as typeof Request;
+
 await import('../lib/i18n');
 
 afterEach(() => {

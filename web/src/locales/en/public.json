@@ -1,5 +1,109 @@
 {
   "meta": {
-    "homeTitle": "Custom art"
+    "homeTitle": "Custom art",
+    "catalogTitle": "Inspiration catalog",
+    "servicesTitle": "Services",
+    "contactTitle": "About & contact",
+    "privacyTitle": "Privacy policy"
+  },
+  "carousel": {
+    "label": "Featured works",
+    "slide": "{{index}} of {{total}}: {{title}}",
+    "previous": "Previous work",
+    "next": "Next work",
+    "counter": "Work {{current}} of {{total}}",
+    "keyboardHint": "Use the arrow keys to browse.",
+    "select": "Show {{title}}"
+  },
+  "work": {
+    "selectedHeading": "Selected work",
+    "space": "Space",
+    "size": "Example size",
+    "category": "Type of work",
+    "year": "Year",
+    "price": "Price",
+    "requestSimilar": "Request something similar",
+    "requestSimilarShort": "Request similar",
+    "requestSimilarFor": "Request something similar to ‘{{title}}’",
+    "browseCatalog": "Browse the full catalog",
+    "attachNote": "The selected example will be attached to your order as a reference.",
+    "notSpecified": "—"
+  },
+  "how": {
+    "eyebrow": "How it works",
+    "title": "From idea to artwork",
+    "steps": {
+      "1": {
+        "title": "Send your request",
+        "body": "Tell me what you have in mind, add photos or examples and share the dimensions."
+      },
+      "2": {
+        "title": "I review it personally",
+        "body": "I read your request carefully and ask questions if anything is unclear."
+      },
+      "3": {
+        "title": "Personal quote",
+        "body": "You receive a tailored proposal. You decide, without obligation, whether to go ahead."
+      },
+      "4": {
+        "title": "Creation",
+        "body": "Once you agree, the work begins. You follow the progress in your account."
+      }
+    },
+    "cta": "Start a custom request"
+  },
+  "servicesPreview": {
+    "eyebrow": "Services",
+    "title": "What I can make for you",
+    "all": "All services"
+  },
+  "instagram": {
+    "eyebrow": "Instagram",
+    "button": "View the profile"
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "title": "Let’s talk",
+    "hours": "Business hours",
+    "email": "Email address",
+    "phone": "Phone",
+    "address": "Address",
+    "orderCta": "Start a custom request"
+  },
+  "catalog": {
+    "title": "Inspiration catalog",
+    "intro": "Get inspired by earlier work and request something similar with one click.",
+    "filterCategory": "Filter by type of work",
+    "filterSpace": "Filter by space",
+    "all": "All",
+    "allSpaces": "All spaces",
+    "results_zero": "No works",
+    "results_one": "{{count}} work",
+    "results_other": "{{count}} works",
+    "emptyTitle": "Nothing in this combination yet",
+    "emptyBody": "Try another filter, or describe your idea in a custom request.",
+    "clearFilters": "Clear filters",
+    "openDetail": "View {{title}}"
+  },
+  "lightbox": {
+    "previous": "Previous work",
+    "next": "Next work",
+    "position": "{{current}} / {{total}}"
+  },
+  "services": {
+    "title": "Services",
+    "intro": "Every piece is made to measure. Choose a service to start a request right away — you always receive a personal quote first.",
+    "request": "Request this service",
+    "requestFor": "Request {{name}}",
+    "wall": "On the wall",
+    "empty": "No services are available at the moment.",
+    "customTitle": "Something else in mind?",
+    "customBody": "Describe your own idea — unusual requests are welcome too.",
+    "customCta": "Describe your own request"
+  },
+  "privacy": {
+    "title": "Privacy policy",
+    "notice": "This text is an example. The business owner must review and adapt it before the website goes live. This page is not legal advice and does not guarantee legal compliance.",
+    "empty": "No privacy policy has been filled in yet."
   }
 }

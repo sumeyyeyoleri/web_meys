@@ -1,5 +1,109 @@
 {
   "meta": {
-    "homeTitle": "Size özel sanat"
+    "homeTitle": "Size özel sanat",
+    "catalogTitle": "İlham kataloğu",
+    "servicesTitle": "Hizmetler",
+    "contactTitle": "Hakkında ve iletişim",
+    "privacyTitle": "Gizlilik politikası"
+  },
+  "carousel": {
+    "label": "Öne çıkan eserler",
+    "slide": "{{index}} / {{total}}: {{title}}",
+    "previous": "Önceki eser",
+    "next": "Sonraki eser",
+    "counter": "Eser {{current}} / {{total}}",
+    "keyboardHint": "Gezinmek için ok tuşlarını kullanın.",
+    "select": "{{title}} göster"
+  },
+  "work": {
+    "selectedHeading": "Seçili eser",
+    "space": "Mekân",
+    "size": "Örnek boyut",
+    "category": "Eser türü",
+    "year": "Yıl",
+    "price": "Fiyat",
+    "requestSimilar": "Buna benzer bir şey iste",
+    "requestSimilarShort": "Benzerini iste",
+    "requestSimilarFor": "‘{{title}}’ benzeri bir şey iste",
+    "browseCatalog": "Tüm kataloğa göz at",
+    "attachNote": "Seçtiğiniz örnek, siparişinize referans olarak eklenir.",
+    "notSpecified": "—"
+  },
+  "how": {
+    "eyebrow": "Nasıl çalışır",
+    "title": "Fikirden esere",
+    "steps": {
+      "1": {
+        "title": "Talebinizi gönderin",
+        "body": "Aklınızdakini anlatın, fotoğraf veya örnek ekleyin, ölçüleri paylaşın."
+      },
+      "2": {
+        "title": "Kişisel olarak inceliyorum",
+        "body": "Talebinizi dikkatle okur, belirsiz bir şey varsa soru sorarım."
+      },
+      "3": {
+        "title": "Kişisel teklif",
+        "body": "Size özel bir teklif alırsınız. Devam edip etmemeye siz karar verirsiniz."
+      },
+      "4": {
+        "title": "Üretim",
+        "body": "Onayınızdan sonra çalışma başlar. İlerlemeyi hesabınızdan takip edersiniz."
+      }
+    },
+    "cta": "Size özel talep başlat"
+  },
+  "servicesPreview": {
+    "eyebrow": "Hizmetler",
+    "title": "Sizin için neler yapabilirim",
+    "all": "Tüm hizmetler"
+  },
+  "instagram": {
+    "eyebrow": "Instagram",
+    "button": "Profili görüntüle"
+  },
+  "contact": {
+    "eyebrow": "İletişim",
+    "title": "Konuşalım",
+    "hours": "Çalışma saatleri",
+    "email": "E-posta adresi",
+    "phone": "Telefon",
+    "address": "Adres",
+    "orderCta": "Size özel talep başlat"
+  },
+  "catalog": {
+    "title": "İlham kataloğu",
+    "intro": "Önceki çalışmalardan ilham alın, tek tıkla benzerini isteyin.",
+    "filterCategory": "İş türüne göre filtrele",
+    "filterSpace": "Mekâna göre filtrele",
+    "all": "Tümü",
+    "allSpaces": "Tüm mekânlar",
+    "results_zero": "Eser yok",
+    "results_one": "{{count}} eser",
+    "results_other": "{{count}} eser",
+    "emptyTitle": "Bu seçimde henüz bir şey yok",
+    "emptyBody": "Başka bir filtre deneyin ya da fikrinizi size özel bir talepte anlatın.",
+    "clearFilters": "Filtreleri temizle",
+    "openDetail": "{{title}} görüntüle"
+  },
+  "lightbox": {
+    "previous": "Önceki eser",
+    "next": "Sonraki eser",
+    "position": "{{current}} / {{total}}"
+  },
+  "services": {
+    "title": "Hizmetler",
+    "intro": "Her eser ölçüye göre yapılır. Hemen talep başlatmak için bir hizmet seçin; önce her zaman kişisel bir teklif alırsınız.",
+    "request": "Bu hizmeti iste",
+    "requestFor": "{{name}} iste",
+    "wall": "Duvar üzerine",
+    "empty": "Şu anda sunulan bir hizmet yok.",
+    "customTitle": "Aklınızda başka bir şey mi var?",
+    "customBody": "Kendi fikrinizi anlatın; alışılmadık talepler de memnuniyetle karşılanır.",
+    "customCta": "Kendi talebinizi anlatın"
+  },
+  "privacy": {
+    "title": "Gizlilik politikası",
+    "notice": "Bu metin bir örnektir. Site yayına girmeden önce işletme sahibi tarafından gözden geçirilip uyarlanmalıdır. Bu sayfa hukuki tavsiye değildir ve yasal uyumluluğu garanti etmez.",
+    "empty": "Henüz bir gizlilik politikası girilmedi."
   }
 }
