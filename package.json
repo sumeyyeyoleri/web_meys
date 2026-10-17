@@ -12,6 +12,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "dev": "npm run dev -w server",
+    "build": "npm run build -w server",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run db:generate -w server --",
@@ -22,9 +24,10 @@
   },
   "allowScripts": {
     "argon2@0.45.1": true,
-    "esbuild@0.28.2": true,
     "prisma@6.19.3": true,
     "@prisma/engines@6.19.3": true,
-    "@prisma/client@6.19.3": true
+    "@prisma/client@6.19.3": true,
+    "esbuild@0.27.7": true,
+    "fsevents@2.3.3": true
   }
 }

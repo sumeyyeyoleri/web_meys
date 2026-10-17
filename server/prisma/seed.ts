@@ -7,13 +7,12 @@
  * and the default site settings.
  */
 import 'dotenv/config';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { CONTENT_KEYS, DEFAULT_ACCENT_COLOR, LOCALES, localeToDb, PASSWORD_MIN_LENGTH } from '@painter/shared';
 import { z } from 'zod';
+import { loadConfig } from '../src/config/env';
 import { hashPassword } from '../src/infrastructure/password-hasher';
+import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
 import { SEED_CONTENT, SEED_PORTFOLIO, SEED_SERVICES, SEED_SETTINGS } from './seed-data/content';
 
@@ -24,23 +23,15 @@ const env = z
     ADMIN_PASSWORD: z.string().min(PASSWORD_MIN_LENGTH),
     SEED_DEMO_CUSTOMER_EMAIL: z.email().transform((v) => v.toLowerCase()),
     SEED_DEMO_CUSTOMER_PASSWORD: z.string().min(PASSWORD_MIN_LENGTH),
-    STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
-    STORAGE_LOCAL_PUBLIC_DIR: z.string().default('./storage/public'),
   })
   .parse(process.env);
 
 const prisma = new PrismaClient();
-const SERVER_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const storage = createStorageDriver(loadConfig().storage);
 
-/** Writes a generated file into public media storage and returns its public URL. */
-async function writePublicMedia(key: string, contents: string): Promise<string> {
-  if (env.STORAGE_DRIVER !== 'local') {
-    throw new Error('The seed writes sample artwork to local storage. Run it with STORAGE_DRIVER=local.');
-  }
-  const target = path.resolve(SERVER_ROOT, env.STORAGE_LOCAL_PUBLIC_DIR, key);
-  await mkdir(path.dirname(target), { recursive: true });
-  await writeFile(target, contents, 'utf8');
-  return `/media/${key}`;
+/** Writes generated artwork to public media storage (local disk or S3) and returns its URL. */
+function writePublicMedia(key: string, svg: string): Promise<string> {
+  return storage.putPublic(key, Buffer.from(svg, 'utf8'), 'image/svg+xml');
 }
 
 async function seedUsers() {
