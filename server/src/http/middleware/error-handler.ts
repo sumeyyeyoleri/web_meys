@@ -23,12 +23,12 @@ export function zodFieldErrors(error: ZodError): Record<string, string> {
 function multerToError(error: MulterError): [number, ErrorCode, string, Record<string, string>] {
   switch (error.code) {
     case 'LIMIT_FILE_SIZE':
-      return [400, 'UPLOAD_FILE_TOO_LARGE', 'File is too large', { files: 'validation.fileTooLarge' }];
+      return [400, 'UPLOAD_FILE_TOO_LARGE', 'File is too large', { [error.field ?? 'files']: 'validation.fileTooLarge' }];
     case 'LIMIT_FILE_COUNT':
       return [400, 'UPLOAD_TOO_MANY_FILES', 'Too many files', { files: 'validation.tooManyFiles' }];
     case 'LIMIT_UNEXPECTED_FILE':
-      return error.field === 'files'
-        ? [400, 'UPLOAD_TOO_MANY_FILES', 'Too many files', { files: 'validation.tooManyFiles' }]
+      return error.field === 'files' || error.field === 'file'
+        ? [400, 'UPLOAD_TOO_MANY_FILES', 'Too many files', { [error.field]: 'validation.tooManyFiles' }]
         : [400, 'VALIDATION_ERROR', 'Unexpected file field', { [error.field ?? 'files']: 'validation.invalid' }];
     default:
       return [400, 'VALIDATION_ERROR', 'Invalid upload', { files: 'validation.invalid' }];

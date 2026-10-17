@@ -2,7 +2,9 @@ import './types';
 import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
 import type { Container } from '../container';
+import { buildOpenApiSpec } from '../openapi/spec';
 import { loadSession } from './middleware/auth';
 import { corsForOrigin } from './middleware/cors';
 import { csrfProtection } from './middleware/csrf';
@@ -58,6 +60,11 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   const limiters = createRateLimiters({ ...DEFAULT_RATE_LIMITS, ...options.rateLimits });
   app.use('/api', loadSession(services.sessions, config));
   app.use('/api', csrfProtection(config));
+  const openApiSpec = buildOpenApiSpec();
+  app.get('/api/openapi.json', (_req, res) => {
+    res.json(openApiSpec);
+  });
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, { customSiteTitle: 'Painter API docs' }));
   app.use('/api', createApiRouter(container, limiters));
   app.use('/api', apiNotFound);
   app.use(errorHandler);

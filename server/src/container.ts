@@ -4,6 +4,8 @@ import { createMailer, type Mailer } from './infrastructure/mailer';
 import { createPrismaClient } from './infrastructure/prisma';
 import { createStorageDriver, type StorageDriver } from './infrastructure/storage';
 import { createRepositories, createTransactionRunner } from './repositories';
+import { createAdminContentService } from './services/admin-content.service';
+import { createAdminOrderService } from './services/admin-order.service';
 import { createAttachmentService } from './services/attachment.service';
 import { createAuthService } from './services/auth.service';
 import { createContentService } from './services/content.service';
@@ -48,6 +50,8 @@ export function createContainer(config: AppConfig, overrides: ContainerOverrides
       notifications: createNotificationService({ repos }),
       attachments: createAttachmentService({ repos, storage }),
       email,
+      adminOrders: createAdminOrderService({ repos, transaction, orders }),
+      adminContent: createAdminContentService({ repos, transaction, storage, smtpConfigured: mailer.configured }),
     },
   };
 }

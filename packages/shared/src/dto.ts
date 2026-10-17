@@ -216,8 +216,11 @@ export interface AdminOrderDetailDto extends OrderDetailDto {
 
 export interface AdminStatsDto {
   totalOrders: number;
+  /** SUBMITTED — not yet looked at. */
   newOrders: number;
-  awaitingReview: number;
+  /** UNDER_REVIEW, AWAITING_CUSTOMER_INFO, QUOTE_SENT. */
+  inReview: number;
+  /** ACCEPTED, IN_PROGRESS. */
   inProgress: number;
   completed: number;
   unreadCustomerMessages: number;

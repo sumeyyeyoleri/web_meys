@@ -1,4 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
+import { createAdminContentRepository } from './admin-content.repository';
+import { createAdminOrderRepository } from './admin-order.repository';
 import { createContentRepository } from './content.repository';
 import type { Db } from './db';
 import { createMessageRepository } from './message.repository';
@@ -17,6 +19,8 @@ export function createRepositories(db: Db) {
     messages: createMessageRepository(db),
     notifications: createNotificationRepository(db),
     content: createContentRepository(db),
+    adminOrders: createAdminOrderRepository(db),
+    adminContent: createAdminContentRepository(db),
   };
 }
 

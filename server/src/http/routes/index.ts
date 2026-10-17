@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { Container } from '../../container';
 import { createAttachmentController } from '../controllers/attachment.controller';
 import { createAuthController } from '../controllers/auth.controller';
@@ -9,7 +9,7 @@ import { createUserController } from '../controllers/user.controller';
 import { requireAuth, requireRole } from '../middleware/auth';
 import type { RateLimitName } from '../middleware/rate-limit';
 import { orderUpload } from '../middleware/upload';
-import type { RequestHandler } from 'express';
+import { createAdminRouter } from './admin';
 
 export function createApiRouter(container: Container, limiters: Record<RateLimitName, RequestHandler>): Router {
   const router = Router();
@@ -56,6 +56,9 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.get('/notifications/unread-count', requireAuth, notifications.unreadCount);
   router.post('/notifications/read-all', requireAuth, notifications.markAllRead);
   router.post('/notifications/:id/read', requireAuth, notifications.markRead);
+
+  // Administration
+  router.use('/admin', createAdminRouter(container.services));
 
   return router;
 }
