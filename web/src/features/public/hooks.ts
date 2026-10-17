@@ -39,3 +39,15 @@ export function usePortfolio(filter: PortfolioFilter = {}) {
     staleTime: FIVE_MINUTES,
   });
 }
+
+/** One published catalog item (order wizard `?from=<id>`). */
+export function usePortfolioItem(id: string | null) {
+  const locale = useLocale();
+  return useQuery({
+    queryKey: queryKeys.portfolioItem(id ?? '', locale),
+    queryFn: ({ signal }) => api.get<PortfolioItemDto>(`/api/portfolio/${encodeURIComponent(id ?? '')}`, { locale }, signal),
+    enabled: !!id,
+    staleTime: FIVE_MINUTES,
+    retry: false,
+  });
+}

@@ -12,13 +12,13 @@ const portfolioQuery = localeQuery.extend({
   featured: queryBooleanSchema.optional(),
 });
 
-export function createPublicController({ content }: Services) {
+export function createPublicController({ content, email }: Services) {
   return {
     async site(req: Request, res: Response) {
       const { locale: requested } = parseQuery(localeQuery, req);
       const locale = await content.resolveLocale(requested);
       const [settings, texts] = await Promise.all([content.requireSettings(), content.getContent(locale)]);
-      const body: SiteDto = { locale, settings: toPublicSettingsDto(settings), content: texts };
+      const body: SiteDto = { locale, settings: toPublicSettingsDto(settings, email.isConfigured), content: texts };
       res.json(body);
     },
 

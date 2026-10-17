@@ -265,7 +265,7 @@ describe('content management', () => {
     await admin.put('/api/admin/settings').send({ ...settings, enabledLocales: ['nl-BE', 'en'], budgetRequired: true }).expect(200);
     const site = (await customer.get('/api/site?locale=tr')).body;
     expect(site.locale).toBe('nl-BE');
-    expect(site.settings).toMatchObject({ budgetRequired: true, enabledLocales: ['nl-BE', 'en'] });
+    expect(site.settings).toMatchObject({ budgetRequired: true, enabledLocales: ['nl-BE', 'en'], emailAvailable: true });
   });
 
   it('uploads public media after checking the file signature', async () => {

@@ -3,7 +3,7 @@ import { localeFromDb, type Locale, type PortfolioItemDto, type PublicSettingsDt
 import { pickTranslation } from '../../domain/localization';
 import { toNumberOrNull } from './common';
 
-export function toPublicSettingsDto(settings: SiteSettings): PublicSettingsDto {
+export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: boolean): PublicSettingsDto {
   return {
     businessName: settings.businessName,
     accentColor: settings.accentColor,
@@ -14,6 +14,7 @@ export function toPublicSettingsDto(settings: SiteSettings): PublicSettingsDto {
     enabledLocales: settings.enabledLocales.map(localeFromDb),
     budgetRequired: settings.budgetRequired,
     deadlineRequired: settings.deadlineRequired,
+    emailAvailable,
   };
 }
 

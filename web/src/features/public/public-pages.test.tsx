@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../../lib/i18n';
-import { mockApi } from '../../test/fixtures';
+import { mockApi, uid } from '../../test/fixtures';
 import { renderApp } from '../../test/render';
 
 beforeEach(() => setLocale('nl-BE'));
@@ -34,7 +34,7 @@ describe('home: curved gallery', () => {
     mockApi();
     renderApp('/');
     const link = await screen.findByRole('link', { name: 'Iets gelijkaardigs aanvragen als ‘Warme aarde’' });
-    expect(link.getAttribute('href')).toBe('/order?from=a1');
+    expect(link.getAttribute('href')).toBe(`/order?from=${uid('a1')}`);
     expect(screen.getAllByText('Persoonlijke offerte').length).toBeGreaterThan(0);
 
     await userEvent.click(screen.getByRole('button', { name: 'Vorig werk' })); // → Nachthaven (not allowed)
@@ -83,7 +83,7 @@ describe('services, contact and privacy', () => {
     mockApi();
     renderApp('/services');
     const link = await screen.findByRole('link', { name: 'Muurschildering aanvragen' });
-    expect(link.getAttribute('href')).toBe('/order?service=s2');
+    expect(link.getAttribute('href')).toBe(`/order?service=${uid('s2')}`);
     expect(screen.getByText('Op de muur')).toBeTruthy();
   });
 

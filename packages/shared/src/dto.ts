@@ -52,6 +52,8 @@ export interface PublicSettingsDto {
   enabledLocales: Locale[];
   budgetRequired: boolean;
   deadlineRequired: boolean;
+  /** Whether the site can send emails (SMTP configured); e.g. for password reset links. */
+  emailAvailable: boolean;
 }
 
 export interface SiteDto {

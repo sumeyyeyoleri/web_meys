@@ -143,6 +143,7 @@ const schemas: Record<string, Json> = {
       enabledLocales: { type: 'array', items: locale },
       budgetRequired: bool,
       deadlineRequired: bool,
+      emailAvailable: { type: 'boolean', description: 'SMTP configured — the site can send emails' },
     },
   },
   AdminSettings: {

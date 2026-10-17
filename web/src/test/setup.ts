@@ -28,6 +28,24 @@ globalThis.Request = class extends NodeRequest {
   }
 } as typeof Request;
 
+// jsdom has no modal dialogs or object URLs.
+if (!HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute('open', '');
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.removeAttribute('open');
+  };
+}
+if (!URL.createObjectURL) {
+  let n = 0;
+  URL.createObjectURL = () => `blob:test/${++n}`;
+  URL.revokeObjectURL = () => undefined;
+}
+// jsdom's scrollTo only logs "not implemented".
+window.scrollTo = () => undefined;
+Element.prototype.scrollIntoView ??= () => undefined;
+
 await import('../lib/i18n');
 
 afterEach(() => {

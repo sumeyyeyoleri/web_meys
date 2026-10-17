@@ -1,5 +1,56 @@
 {
   "meta": {
-    "title": "Hesabım"
+    "title": "Hesabım",
+    "loginTitle": "Giriş yap",
+    "registerTitle": "Hesap oluştur",
+    "forgotTitle": "Şifremi unuttum",
+    "resetTitle": "Yeni şifre"
+  },
+  "fields": {
+    "fullName": "Ad soyad",
+    "email": "E-posta adresi",
+    "password": "Şifre",
+    "newPassword": "Yeni şifre",
+    "passwordConfirm": "Şifreyi tekrar girin",
+    "passwordHint": "En az {{min}} karakter.",
+    "preferredLocale": "Tercih edilen dil",
+    "showPassword": "Şifreyi göster",
+    "hidePassword": "Şifreyi gizle"
+  },
+  "login": {
+    "title": "Tekrar hoş geldiniz",
+    "intro": "Taleplerinizi ve mesajlarınızı görmek için giriş yapın.",
+    "submit": "Giriş yap",
+    "forgot": "Şifrenizi mi unuttunuz?",
+    "noAccount": "Henüz hesabınız yok mu?",
+    "register": "Hesap oluşturun",
+    "welcome": "Giriş yaptınız."
+  },
+  "register": {
+    "title": "Hesabınızı oluşturun",
+    "intro": "Bir hesapla taleplerinizi takip edebilir ve mesajlara yanıt verebilirsiniz.",
+    "submit": "Hesap oluştur",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "login": "Giriş yapın",
+    "welcome": "Hoş geldiniz! Hesabınız oluşturuldu."
+  },
+  "forgot": {
+    "title": "Şifrenizi mi unuttunuz?",
+    "intro": "E-posta adresinizi girin. Yeni şifre belirlemeniz için bir bağlantı göndereceğiz.",
+    "submit": "Bağlantı gönder",
+    "sentTitle": "Gelen kutunuzu kontrol edin",
+    "sent": "{{email}} için bir hesap varsa birkaç dakika içinde bir bağlantı içeren e-posta alacaksınız. Bağlantı 1 saat geçerlidir.",
+    "unavailable": "Şifre e-postaları şu anda gönderilemiyor. Lütfen bizimle iletişime geçin, size yardımcı olalım.",
+    "contact": "Bize ulaşın",
+    "back": "Girişe dön"
+  },
+  "reset": {
+    "title": "Yeni şifre belirleyin",
+    "intro": "Yeni bir şifre seçin. Ardından tüm cihazlarda oturumunuz kapatılır.",
+    "submit": "Şifreyi kaydet",
+    "success": "Şifreniz değiştirildi. Şimdi giriş yapabilirsiniz.",
+    "missingToken": "Bu bağlantı eksik. E-postadaki bağlantıyı tekrar açın ya da yenisini isteyin.",
+    "requestNew": "Yeni bağlantı iste",
+    "goLogin": "Girişe git"
   }
 }

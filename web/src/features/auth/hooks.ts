@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { UserDto } from '@painter/shared';
+import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput, UserDto } from '@painter/shared';
 import { useToast } from '../../components/ui/Toast';
 import { api } from '../../lib/api';
 import { setLocale } from '../../lib/i18n';
@@ -42,5 +42,36 @@ export function useLogout() {
       navigate('/');
     },
     onError: () => toast.error(t('errors.generic')),
+  });
+}
+
+export function useLoginMutation() {
+  const applyUser = useApplySignedInUser();
+  return useMutation({
+    mutationFn: (input: LoginInput) => api.post<UserDto>('/api/auth/login', input),
+    onSuccess: (user) => applyUser(user),
+  });
+}
+
+export function useRegisterMutation() {
+  const applyUser = useApplySignedInUser();
+  return useMutation({
+    mutationFn: (input: RegisterInput) => api.post<UserDto>('/api/auth/register', input),
+    onSuccess: (user) => applyUser(user),
+  });
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: (input: ForgotPasswordInput) => api.post('/api/auth/forgot-password', input),
+  });
+}
+
+export function useResetPasswordMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ResetPasswordInput) => api.post('/api/auth/reset-password', input),
+    // The server ends every session, including this one.
+    onSuccess: () => queryClient.setQueryData(queryKeys.me, { user: null }),
   });
 }

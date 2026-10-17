@@ -1,5 +1,56 @@
 {
   "meta": {
-    "title": "Mijn account"
+    "title": "Mijn account",
+    "loginTitle": "Aanmelden",
+    "registerTitle": "Account aanmaken",
+    "forgotTitle": "Wachtwoord vergeten",
+    "resetTitle": "Nieuw wachtwoord"
+  },
+  "fields": {
+    "fullName": "Volledige naam",
+    "email": "E-mailadres",
+    "password": "Wachtwoord",
+    "newPassword": "Nieuw wachtwoord",
+    "passwordConfirm": "Herhaal het wachtwoord",
+    "passwordHint": "Minstens {{min}} tekens.",
+    "preferredLocale": "Voorkeurstaal",
+    "showPassword": "Wachtwoord tonen",
+    "hidePassword": "Wachtwoord verbergen"
+  },
+  "login": {
+    "title": "Welkom terug",
+    "intro": "Meld u aan om uw aanvragen en berichten te bekijken.",
+    "submit": "Aanmelden",
+    "forgot": "Wachtwoord vergeten?",
+    "noAccount": "Nog geen account?",
+    "register": "Account aanmaken",
+    "welcome": "U bent aangemeld."
+  },
+  "register": {
+    "title": "Account aanmaken",
+    "intro": "Met een account volgt u uw aanvragen op en beantwoordt u berichten.",
+    "submit": "Account aanmaken",
+    "haveAccount": "Hebt u al een account?",
+    "login": "Aanmelden",
+    "welcome": "Welkom! Uw account is aangemaakt."
+  },
+  "forgot": {
+    "title": "Wachtwoord vergeten",
+    "intro": "Vul uw e-mailadres in. We sturen u een link om een nieuw wachtwoord in te stellen.",
+    "submit": "Link aanvragen",
+    "sentTitle": "Controleer uw mailbox",
+    "sent": "Als er een account bestaat voor {{email}}, ontvangt u binnen enkele minuten een e-mail met een link. De link is 1 uur geldig.",
+    "unavailable": "Wachtwoord-e-mails kunnen momenteel niet verstuurd worden. Neem contact met ons op, dan helpen we u verder.",
+    "contact": "Contact opnemen",
+    "back": "Terug naar aanmelden"
+  },
+  "reset": {
+    "title": "Nieuw wachtwoord instellen",
+    "intro": "Kies een nieuw wachtwoord. Daarna wordt u overal afgemeld.",
+    "submit": "Wachtwoord opslaan",
+    "success": "Uw wachtwoord is gewijzigd. U kunt zich nu aanmelden.",
+    "missingToken": "Deze link is onvolledig. Open de link uit de e-mail opnieuw of vraag een nieuwe aan.",
+    "requestNew": "Nieuwe link aanvragen",
+    "goLogin": "Naar aanmelden"
   }
 }

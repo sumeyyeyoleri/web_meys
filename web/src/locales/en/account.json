@@ -1,5 +1,56 @@
 {
   "meta": {
-    "title": "My account"
+    "title": "My account",
+    "loginTitle": "Log in",
+    "registerTitle": "Create account",
+    "forgotTitle": "Forgot password",
+    "resetTitle": "New password"
+  },
+  "fields": {
+    "fullName": "Full name",
+    "email": "Email address",
+    "password": "Password",
+    "newPassword": "New password",
+    "passwordConfirm": "Repeat the password",
+    "passwordHint": "At least {{min}} characters.",
+    "preferredLocale": "Preferred language",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "login": {
+    "title": "Welcome back",
+    "intro": "Log in to see your requests and messages.",
+    "submit": "Log in",
+    "forgot": "Forgot your password?",
+    "noAccount": "No account yet?",
+    "register": "Create an account",
+    "welcome": "You are logged in."
+  },
+  "register": {
+    "title": "Create your account",
+    "intro": "With an account you can follow your requests and reply to messages.",
+    "submit": "Create account",
+    "haveAccount": "Already have an account?",
+    "login": "Log in",
+    "welcome": "Welcome! Your account has been created."
+  },
+  "forgot": {
+    "title": "Forgot your password?",
+    "intro": "Enter your email address. We'll send you a link to set a new password.",
+    "submit": "Send link",
+    "sentTitle": "Check your inbox",
+    "sent": "If an account exists for {{email}}, you'll receive an email with a link within a few minutes. The link is valid for 1 hour.",
+    "unavailable": "Password emails can't be sent at the moment. Please contact us and we'll help you.",
+    "contact": "Contact us",
+    "back": "Back to login"
+  },
+  "reset": {
+    "title": "Set a new password",
+    "intro": "Choose a new password. You'll then be logged out everywhere.",
+    "submit": "Save password",
+    "success": "Your password has been changed. You can now log in.",
+    "missingToken": "This link is incomplete. Open the link from the email again or request a new one.",
+    "requestNew": "Request a new link",
+    "goLogin": "Go to login"
   }
 }

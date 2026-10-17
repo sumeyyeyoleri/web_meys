@@ -85,7 +85,7 @@ export function toAdminServiceDto(service: AdminServiceWithCount): AdminServiceD
 
 export function toAdminSettingsDto(settings: SiteSettings, smtpConfigured: boolean): AdminSettingsDto {
   return {
-    ...toPublicSettingsDto(settings),
+    ...toPublicSettingsDto(settings, smtpConfigured),
     emailNotificationsEnabled: settings.emailNotificationsEnabled,
     smtpConfigured,
   };
