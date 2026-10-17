@@ -3,7 +3,8 @@
 // Deletion policy: orders and everything attached to them (attachments, messages,
 // internal notes, status history) use `onDelete: Restrict` so nothing is ever
 // erased silently. Orders are archived, never deleted. Translations cascade from
-// their parent row.
+// their parent row. An order's optional inspiration link (a catalog item) is set
+// to NULL if that item is deleted — the order itself is unaffected.
 
 generator client {
   provider = "prisma-client-js"
@@ -52,6 +53,17 @@ enum PortfolioCategory {
   WALL_PAINTING
   PORTRAIT
   OTHER
+}
+
+/// Room or place a catalog item suits (Inspiration Catalog filter).
+enum Space {
+  LIVING_ROOM
+  BEDROOM
+  KIDS_ROOM
+  KITCHEN
+  CAFE_SHOP
+  OFFICE
+  OUTDOOR
 }
 
 enum NotificationType {
@@ -142,17 +154,19 @@ model PasswordResetToken {
 /// differ from the customer's own address, and the order must keep showing what
 /// was originally submitted even if the profile changes later.
 model Order {
-  id            String      @id @default(uuid()) @db.Uuid
+  id             String      @id @default(uuid()) @db.Uuid
   /// Human-readable, non-sequential reference, e.g. ORD-2026-7K3QXM.
-  reference     String      @unique
-  customerId    String      @db.Uuid
+  reference      String      @unique
+  customerId     String      @db.Uuid
   /// Client-generated UUID; a repeated submission returns the existing order.
-  idempotencyKey String     @db.Uuid
-  status        OrderStatus @default(SUBMITTED)
+  idempotencyKey String      @db.Uuid
+  status         OrderStatus @default(SUBMITTED)
 
   // Step 1 — service
-  serviceId     String?     @db.Uuid
-  customRequest String?
+  serviceId         String? @db.Uuid
+  customRequest     String?
+  /// Catalog item the customer started from ("Request something similar").
+  inspirationItemId String? @db.Uuid
 
   // Step 2 — dimensions
   width               Decimal       @db.Decimal(10, 2)
@@ -197,13 +211,14 @@ model Order {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  customer      User                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  service       Service?             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  attachments   OrderAttachment[]
-  messages      OrderMessage[]
-  internalNotes InternalAdminNote[]
-  statusHistory OrderStatusHistory[]
-  notifications Notification[]
+  customer        User                 @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  service         Service?             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  inspirationItem PortfolioItem?       @relation(fields: [inspirationItemId], references: [id], onDelete: SetNull)
+  attachments     OrderAttachment[]
+  messages        OrderMessage[]
+  internalNotes   InternalAdminNote[]
+  statusHistory   OrderStatusHistory[]
+  notifications   Notification[]
 
   @@unique([customerId, idempotencyKey])
   @@index([status])
@@ -211,6 +226,7 @@ model Order {
   @@index([customerId])
   @@index([archivedAt])
   @@index([serviceId])
+  @@index([inspirationItemId])
 }
 
 /// Customer reference image, stored in PRIVATE storage and served only through
@@ -331,25 +347,30 @@ model ServiceTranslation {
 }
 
 model PortfolioItem {
-  id          String            @id @default(uuid()) @db.Uuid
+  id                  String            @id @default(uuid()) @db.Uuid
   /// Stable technical identifier (used by the seed).
-  slug        String            @unique
-  category    PortfolioCategory
+  slug                String            @unique
+  category            PortfolioCategory
   /// Absolute URL or a path in the public media storage (e.g. /media/portfolio/x.svg).
-  imageUrl    String
-  width       Decimal?          @db.Decimal(10, 2)
-  height      Decimal?          @db.Decimal(10, 2)
-  unit        DimensionUnit?
-  year        Int?
-  isFeatured  Boolean           @default(false)
-  isPublished Boolean           @default(true)
+  imageUrl            String
+  width               Decimal?          @db.Decimal(10, 2)
+  height              Decimal?          @db.Decimal(10, 2)
+  unit                DimensionUnit?
+  year                Int?
+  isFeatured          Boolean           @default(false)
+  isPublished         Boolean           @default(true)
   /// Placeholder/example work — shown with a translated "Example" label.
-  isSample    Boolean           @default(false)
-  sortOrder   Int               @default(0)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  isSample            Boolean           @default(false)
+  /// Rooms/places this work suits (catalog filter).
+  spaces              Space[]           @default([])
+  /// Shows the "Request something similar" button and allows orders to reference it.
+  allowSimilarRequest Boolean           @default(true)
+  sortOrder           Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
-  translations PortfolioItemTranslation[]
+  translations   PortfolioItemTranslation[]
+  inspiredOrders Order[]
 
   @@index([isPublished, sortOrder])
   @@index([category])
@@ -382,7 +403,7 @@ model LocalizedContent {
 model SiteSettings {
   id                        Int      @id @default(1)
   businessName              String
-  accentColor               String   @default("#B4532A")
+  accentColor               String   @default("#E8D3A8")
   instagramUrl              String?
   contactEmail              String?
   contactPhone              String?

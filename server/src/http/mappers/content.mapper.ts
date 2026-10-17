@@ -45,5 +45,7 @@ export function toPortfolioItemDto(
     year: item.year,
     isFeatured: item.isFeatured,
     isSample: item.isSample,
+    spaces: item.spaces,
+    allowSimilarRequest: item.allowSimilarRequest,
   };
 }

@@ -80,6 +80,7 @@ function orderData(input: CreateOrderInput, customerId: string, reference: strin
     status: 'SUBMITTED',
     serviceId: input.serviceId ?? null,
     customRequest: input.customRequest ?? null,
+    inspirationItemId: input.inspirationItemId ?? null,
     width: new Prisma.Decimal(input.width),
     height: new Prisma.Decimal(input.height),
     unit: input.unit,
@@ -179,6 +180,12 @@ export function createOrderService({ repos, transaction, storage, email, content
       if (input.serviceId) {
         const service = await repos.content.findService(input.serviceId);
         if (!service?.isActive) throw validationError({ serviceId: 'validation.invalidOption' });
+      }
+      if (input.inspirationItemId) {
+        const item = await repos.content.findPortfolioItem(input.inspirationItemId);
+        if (!item?.isPublished || !item.allowSimilarRequest) {
+          throw validationError({ inspirationItemId: 'validation.invalidInspiration' });
+        }
       }
 
       const images = validateImages(files, 'orders');

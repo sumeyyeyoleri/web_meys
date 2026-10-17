@@ -25,6 +25,7 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.get('/site', publicCtrl.site);
   router.get('/services', publicCtrl.services);
   router.get('/portfolio', publicCtrl.portfolio);
+  router.get('/portfolio/:id', publicCtrl.portfolioItem);
 
   // Authentication
   router.get('/auth/csrf', auth.csrf);

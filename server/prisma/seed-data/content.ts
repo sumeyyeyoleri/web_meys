@@ -1,4 +1,4 @@
-import type { ContentKey, Locale } from '@painter/shared';
+import type { ContentKey, Locale, Space } from '@painter/shared';
 import type { Composition, PaletteName } from './art';
 
 type PerLocale<T> = Record<Locale, T>;
@@ -82,7 +82,7 @@ export const SEED_SERVICES: SeedService[] = [
   {
     slug: 'decorative-wall-painting',
     isWallService: true,
-    art: { seed: 1404, palette: 'sand', composition: 'colorField' },
+    art: { seed: 1404, palette: 'gold', composition: 'colorField' },
     translations: {
       'nl-BE': {
         name: 'Decoratief schilderwerk',
@@ -114,6 +114,7 @@ export interface SeedPortfolioItem {
   unit: 'CM' | 'M';
   year: number;
   isFeatured: boolean;
+  spaces: Space[];
   translations: PerLocale<{ title: string; description: string }>;
 }
 
@@ -127,6 +128,7 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     unit: 'CM',
     year: 2025,
     isFeatured: true,
+    spaces: ['LIVING_ROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Warme aarde', description: 'Acryl op doek. Organische vormen in aardetinten.' },
       en: { title: 'Warm earth', description: 'Acrylic on canvas. Organic shapes in earth tones.' },
@@ -142,6 +144,7 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     unit: 'M',
     year: 2025,
     isFeatured: true,
+    spaces: ['LIVING_ROOM', 'OUTDOOR'],
     translations: {
       'nl-BE': { title: 'Getijdenlijnen', description: 'Muurschildering voor een leefruimte, geïnspireerd op de Noordzee.' },
       en: { title: 'Tidal lines', description: 'Mural for a living space, inspired by the North Sea.' },
@@ -157,6 +160,7 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     unit: 'CM',
     year: 2024,
     isFeatured: false,
+    spaces: ['BEDROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Studie in oker', description: 'Olieverf op doek. Rustige kleurvlakken.' },
       en: { title: 'Study in ochre', description: 'Oil on canvas. Calm fields of colour.' },
@@ -172,6 +176,7 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     unit: 'CM',
     year: 2025,
     isFeatured: true,
+    spaces: ['LIVING_ROOM', 'BEDROOM'],
     translations: {
       'nl-BE': { title: 'Avondfiguur', description: 'Abstract portret in gedempte avondkleuren.' },
       en: { title: 'Evening figure', description: 'Abstract portrait in muted evening colours.' },
@@ -181,12 +186,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   {
     slug: 'sample-forest-rhythm',
     category: 'WALL_PAINTING',
-    art: { seed: 2505, palette: 'forest', composition: 'strokes' },
+    art: { seed: 2505, palette: 'sage', composition: 'strokes' },
     width: 4,
     height: 2.6,
     unit: 'M',
     year: 2024,
     isFeatured: false,
+    spaces: ['KITCHEN', 'CAFE_SHOP'],
     translations: {
       'nl-BE': { title: 'Bosritme', description: 'Decoratieve wandafwerking met losse penseelstreken.' },
       en: { title: 'Forest rhythm', description: 'Decorative wall finish with loose brushstrokes.' },
@@ -201,7 +207,8 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     height: 90,
     unit: 'CM',
     year: 2023,
-    isFeatured: false,
+    isFeatured: true,
+    spaces: ['KITCHEN', 'LIVING_ROOM'],
     translations: {
       'nl-BE': { title: 'Kleituin', description: 'Gemengde technieken op doek.' },
       en: { title: 'Clay garden', description: 'Mixed media on canvas.' },
@@ -211,12 +218,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   {
     slug: 'sample-night-harbour',
     category: 'MURAL',
-    art: { seed: 2707, palette: 'indigo', composition: 'horizon' },
+    art: { seed: 2707, palette: 'nightBlue', composition: 'horizon' },
     width: 8,
     height: 3.5,
     unit: 'M',
     year: 2024,
     isFeatured: true,
+    spaces: ['CAFE_SHOP', 'OUTDOOR'],
     translations: {
       'nl-BE': { title: 'Nachthaven', description: 'Buitenmuur van een handelszaak, weerbestendige verf.' },
       en: { title: 'Night harbour', description: 'Exterior wall of a shop, weather-resistant paint.' },
@@ -226,12 +234,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   {
     slug: 'sample-sand-strata',
     category: 'WALL_PAINTING',
-    art: { seed: 2808, palette: 'sand', composition: 'colorField' },
+    art: { seed: 2808, palette: 'gold', composition: 'colorField' },
     width: 3.2,
     height: 2.5,
     unit: 'M',
     year: 2025,
-    isFeatured: false,
+    isFeatured: true,
+    spaces: ['BEDROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Zandlagen', description: 'Kalkverf in horizontale kleurvlakken.' },
       en: { title: 'Sand strata', description: 'Lime paint in horizontal colour blocks.' },
@@ -247,6 +256,7 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
     unit: 'CM',
     year: 2023,
     isFeatured: false,
+    spaces: ['BEDROOM'],
     translations: {
       'nl-BE': { title: 'Stille blik', description: 'Portretstudie in warme tinten.' },
       en: { title: 'Quiet gaze', description: 'Portrait study in warm tones.' },
@@ -256,16 +266,49 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   {
     slug: 'sample-paper-wind',
     category: 'OTHER',
-    art: { seed: 3010, palette: 'indigo', composition: 'strokes' },
+    art: { seed: 3010, palette: 'nightBlue', composition: 'strokes' },
     width: 42,
     height: 30,
     unit: 'CM',
     year: 2025,
     isFeatured: false,
+    spaces: ['KIDS_ROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Papieren wind', description: 'Gouache op papier.' },
       en: { title: 'Paper wind', description: 'Gouache on paper.' },
       tr: { title: 'Kâğıt rüzgâr', description: 'Kâğıt üzerine guaj.' },
+    },
+  },
+  {
+    slug: 'sample-moonlit-hills',
+    category: 'MURAL',
+    art: { seed: 3111, palette: 'nightBlue', composition: 'hills' },
+    width: 3.6,
+    height: 2.4,
+    unit: 'M',
+    year: 2025,
+    isFeatured: true,
+    spaces: ['KIDS_ROOM', 'BEDROOM'],
+    translations: {
+      'nl-BE': { title: 'Maanlichtheuvels', description: 'Rustige muurschildering voor een kinder- of slaapkamer.' },
+      en: { title: 'Moonlit hills', description: 'A calm mural for a children’s room or bedroom.' },
+      tr: { title: 'Ay ışığında tepeler', description: 'Çocuk ya da yatak odası için sakin bir duvar resmi.' },
+    },
+  },
+  {
+    slug: 'sample-golden-valley',
+    category: 'PAINTING',
+    art: { seed: 3212, palette: 'gold', composition: 'hills' },
+    width: 140,
+    height: 100,
+    unit: 'CM',
+    year: 2025,
+    isFeatured: true,
+    spaces: ['LIVING_ROOM', 'CAFE_SHOP'],
+    translations: {
+      'nl-BE': { title: 'Gouden vallei', description: 'Acryl op doek. Gelaagde heuvels in warm avondlicht.' },
+      en: { title: 'Golden valley', description: 'Acrylic on canvas. Layered hills in warm evening light.' },
+      tr: { title: 'Altın vadi', description: 'Tuval üzerine akrilik. Sıcak akşam ışığında katman katman tepeler.' },
     },
   },
 ];

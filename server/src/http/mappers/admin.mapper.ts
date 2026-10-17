@@ -64,6 +64,8 @@ export function toAdminPortfolioItemDto(item: PortfolioWithTranslations): AdminP
     isFeatured: item.isFeatured,
     isPublished: item.isPublished,
     isSample: item.isSample,
+    spaces: item.spaces,
+    allowSimilarRequest: item.allowSimilarRequest,
     sortOrder: item.sortOrder,
     translations: byLocale(item.translations, (t) => ({ title: t?.title ?? '', description: t?.description ?? null })),
   };

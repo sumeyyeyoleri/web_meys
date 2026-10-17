@@ -181,3 +181,22 @@ describe('admin status change', () => {
     expect(adminStatusChangeSchema.safeParse({ status: 'UNDER_REVIEW' }).success).toBe(true);
   });
 });
+
+describe('inspiration (Request something similar)', () => {
+  const inspirationItemId = '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d';
+
+  it('lets a catalog example alone satisfy the service step', () => {
+    expect(serviceStepSchema.safeParse({ inspirationItemId }).success).toBe(true);
+    const { serviceId: _omit, ...withoutService } = validOrder;
+    const schema = buildCreateOrderSchema({ ...relaxed, isGuest: false });
+    expect(schema.safeParse({ ...withoutService, inspirationItemId }).success).toBe(true);
+    expect(fieldErrors(schema.safeParse(withoutService))).toEqual({ serviceId: 'validation.serviceOrCustomRequired' });
+  });
+
+  it('rejects a malformed inspiration id and ignores an empty one', () => {
+    expect(fieldErrors(serviceStepSchema.safeParse({ serviceId: validOrder.serviceId, inspirationItemId: 'x' }))).toEqual({
+      inspirationItemId: 'validation.invalid',
+    });
+    expect(serviceStepSchema.parse({ serviceId: validOrder.serviceId, inspirationItemId: '' }).inspirationItemId).toBeUndefined();
+  });
+});

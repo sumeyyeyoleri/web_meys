@@ -1,4 +1,4 @@
-import type { Locale, PortfolioCategory } from '@prisma/client';
+import type { Locale, PortfolioCategory, Space } from '@prisma/client';
 import type { Db } from './db';
 
 export function createContentRepository(db: Db) {
@@ -23,11 +23,16 @@ export function createContentRepository(db: Db) {
       });
     },
 
-    listPublishedPortfolio(filter: { category?: PortfolioCategory; featured?: boolean }) {
+    findPortfolioItem(id: string) {
+      return db.portfolioItem.findUnique({ where: { id }, include: { translations: true } });
+    },
+
+    listPublishedPortfolio(filter: { category?: PortfolioCategory; space?: Space; featured?: boolean }) {
       return db.portfolioItem.findMany({
         where: {
           isPublished: true,
           ...(filter.category ? { category: filter.category } : {}),
+          ...(filter.space ? { spaces: { has: filter.space } } : {}),
           ...(filter.featured !== undefined ? { isFeatured: filter.featured } : {}),
         },
         include: { translations: true },

@@ -1,13 +1,14 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { localeSchema, PORTFOLIO_CATEGORIES, queryBooleanSchema, type SiteDto } from '@painter/shared';
+import { localeSchema, PORTFOLIO_CATEGORIES, queryBooleanSchema, spaceSchema, type SiteDto } from '@painter/shared';
 import type { Services } from '../../container';
 import { toPortfolioItemDto, toPublicSettingsDto, toServiceDto } from '../mappers/content.mapper';
-import { parseQuery } from '../middleware/validation';
+import { parseIdParam, parseQuery } from '../middleware/validation';
 
 const localeQuery = z.object({ locale: localeSchema.optional() });
 const portfolioQuery = localeQuery.extend({
   category: z.enum(PORTFOLIO_CATEGORIES, { error: 'validation.invalidOption' }).optional(),
+  space: spaceSchema.optional(),
   featured: queryBooleanSchema.optional(),
 });
 
@@ -30,8 +31,14 @@ export function createPublicController({ content }: Services) {
     async portfolio(req: Request, res: Response) {
       const query = parseQuery(portfolioQuery, req);
       const locale = await content.resolveLocale(query.locale);
-      const items = await content.listPortfolio({ category: query.category, featured: query.featured });
+      const items = await content.listPortfolio({ category: query.category, space: query.space, featured: query.featured });
       res.json(items.map((item) => toPortfolioItemDto(item, locale)));
+    },
+
+    async portfolioItem(req: Request, res: Response) {
+      const locale = await content.resolveLocale(parseQuery(localeQuery, req).locale);
+      const item = await content.getPublishedPortfolioItem(parseIdParam(req));
+      res.json(toPortfolioItemDto(item, locale));
     },
   };
 }

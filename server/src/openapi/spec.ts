@@ -27,6 +27,7 @@ import {
   LOCALES,
   ORDER_STATUSES,
   PORTFOLIO_CATEGORIES,
+  SPACES,
   UPLOAD_MAX_FILES,
 } from '@painter/shared';
 
@@ -73,6 +74,7 @@ const dateTime = { type: 'string', format: 'date-time' };
 const nDateTime = { type: ['string', 'null'], format: 'date-time' };
 const status = { type: 'string', enum: [...ORDER_STATUSES] };
 const locale = { type: 'string', enum: [...LOCALES] };
+const spaces = { type: 'array', items: { type: 'string', enum: [...SPACES] } };
 const translations = (props: Json) => ({
   type: 'object',
   properties: Object.fromEntries(LOCALES.map((l) => [l, { type: 'object', properties: props }])),
@@ -167,7 +169,14 @@ const schemas: Record<string, Json> = {
       year: { type: ['integer', 'null'] },
       isFeatured: bool,
       isSample: bool,
+      spaces,
+      allowSimilarRequest: { type: 'boolean', description: 'Whether "Request something similar" is offered' },
     },
+  },
+  Inspiration: {
+    type: ['object', 'null'],
+    description: 'Catalog item the order started from; title in the order communication language.',
+    properties: { id: str, title: str, imageUrl: str },
   },
   OrderSummary: {
     type: 'object',
@@ -190,6 +199,7 @@ const schemas: Record<string, Json> = {
         type: 'object',
         description: 'All submitted data, attachments, status history and allowed transitions for the viewer.',
         properties: {
+          inspiration: ref('Inspiration'),
           width: num,
           height: num,
           unit: str,
@@ -298,6 +308,8 @@ const schemas: Record<string, Json> = {
       isFeatured: bool,
       isPublished: bool,
       isSample: bool,
+      spaces,
+      allowSimilarRequest: bool,
       sortOrder: { type: 'integer' },
       translations: translations({ title: str, description: nstr }),
     },
@@ -380,9 +392,18 @@ export function buildOpenApiSpec(): Json {
           parameters: [
             localeParam,
             { name: 'category', in: 'query', schema: { type: 'string', enum: [...PORTFOLIO_CATEGORIES] } },
+            { name: 'space', in: 'query', schema: { type: 'string', enum: [...SPACES] } },
             { name: 'featured', in: 'query', schema: { type: 'boolean' } },
           ],
-          responses: { 200: ok('Items', { type: 'array', items: ref('PortfolioItem') }) },
+          responses: { 200: ok('Items', { type: 'array', items: ref('PortfolioItem') }), ...errors(400) },
+        },
+      },
+      '/api/portfolio/{id}': {
+        get: {
+          tags: ['Public'],
+          summary: 'One published portfolio item (e.g. for /order?from=<id>)',
+          parameters: [idParam, localeParam],
+          responses: { 200: ok('Item', ref('PortfolioItem')), ...errors(404) },
         },
       },
 
@@ -428,7 +449,7 @@ export function buildOpenApiSpec(): Json {
         post: {
           tags: ['Orders'],
           summary: 'Submit a custom order (guests: an account is created)',
-          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. Password fields are only required for guests. A repeated idempotencyKey returns the existing order with 200.`,
+          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. Password fields are only required for guests. A repeated idempotencyKey returns the existing order with 200. An optional \`inspirationItemId\` must reference a published catalog item that allows similar requests (otherwise 400 \`validation.invalidInspiration\`); it does not count against the file limit.`,
           security: csrf,
           requestBody: {
             required: true,

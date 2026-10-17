@@ -89,6 +89,8 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     isFeatured: input.isFeatured,
     isPublished: input.isPublished,
     isSample: input.isSample,
+    spaces: input.spaces,
+    allowSimilarRequest: input.allowSimilarRequest,
   });
 
   const portfolioTranslations = (input: PortfolioItemInput) =>

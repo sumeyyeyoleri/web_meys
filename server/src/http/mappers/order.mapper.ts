@@ -2,6 +2,7 @@ import {
   getAllowedTransitions,
   localeFromDb,
   type AttachmentDto,
+  type InspirationDto,
   type Locale,
   type OrderDetailDto,
   type OrderSummaryDto,
@@ -49,6 +50,14 @@ function toStatusHistoryDto(entry: OrderWithDetail['statusHistory'][number]): St
   };
 }
 
+function toInspirationDto(order: OrderWithDetail): InspirationDto | null {
+  const item = order.inspirationItem;
+  if (!item) return null;
+  // Shown in the order's communication language, whoever is viewing.
+  const title = pickTranslation(item.translations, localeFromDb(order.communicationLocale))?.title ?? '';
+  return { id: item.id, title, imageUrl: item.imageUrl };
+}
+
 export function toOrderDetailDto(
   order: OrderWithDetail,
   locale: Locale,
@@ -59,6 +68,7 @@ export function toOrderDetailDto(
     ...toOrderSummaryDto(order, locale, unreadMessages),
     serviceId: order.serviceId,
     customRequest: order.customRequest,
+    inspiration: toInspirationDto(order),
     isWallService: order.service?.isWallService ?? false,
     width: toNumber(order.width),
     height: toNumber(order.height),

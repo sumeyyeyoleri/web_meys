@@ -3,6 +3,7 @@ import type { Db } from './db';
 
 export const orderDetailInclude = {
   service: { include: { translations: true } },
+  inspirationItem: { include: { translations: true } },
   attachments: { orderBy: { createdAt: 'asc' } },
   statusHistory: { orderBy: { createdAt: 'asc' }, include: { changedBy: { select: { role: true } } } },
 } as const satisfies Prisma.OrderInclude;

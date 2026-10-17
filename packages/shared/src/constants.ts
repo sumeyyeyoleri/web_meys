@@ -21,6 +21,10 @@ export type DimensionUnit = (typeof DIMENSION_UNITS)[number];
 export const PORTFOLIO_CATEGORIES = ['PAINTING', 'MURAL', 'WALL_PAINTING', 'PORTRAIT', 'OTHER'] as const;
 export type PortfolioCategory = (typeof PORTFOLIO_CATEGORIES)[number];
 
+/** Rooms/places used to filter the Inspiration Catalog. */
+export const SPACES = ['LIVING_ROOM', 'BEDROOM', 'KIDS_ROOM', 'KITCHEN', 'CAFE_SHOP', 'OFFICE', 'OUTDOOR'] as const;
+export type Space = (typeof SPACES)[number];
+
 export const NOTIFICATION_TYPES = ['ORDER_SUBMITTED', 'ORDER_STATUS_CHANGED', 'ORDER_MESSAGE'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -44,7 +48,7 @@ export const ORDER_REFERENCE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 export const ORDER_REFERENCE_RANDOM_LENGTH = 6;
 export const ORDER_REFERENCE_PATTERN = /^ORD-\d{4}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/;
 
-export const DEFAULT_ACCENT_COLOR = '#B4532A';
+export const DEFAULT_ACCENT_COLOR = '#E8D3A8';
 export const HEX_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
 export const DEFAULT_PAGE_SIZE = 20;

@@ -124,6 +124,8 @@ async function seedPortfolio() {
         isFeatured: item.isFeatured,
         isPublished: true,
         isSample: true,
+        spaces: item.spaces,
+        allowSimilarRequest: true,
         sortOrder: index,
       },
     });

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CONTENT_KEYS, DIMENSION_UNITS, HEX_COLOR_PATTERN, PORTFOLIO_CATEGORIES } from '../constants';
+import { CONTENT_KEYS, DIMENSION_UNITS, HEX_COLOR_PATTERN, PORTFOLIO_CATEGORIES, SPACES } from '../constants';
 import { DEFAULT_LOCALE, LOCALES } from '../locales';
 import {
   emptyToUndefined,
@@ -19,6 +19,8 @@ function perLocale<T extends z.ZodType>(schema: T) {
 }
 
 /* ---------- Portfolio ---------- */
+
+export const spaceSchema = z.enum(SPACES, { error: 'validation.invalidOption' });
 
 export const portfolioTranslationSchema = z.object({
   title: requiredString(150),
@@ -43,6 +45,12 @@ export const portfolioItemSchema = z.object({
   isFeatured: z.boolean(),
   isPublished: z.boolean(),
   isSample: z.boolean(),
+  spaces: z
+    .array(spaceSchema)
+    .max(SPACES.length)
+    .default([])
+    .transform((spaces) => SPACES.filter((space) => spaces.includes(space))),
+  allowSimilarRequest: z.boolean().default(true),
   translations: perLocale(portfolioTranslationSchema),
 });
 export type PortfolioItemInput = z.infer<typeof portfolioItemSchema>;

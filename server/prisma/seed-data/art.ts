@@ -4,22 +4,23 @@
  * Every output is clearly a sample (`isSample = true` in the database).
  */
 
-export type Composition = 'colorField' | 'organic' | 'strokes' | 'horizon' | 'orbits';
+export type Composition = 'colorField' | 'organic' | 'strokes' | 'horizon' | 'orbits' | 'hills';
 
 export interface Palette {
   ground: string;
   colors: [string, string, string, string];
 }
 
+/** Rich but slightly muted palettes on deep grounds, so the works glow on a dark gallery wall. */
 export const PALETTES = {
-  terracotta: { ground: '#F3EADF', colors: ['#B4532A', '#D9925E', '#5E3A2B', '#E8C9A6'] },
-  sea: { ground: '#EEF1EE', colors: ['#2F5D62', '#5E8B7E', '#A7C4BC', '#1E3640'] },
-  ochre: { ground: '#F6EEDC', colors: ['#C8963E', '#8C5A1F', '#E9C46A', '#3D3A2E'] },
-  dusk: { ground: '#EDE7EC', colors: ['#6B4E71', '#C9A9A6', '#2E2A3B', '#E3B5A4'] },
-  forest: { ground: '#ECEDE4', colors: ['#3F5A3C', '#8EA172', '#C9C19B', '#22301F'] },
-  clay: { ground: '#F1E6DE', colors: ['#9C4A3B', '#D7A48A', '#3B2C2A', '#B9B19E'] },
-  indigo: { ground: '#ECEEF3', colors: ['#2B3A67', '#7D8BB6', '#D6A35C', '#151B2E'] },
-  sand: { ground: '#F5F0E6', colors: ['#B88B5A', '#E2CBA6', '#6E5A47', '#A3B0A0'] },
+  terracotta: { ground: '#2B1A15', colors: ['#B4532A', '#D9925E', '#5E3A2B', '#E8C9A6'] },
+  sea: { ground: '#13221F', colors: ['#2F5D62', '#5E8B7E', '#A7C4BC', '#E8D3A8'] },
+  ochre: { ground: '#2A2116', colors: ['#C8963E', '#8C5A1F', '#E9C46A', '#463A28'] },
+  dusk: { ground: '#221C27', colors: ['#6B4E71', '#C9A9A6', '#E3B5A4', '#3A2E44'] },
+  sage: { ground: '#1C2420', colors: ['#6F8F72', '#A7B89A', '#C9C19B', '#2E3B33'] },
+  clay: { ground: '#261C19', colors: ['#9C4A3B', '#D7A48A', '#B9B19E', '#4A3530'] },
+  nightBlue: { ground: '#121A26', colors: ['#2F4A6D', '#D9A441', '#7DA2D6', '#E8D3A8'] },
+  gold: { ground: '#1E1A12', colors: ['#D4AF6A', '#8A6B3A', '#E8D3A8', '#3B3122'] },
 } satisfies Record<string, Palette>;
 
 export type PaletteName = keyof typeof PALETTES;
@@ -154,12 +155,41 @@ function orbits(rng: Rng, p: Palette, w: number, h: number): string {
   return out;
 }
 
+/** Relative luminance-ish brightness of a #RRGGBB colour (0–255). */
+function brightness(hex: string): number {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+}
+
+/** Layered hills receding into the distance under a sun or moon. */
+function hills(rng: Rng, p: Palette, w: number, h: number): string {
+  const light = [...p.colors].sort((a, b) => brightness(b) - brightness(a))[0]!;
+  const bleed = w * 0.05;
+  const orbX = between(rng, 0.2, 0.8) * w;
+  const orbY = between(rng, 0.18, 0.32) * h;
+  const orbR = between(rng, 0.05, 0.08) * w;
+  let out = `<circle cx="${r1(orbX)}" cy="${r1(orbY)}" r="${r1(orbR * 2.4)}" fill="${light}" opacity="0.12" filter="url(#bleed)"/>`;
+  out += `<circle cx="${r1(orbX)}" cy="${r1(orbY)}" r="${r1(orbR)}" fill="${light}" opacity="0.9" filter="url(#bleed)"/>`;
+  const layers = 5;
+  for (let i = 0; i < layers; i++) {
+    const base = h * (0.42 + i * 0.12);
+    const amp = h * between(rng, 0.04, 0.1);
+    const peak = between(rng, 0.2, 0.8) * w;
+    const d = `M${r1(-bleed)},${r1(base + amp)} C${r1(peak * 0.5)},${r1(base + amp * 0.4)} ${r1(peak - w * 0.1)},${r1(base - amp)} ${r1(peak)},${r1(base - amp)} S${r1(w * 0.9)},${r1(base + amp * 0.6)} ${r1(w + bleed)},${r1(base)} L${r1(w + bleed)},${r1(h + bleed)} L${r1(-bleed)},${r1(h + bleed)} Z`;
+    // Back layers are lighter and hazier; front layers darker and denser.
+    const color = p.colors[[2, 1, 0, 1, 0][i] as 0 | 1 | 2];
+    out += `<path d="${d}" fill="${color}" opacity="${r1(0.35 + i * 0.15)}" filter="url(#bleed)"/>`;
+  }
+  return out;
+}
+
 const COMPOSERS: Record<Composition, (rng: Rng, p: Palette, w: number, h: number) => string> = {
   colorField,
   organic,
   strokes,
   horizon,
   orbits,
+  hills,
 };
 
 const escapeXml = (value: string) =>

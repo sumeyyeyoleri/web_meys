@@ -2,7 +2,7 @@
  * Data transfer objects returned by the API. Dates are ISO 8601 strings,
  * calendar dates (deadline) are `YYYY-MM-DD`, money and sizes are numbers.
  */
-import type { ContentKey, DimensionUnit, NotificationType, PortfolioCategory, Role } from './constants';
+import type { ContentKey, DimensionUnit, NotificationType, PortfolioCategory, Role, Space } from './constants';
 import type { Locale } from './locales';
 import type { OrderStatus } from './order-status';
 
@@ -80,6 +80,9 @@ export interface PortfolioItemDto {
   year: number | null;
   isFeatured: boolean;
   isSample: boolean;
+  spaces: Space[];
+  /** Whether "Request something similar" is offered for this item. */
+  allowSimilarRequest: boolean;
 }
 
 /* ---------- Orders ---------- */
@@ -127,9 +130,17 @@ export interface OrderSummaryDto {
   updatedAt: string;
 }
 
+/** Catalog item an order was started from; title in the order's communication language. */
+export interface InspirationDto {
+  id: string;
+  title: string;
+  imageUrl: string;
+}
+
 export interface OrderDetailDto extends OrderSummaryDto {
   serviceId: string | null;
   customRequest: string | null;
+  inspiration: InspirationDto | null;
   isWallService: boolean;
   width: number;
   height: number;
@@ -249,6 +260,8 @@ export interface AdminPortfolioItemDto {
   isFeatured: boolean;
   isPublished: boolean;
   isSample: boolean;
+  spaces: Space[];
+  allowSimilarRequest: boolean;
   sortOrder: number;
   translations: Translations<{ title: string; description: string | null }>;
 }

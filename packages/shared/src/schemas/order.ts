@@ -34,10 +34,16 @@ const optionalDate = z.preprocess(emptyToUndefined, isoDateSchema.optional());
 export const serviceStepShape = {
   serviceId: optionalUuid,
   customRequest: optionalString(2000),
+  /** Catalog item the order starts from ("Request something similar"). */
+  inspirationItemId: optionalUuid,
 };
 
-function refineServiceStep(value: { serviceId?: string; customRequest?: string }, ctx: z.RefinementCtx) {
-  if (!value.serviceId && !value.customRequest) {
+/** A service, a free-text request or a catalog example — at least one is needed. */
+function refineServiceStep(
+  value: { serviceId?: string; customRequest?: string; inspirationItemId?: string },
+  ctx: z.RefinementCtx,
+) {
+  if (!value.serviceId && !value.customRequest && !value.inspirationItemId) {
     ctx.addIssue({ code: 'custom', path: ['serviceId'], message: 'validation.serviceOrCustomRequired' });
   }
 }
@@ -219,7 +225,8 @@ export type AdminStatusChangeInput = z.infer<typeof adminStatusChangeSchema>;
 /** Admin edit of the submitted order data. Past deadlines are allowed here (historic orders). */
 export const adminOrderUpdateSchema = z
   .object({
-    ...serviceStepShape,
+    serviceId: serviceStepShape.serviceId,
+    customRequest: serviceStepShape.customRequest,
     ...dimensionsStepShape,
     ...detailsStepShape,
     ...contactStepShape,
