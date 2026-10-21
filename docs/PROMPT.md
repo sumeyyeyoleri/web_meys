@@ -219,3 +219,26 @@ The site must work without problems on phones and computers:
 - **No zoom on iPhone form fields:** the font size of every input, select and textarea is at least 16px, so tapping a field never zooms the page.
 - **Safe areas:** the iPhone notch and the bottom home bar must never cover content or controls (use `viewport-fit=cover` with `env(safe-area-inset-*)` padding on fixed and full-screen elements).
 - **Mobile keyboard:** when the on-screen keyboard opens, the focused form field stays visible and is not hidden behind the keyboard or behind fixed bars.
+
+## 18. Brand, welcome screen and owner customization (decisions)
+
+### 18.1 Site name: "MeysArt"
+- The seeded `businessName` is **MeysArt**. It appears in the navigation, the browser tab title (`<title>`), the footer, emails and the README.
+- Without an uploaded logo, the name is shown as a **wordmark** in Cormorant Garamond: "Meys" regular, "Art" italic in the accent colour.
+- Admin settings offer an **optional logo upload** (SVG, PNG or WebP). When a logo is set it replaces the wordmark everywhere. Uploaded SVGs must be checked server-side and rejected if they contain scripts, event handlers, external references or other active content.
+
+### 18.2 Welcome screen
+- On the first visit to the **home page only**, a full-screen dark welcome screen is shown: large MeysArt logo, a short tagline (3 languages), one featured artwork as a slightly darkened background, and an "Enter the gallery" button.
+- Shown **once per browser session** (sessionStorage). A "Skip" link is always visible; Esc and Enter also dismiss it. No animation with `prefers-reduced-motion`.
+- It must never block search engines or visitors who arrive directly on another page (e.g. `/catalog`): the page content is rendered underneath, and only `/` shows the welcome screen.
+- The admin can turn it on/off and change the background image and the tagline (3 languages).
+- Works on phones (§17).
+
+### 18.3 Admin dashboard additions (phase 9)
+- A separate, MeysArt-branded **admin login page** at `/admin/login`: dark design, logo centred, title "Dashboard". Successful login goes to `/admin`. Signing in with a customer account shows "You don't have access to this area". Login rate limiting applies here too.
+- Main goal: **the painter can personalise the site herself.**
+  - **Portfolio / catalog:** add works by uploading her own photos, edit, reorder, feature, hide and delete. Uploaded photos are automatically resized and optimised for the web.
+  - **"Hide all sample works"** button: unpublishes every `isSample = true` item in one click (with a confirmation dialog). Real works never show the "Example" label.
+  - **Texts:** home title, about, contact, welcome tagline etc. in 3 languages.
+  - **Settings:** site name, logo, accent colour, Instagram, contact details, welcome screen settings.
+  - On first login the dashboard shows a short **"Personalise your site" checklist**: upload a logo, add your first work, write the about text, hide the sample works, enter your contact details.
