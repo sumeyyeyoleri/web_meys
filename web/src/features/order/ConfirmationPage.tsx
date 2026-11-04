@@ -1,38 +1,55 @@
-import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { OrderDetailDto } from '@painter/shared';
-import { ButtonLink } from '../../components/ui/Button';
-import { LoadingBlock } from '../../components/ui/Spinner';
-import { ErrorState } from '../../components/ui/States';
-import { api } from '../../lib/api';
+import { Button, ButtonLink } from '../../components/ui/Button';
+import { FormAlert } from '../../components/ui/FormAlert';
+import { Input } from '../../components/ui/Inputs';
+import { useToast } from '../../components/ui/Toast';
 import { useLocale } from '../../lib/i18n';
-import { queryKeys } from '../../lib/query-keys';
+import { formatDate } from '../../lib/format';
 import { usePageTitle } from '../../lib/use-page-title';
-import { ArtworkImage } from '../public/ArtworkImage';
 import { NextSteps } from './NextSteps';
+import type { GuestConfirmationState } from './useSubmitOrder';
 
-/** Shown after a signed-in customer submitted: reference, what happens next, link to the order in the account. */
-export function ConfirmationPage() {
+/**
+ * Shown once after a guest submitted: the reference and the private tracking link. The link is
+ * only in the router state (it survives a reload of this tab, but is never stored by the site).
+ */
+export function GuestConfirmationPage() {
   const { t } = useTranslation('order');
   usePageTitle(t('meta.confirmationTitle'));
-  const { orderId = '' } = useParams();
   const locale = useLocale();
-  const order = useQuery({
-    queryKey: queryKeys.orders.detail(orderId),
-    queryFn: ({ signal }) => api.get<OrderDetailDto>(`/api/orders/${encodeURIComponent(orderId)}`, { locale }, signal),
-  });
+  const toast = useToast();
+  const linkRef = useRef<HTMLInputElement>(null);
+  const state = useLocation().state as GuestConfirmationState | null;
 
-  if (order.isPending) return <LoadingBlock className="min-h-[60vh]" />;
-  if (order.isError) {
+  if (!state?.tracking) {
     return (
-      <div className="container-content pt-40 pb-24">
-        <ErrorState error={order.error} onRetry={() => void order.refetch()} />
+      <div className="container-content flex justify-center pt-36 pb-24 sm:pt-44">
+        <div className="flex w-full max-w-2xl flex-col gap-6 text-center">
+          <h1 className="text-5xl">{t('sent.missingTitle')}</h1>
+          <p className="text-text-muted">{t('sent.missingBody')}</p>
+          <ButtonLink to="/" variant="secondary" className="self-center">
+            {t('confirmation.home')}
+          </ButtonLink>
+        </div>
       </div>
     );
   }
 
-  const { reference, inspiration } = order.data;
+  const { reference, tracking, email, inspirationTitle } = state;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(tracking.url);
+      toast.success(t('sent.copied'));
+    } catch {
+      // Clipboard not available (e.g. permissions): select the text so it can be copied by hand.
+      linkRef.current?.select();
+      toast.show(t('sent.copyManually'));
+    }
+  }
+
   return (
     <div className="container-content flex justify-center pt-36 pb-24 sm:pt-44">
       <div className="flex w-full max-w-2xl flex-col gap-10">
@@ -43,23 +60,36 @@ export function ConfirmationPage() {
             <span className="text-sm text-text-muted">{t('confirmation.reference')}</span>
             <span className="font-sans text-2xl font-semibold tracking-[0.08em] text-text">{reference}</span>
           </div>
+          {inspirationTitle ? <p className="text-text-muted">{t('inspiration.inspiredBy', { title: inspirationTitle })}</p> : null}
         </header>
 
-        {inspiration ? (
-          <div className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface p-4">
-            <ArtworkImage src={inspiration.imageUrl} alt="" className="size-16 shrink-0" />
-            <p>{t('inspiration.inspiredBy', { title: inspiration.title })}</p>
+        <section aria-labelledby="link-title" className="flex flex-col gap-4 rounded-[var(--radius-panel)] border border-accent/60 bg-surface p-6 sm:p-8">
+          <h2 id="link-title" className="text-3xl">
+            {t('sent.linkTitle')}
+          </h2>
+          <p className="text-text-muted">{t('sent.linkIntro')}</p>
+          <label htmlFor="tracking-link" className="sr-only">
+            {t('sent.linkLabel')}
+          </label>
+          <Input id="tracking-link" ref={linkRef} readOnly value={tracking.url} onFocus={(e) => e.currentTarget.select()} className="font-mono text-base" />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button onClick={() => void copy()}>{t('sent.copy')}</Button>
+            <ButtonLink to={new URL(tracking.url).pathname + new URL(tracking.url).hash} variant="secondary">
+              {t('sent.open')}
+            </ButtonLink>
           </div>
-        ) : null}
+          <FormAlert tone="info">
+            <p className="font-semibold">{t('sent.saveWarning')}</p>
+            <p className="mt-1 text-text-muted">{t('sent.saveWarningBody', { date: formatDate(tracking.expiresAt, locale) })}</p>
+          </FormAlert>
+          {tracking.emailSent ? <FormAlert tone="success">{t('sent.emailed', { email })}</FormAlert> : null}
+        </section>
 
-        <NextSteps where="account" />
+        <NextSteps where="link" />
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <ButtonLink to={`/account/orders/${orderId}`}>{t('confirmation.viewOrder')}</ButtonLink>
-          <ButtonLink to="/" variant="secondary">
-            {t('confirmation.home')}
-          </ButtonLink>
-        </div>
+        <ButtonLink to="/" variant="secondary" className="self-center">
+          {t('confirmation.home')}
+        </ButtonLink>
       </div>
     </div>
   );

@@ -47,7 +47,7 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 
 ### Floating pill navigation (all public pages)
 - Centered, `max-width: 760px`, 28px from the top, background `--color-surface-2`, 1px border, 16px radius.
-- Left: business name in Cormorant (from settings). Center: Home, Catalog, Services, About/Contact. Right: language switcher (NL / EN / TR, active one in full white), account/login icon, notifications bell when logged in, and an "Order" button (secondary style with a small paper-plane icon).
+- Left: business name in Cormorant (from settings). Center: Home, Catalog, Services, About/Contact. Right: language switcher (NL / EN / TR, active one in full white) and an "Order" button (customers have no account, so there is no login icon or bell; only the signed-in artist sees a small "Log out" text button) (secondary style with a small paper-plane icon).
 - Sticky on scroll, with a slightly stronger background. On mobile it collapses to name + hamburger; the menu opens as a full-screen dark sheet with large serif links, focus trap and Esc to close.
 
 ### Buttons
@@ -90,8 +90,8 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
   - The confirmation page and the order detail show "Inspired by: <title>".
 - Guest confirmation: order number, the private tracking link in a read-only field with "Copy link" / "Open order", and a clear "Save this link" notice; "We also emailed it" only when the email was really sent.
 
-### Customer account & admin
-- Same dark tokens. Orders list as cards on mobile, table on desktop. Status badges: small pill with dot + translated label.
+### Tracking page & admin
+- Same dark tokens. The customer's tracking page (`/track#<token>`) is a single order page; the admin orders list uses cards on mobile, a table on desktop. Status badges: small pill with dot + translated label.
 - Admin order detail shows an **"Inspired by"** card (thumbnail + title + link to the portfolio item) when the order has one.
 - Admin portfolio editor gets the new **Spaces** multi-select and an **"Show 'Request similar' button"** toggle (default on).
 
@@ -106,7 +106,7 @@ Keep generating original abstract SVG artworks (no reproductions of famous paint
 5. Add translations for all new keys in nl-BE, en and tr. Update the OpenAPI spec.
 
 ## 7. Done criteria for the design
-- Looks consistent on every page, including the 404, auth pages, account and admin.
+- Looks consistent on every page, including the 404, the tracking page, the artist's sign-in pages and admin.
 - WCAG AA contrast everywhere (verify muted text and accent buttons), keyboard-operable carousel, lightbox and filters, visible focus.
 - Works at 360px, 768px, 1280px and 1440px widths without horizontal scrolling (except the intentionally clipped carousel).
 - Lighthouse accessibility score ≥ 95 on Home, Catalog and Order.
