@@ -2,7 +2,7 @@
  * Idempotent seed: running it again never duplicates rows and never overwrites
  * content that an administrator has edited since (rows are only created when missing).
  *
- * Creates: the admin (from env), one demo customer with two demo orders, one guest order, 4 services,
+ * Creates: the admin (from env), three demo orders (customers have no account), 4 services,
  * 10 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
  * and the default site settings.
  */
@@ -19,7 +19,7 @@ import {
 import { z } from 'zod';
 import { loadConfig } from '../src/config/env';
 import { generateToken, sha256 } from '../src/infrastructure/crypto';
-import { hashPassword } from '../src/infrastructure/password-hasher';
+import { hashPassword, verifyPassword } from '../src/infrastructure/password-hasher';
 import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
 import { SEED_CONTENT, SEED_PORTFOLIO, SEED_SERVICES, SEED_SETTINGS } from './seed-data/content';
@@ -29,8 +29,6 @@ const env = z
     DATABASE_URL: z.string().min(1),
     ADMIN_EMAIL: z.email().transform((v) => v.toLowerCase()),
     ADMIN_PASSWORD: z.string().min(PASSWORD_MIN_LENGTH),
-    SEED_DEMO_CUSTOMER_EMAIL: z.email().transform((v) => v.toLowerCase()),
-    SEED_DEMO_CUSTOMER_PASSWORD: z.string().min(PASSWORD_MIN_LENGTH),
   })
   .parse(process.env);
 
@@ -42,42 +40,25 @@ function writePublicMedia(key: string, svg: string): Promise<string> {
   return storage.putPublic(key, Buffer.from(svg, 'utf8'), 'image/svg+xml');
 }
 
-async function seedUsers() {
-  const admin = await prisma.user.upsert({
-    where: { email: env.ADMIN_EMAIL },
-    update: { role: 'ADMIN' },
-    create: {
-      email: env.ADMIN_EMAIL,
-      passwordHash: await hashPassword(env.ADMIN_PASSWORD),
-      role: 'ADMIN',
-      preferredLocale: 'NL_BE',
-      profile: { create: { fullName: 'Administrator' } },
-    },
-  });
-
-  const customer = await prisma.user.upsert({
-    where: { email: env.SEED_DEMO_CUSTOMER_EMAIL },
-    update: {},
-    create: {
-      email: env.SEED_DEMO_CUSTOMER_EMAIL,
-      passwordHash: await hashPassword(env.SEED_DEMO_CUSTOMER_PASSWORD),
-      role: 'CUSTOMER',
-      preferredLocale: 'NL_BE',
-      profile: {
-        create: {
-          fullName: 'Demo Klant',
-          phone: '+32 470 11 22 33',
-          country: 'België',
-          city: 'Gent',
-          postalCode: '9000',
-          street: 'Voorbeeldstraat',
-          houseNumber: '10',
-        },
-      },
-    },
-  });
-
-  return { admin, customer };
+/**
+ * The artist's account. When ADMIN_PASSWORD in .env no longer matches, the password is
+ * updated and every session ends — the way to reset it when SMTP is not configured.
+ */
+async function seedAdmin() {
+  const existing = await prisma.user.findUnique({ where: { email: env.ADMIN_EMAIL } });
+  if (!existing) {
+    return prisma.user.create({
+      data: { email: env.ADMIN_EMAIL, passwordHash: await hashPassword(env.ADMIN_PASSWORD), preferredLocale: 'NL_BE' },
+    });
+  }
+  if (!(await verifyPassword(existing.passwordHash, env.ADMIN_PASSWORD))) {
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: existing.id }, data: { passwordHash: await hashPassword(env.ADMIN_PASSWORD) } }),
+      prisma.session.deleteMany({ where: { userId: existing.id } }),
+    ]);
+    console.log('Admin password updated from ADMIN_PASSWORD; all admin sessions were signed out.');
+  }
+  return existing;
 }
 
 async function seedServices() {
@@ -184,14 +165,14 @@ const daysAgo = (days: number, hour = 10) => {
   return date;
 };
 
-async function seedDemoOrders(adminId: string, customerId: string, services: Map<string, string>) {
+async function seedDemoOrders(adminId: string, services: Map<string, string>) {
   const muralId = services.get('mural');
   const portraitId = services.get('portrait');
   if (!muralId || !portraitId) throw new Error('Demo services are missing.');
 
   const contact = {
     contactName: 'Demo Klant',
-    contactEmail: env.SEED_DEMO_CUSTOMER_EMAIL,
+    contactEmail: 'demo.klant@example.com',
     contactPhone: '+32 470 11 22 33',
     communicationLocale: 'NL_BE' as const,
   };
@@ -203,7 +184,6 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
       const order = await tx.order.create({
         data: {
           reference: quoteRef,
-          customerId,
           idempotencyKey: '7b0d9c4e-1f2a-4e3b-8c5d-6a7b8c9d0e1f',
           status: 'QUOTE_SENT',
           serviceId: muralId,
@@ -239,7 +219,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
             orderId: order.id,
             fromStatus: null,
             toStatus: 'SUBMITTED',
-            changedById: customerId,
+            changedById: null,
             changedByRole: 'CUSTOMER',
             createdAt: daysAgo(12),
           },
@@ -267,7 +247,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
         data: [
           {
             orderId: order.id,
-            senderId: customerId,
+            senderId: null,
             senderRole: 'CUSTOMER',
             body: 'Goeiedag, is het mogelijk om ook het plafond gedeeltelijk mee te nemen in het ontwerp?',
             readAt: daysAgo(9),
@@ -285,7 +265,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
             orderId: order.id,
             senderId: adminId,
             senderRole: 'ADMIN',
-            body: 'Uw offerte staat klaar in uw account. Laat gerust weten als u vragen hebt.',
+            body: 'Uw offerte staat klaar via uw persoonlijke link. Laat gerust weten als u vragen hebt.',
             readAt: null,
             createdAt: daysAgo(3, 11),
           },
@@ -299,18 +279,8 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
           createdAt: daysAgo(9, 15),
         },
       });
-      await tx.notification.createMany({
-        data: [
-          { userId: adminId, type: 'ORDER_SUBMITTED', orderId: order.id, readAt: daysAgo(11), createdAt: daysAgo(12) },
-          {
-            userId: customerId,
-            type: 'ORDER_STATUS_CHANGED',
-            orderId: order.id,
-            status: 'QUOTE_SENT',
-            createdAt: daysAgo(3),
-          },
-          { userId: customerId, type: 'ORDER_MESSAGE', orderId: order.id, createdAt: daysAgo(3, 11) },
-        ],
+      await tx.notification.create({
+        data: { userId: adminId, type: 'ORDER_SUBMITTED', orderId: order.id, readAt: daysAgo(11), createdAt: daysAgo(12) },
       });
     });
   }
@@ -322,7 +292,6 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
       const order = await tx.order.create({
         data: {
           reference: submittedRef,
-          customerId,
           idempotencyKey: '2c4e6a8b-0d1f-4a3c-9e5b-7d9f1b3d5f7a',
           status: 'SUBMITTED',
           serviceId: portraitId,
@@ -347,7 +316,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
           orderId: order.id,
           fromStatus: null,
           toStatus: 'SUBMITTED',
-          changedById: customerId,
+          changedById: null,
           changedByRole: 'CUSTOMER',
           createdAt: daysAgo(1),
         },
@@ -360,7 +329,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
 }
 
 /**
- * A guest order (no account) with a private tracking link. The link is printed once when the
+ * An order with a private tracking link. The link is printed once when the
  * order is created — like the confirmation page, the token itself is never stored.
  */
 async function seedGuestOrder(adminId: string, services: Map<string, string>) {
@@ -371,7 +340,6 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
     const order = await tx.order.create({
       data: {
         reference,
-        customerId: null,
         idempotencyKey: '5e7a9c1b-3d5f-4b7d-9f1a-3c5e7a9c1b3d',
         status: 'SUBMITTED',
         serviceId: services.get('canvas-painting') ?? null,
@@ -405,15 +373,15 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
     });
     await tx.notification.create({ data: { userId: adminId, type: 'ORDER_SUBMITTED', orderId: order.id, createdAt: daysAgo(2) } });
   });
-  console.log(`Demo guest order ${reference} — tracking link (shown only now): ${loadConfig().webOrigin}/track#${token}`);
+  console.log(`Demo order ${reference} — tracking link (shown only now): ${loadConfig().webOrigin}/track#${token}`);
 }
 
 async function main() {
-  const { admin, customer } = await seedUsers();
+  const admin = await seedAdmin();
   const services = await seedServices();
   await seedPortfolio();
   await seedContentAndSettings();
-  await seedDemoOrders(admin.id, customer.id, services);
+  await seedDemoOrders(admin.id, services);
   await seedGuestOrder(admin.id, services);
 
   const counts = await Promise.all([

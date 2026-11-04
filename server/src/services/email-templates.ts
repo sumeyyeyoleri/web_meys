@@ -8,8 +8,8 @@ interface EmailCopy {
   statusChanged: { subject: (reference: string) => string; body: (reference: string, status: string, link: string) => string };
   newMessage: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
   orderSubmitted: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
-  /** Guests have no account: they follow the order through their private tracking link. */
-  guest: {
+  /** Customers have no account: they follow the order through their private tracking link. */
+  customer: {
     statusChanged: (reference: string, status: string) => string;
     newMessage: (reference: string) => string;
     trackingLink: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
@@ -37,7 +37,7 @@ const COPY: Record<Locale, EmailCopy> = {
     },
     statusChanged: {
       subject: (ref) => `Uw bestelling ${ref} werd bijgewerkt`,
-      body: (ref, status, link) => `De status van uw bestelling ${ref} is nu: ${status}.\n\nBekijk de details in uw account:\n${link}`,
+      body: (ref, status, link) => `De status van bestelling ${ref} is nu: ${status}.\n\n${link}`,
     },
     newMessage: {
       subject: (ref) => `Nieuw bericht over bestelling ${ref}`,
@@ -47,7 +47,7 @@ const COPY: Record<Locale, EmailCopy> = {
       subject: (ref) => `Nieuwe aanvraag ${ref}`,
       body: (ref, link) => `Er werd een nieuwe aanvraag ingediend: ${ref}.\n\n${link}`,
     },
-    guest: {
+    customer: {
       statusChanged: (ref, status) =>
         `De status van uw bestelling ${ref} is nu: ${status}.\n\nOpen de persoonlijke volglink die u bij uw aanvraag hebt bewaard om de details te bekijken.`,
       newMessage: (ref) =>
@@ -79,7 +79,7 @@ const COPY: Record<Locale, EmailCopy> = {
     },
     statusChanged: {
       subject: (ref) => `Your order ${ref} has been updated`,
-      body: (ref, status, link) => `The status of your order ${ref} is now: ${status}.\n\nSee the details in your account:\n${link}`,
+      body: (ref, status, link) => `The status of order ${ref} is now: ${status}.\n\n${link}`,
     },
     newMessage: {
       subject: (ref) => `New message about order ${ref}`,
@@ -89,7 +89,7 @@ const COPY: Record<Locale, EmailCopy> = {
       subject: (ref) => `New request ${ref}`,
       body: (ref, link) => `A new request was submitted: ${ref}.\n\n${link}`,
     },
-    guest: {
+    customer: {
       statusChanged: (ref, status) =>
         `The status of your order ${ref} is now: ${status}.\n\nOpen the private tracking link you saved with your request to see the details.`,
       newMessage: (ref) =>
@@ -121,7 +121,7 @@ const COPY: Record<Locale, EmailCopy> = {
     },
     statusChanged: {
       subject: (ref) => `${ref} numaralı siparişiniz güncellendi`,
-      body: (ref, status, link) => `${ref} numaralı siparişinizin durumu: ${status}.\n\nAyrıntıları hesabınızda görebilirsiniz:\n${link}`,
+      body: (ref, status, link) => `${ref} numaralı siparişin durumu: ${status}.\n\n${link}`,
     },
     newMessage: {
       subject: (ref) => `${ref} numaralı sipariş hakkında yeni mesaj`,
@@ -131,7 +131,7 @@ const COPY: Record<Locale, EmailCopy> = {
       subject: (ref) => `Yeni talep: ${ref}`,
       body: (ref, link) => `Yeni bir talep gönderildi: ${ref}.\n\n${link}`,
     },
-    guest: {
+    customer: {
       statusChanged: (ref, status) =>
         `${ref} numaralı siparişinizin durumu: ${status}.\n\nAyrıntıları görmek için siparişinizle birlikte sakladığınız özel takip linkini açın.`,
       newMessage: (ref) =>

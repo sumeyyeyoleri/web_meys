@@ -38,7 +38,7 @@ export function createMessageService({ repos, transaction, orders, email }: Deps
       const now = new Date();
       await transaction(async (tx) => {
         await tx.messages.markReadFromSender(order.id, otherRole(viewer.role), now);
-        // Guests have no in-app notifications.
+        // Customers have no account, so no in-app notifications.
         if (viewer.id) await tx.notifications.markReadForOrder(viewer.id, order.id, 'ORDER_MESSAGE', now);
       });
     },

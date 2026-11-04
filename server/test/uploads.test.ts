@@ -2,13 +2,12 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { UPLOAD_MAX_FILE_SIZE_BYTES, UPLOAD_MAX_FILES } from '@painter/shared';
 import {
   closeTestPrisma,
-  CUSTOMER_A,
+  guest,
   IMAGES,
   orderPayload,
   pngFile,
   privateFiles,
   setupTest,
-  signedIn,
   submitOrder,
   type TestContext,
 } from './helpers';
@@ -26,7 +25,7 @@ async function expectNothingStored() {
 
 describe('reference image validation', () => {
   it(`rejects more than ${UPLOAD_MAX_FILES} files`, async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const files = Array.from({ length: UPLOAD_MAX_FILES + 1 }, (_, i) => pngFile(`ref-${i}.png`));
     const res = await submitOrder(client, orderPayload(), files).expect(400);
     expect(res.body.error).toMatchObject({ code: 'UPLOAD_TOO_MANY_FILES', fields: { files: 'validation.tooManyFiles' } });
@@ -34,14 +33,14 @@ describe('reference image validation', () => {
   });
 
   it('accepts exactly the maximum number of files', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const files = Array.from({ length: UPLOAD_MAX_FILES }, (_, i) => pngFile(`ref-${i}.png`));
     const res = await submitOrder(client, orderPayload(), files).expect(201);
     expect(res.body.order.attachments).toHaveLength(UPLOAD_MAX_FILES);
   });
 
   it('rejects files over the size limit', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const big = Buffer.concat([IMAGES.png, Buffer.alloc(UPLOAD_MAX_FILE_SIZE_BYTES)]);
     const res = await submitOrder(client, orderPayload(), [{ buffer: big, name: 'big.png', type: 'image/png' }]).expect(400);
     expect(res.body.error).toMatchObject({ code: 'UPLOAD_FILE_TOO_LARGE', fields: { files: 'validation.fileTooLarge' } });
@@ -49,13 +48,13 @@ describe('reference image validation', () => {
   });
 
   it('rejects disallowed MIME types', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload(), [{ buffer: IMAGES.gif, name: 'anim.gif', type: 'image/gif' }]).expect(400);
     expect(res.body.error).toMatchObject({ code: 'UPLOAD_INVALID_TYPE', fields: { 'files.0': 'validation.fileType' } });
   });
 
   it('rejects a spoofed extension and MIME type whose bytes are not an image', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload(), [
       pngFile('fine.png'),
       { buffer: IMAGES.text, name: 'evil.png', type: 'image/png' },
@@ -65,14 +64,14 @@ describe('reference image validation', () => {
   });
 
   it('rejects a real image whose declared type or extension does not match its bytes', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     await submitOrder(client, orderPayload(), [{ buffer: IMAGES.png, name: 'photo.jpg', type: 'image/jpeg' }]).expect(400);
     await submitOrder(client, orderPayload(), [{ buffer: IMAGES.png, name: 'photo.jpg', type: 'image/png' }]).expect(400);
     await submitOrder(client, orderPayload(), [{ buffer: IMAGES.png, name: 'photo.svg', type: 'image/png' }]).expect(400);
   });
 
   it('removes already stored files when the database transaction fails', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const before = await privateFiles();
     // A trigger makes the attachment insert fail after the files were already written to storage.
     await ctx.prisma.$executeRawUnsafe(

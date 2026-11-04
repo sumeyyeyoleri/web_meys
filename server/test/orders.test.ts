@@ -1,15 +1,18 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
+  ADMIN,
   closeTestPrisma,
-  CUSTOMER_A,
-  CUSTOMER_B,
+  createOrder,
+  CUSTOMER,
   eventually,
+  guest,
   IMAGES,
   orderPayload,
   pngFile,
   setupTest,
   signedIn,
   submitOrder,
+  track,
   type TestContext,
 } from './helpers';
 import { ORDER_REFERENCE_PATTERN } from '@painter/shared';
@@ -22,7 +25,7 @@ afterAll(closeTestPrisma);
 
 describe('order creation', () => {
   it('creates an order with images, history and an admin notification in one go', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId, customRequest: '' }), [
       pngFile('schets één.png'),
       { buffer: IMAGES.jpeg, name: 'photo.JPG', type: 'image/jpeg' },
@@ -49,16 +52,14 @@ describe('order creation', () => {
   });
 
   it('keeps the submitted contact details and project address on the order', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ city: 'Antwerpen', street: 'Meir', houseNumber: '50' })).expect(201);
     expect(res.body.order.projectAddress).toMatchObject({ city: 'Antwerpen', street: 'Meir', houseNumber: '50' });
-    await client.patch('/api/users/me').send({ fullName: 'Anna', city: 'Leuven', preferredLocale: 'nl-BE' }).expect(200);
-    const detail = await client.get(`/api/orders/${res.body.order.id}`).expect(200);
-    expect(detail.body.projectAddress.city).toBe('Antwerpen');
+    expect(res.body.order.contact).toMatchObject({ fullName: CUSTOMER.name, email: CUSTOMER.email, phone: CUSTOMER.phone });
   });
 
   it('returns field-level i18n keys for invalid data', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
       orderPayload({ width: -5, description: 'too short', phone: '0470', budgetMin: 500, budgetMax: 100, deadline: '2020-01-01', privacyAccepted: false }),
@@ -73,7 +74,7 @@ describe('order creation', () => {
   });
 
   it('rejects malformed JSON and missing data', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const bad = await client.post('/api/orders').field('data', '{not json').expect(400);
     expect(bad.body.error.fields).toEqual({ data: 'validation.invalid' });
     const missing = await client.post('/api/orders').field('other', 'x').expect(400);
@@ -82,13 +83,13 @@ describe('order creation', () => {
 
   it('rejects an inactive or unknown service', async () => {
     await ctx.prisma.service.update({ where: { id: ctx.ids.serviceId }, data: { isActive: false } });
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId })).expect(400);
     expect(res.body.error.fields).toEqual({ serviceId: 'validation.invalidOption' });
   });
 
   it('validates the size and the project address', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
       orderPayload({ width: 0, height: 'abc', unit: 'INCH', country: '', city: ' ', postalCode: '', street: '', houseNumber: '' }),
@@ -106,10 +107,12 @@ describe('order creation', () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
-  it('keeps the phone and the service optional and derives a title', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
-    const plain = await submitOrder(client, orderPayload({ phone: '', addressExtra: '' })).expect(201);
-    expect(plain.body.order).toMatchObject({ serviceId: null, contact: { phone: null }, projectAddress: { addressExtra: null } });
+  it('requires name and phone, keeps the email, service and extra address line optional, and derives a title', async () => {
+    const client = await guest(ctx.app);
+    const missing = await submitOrder(client, orderPayload({ fullName: ' ', phone: '' })).expect(400);
+    expect(missing.body.error.fields).toEqual({ fullName: 'validation.required', phone: 'validation.required' });
+    const plain = await submitOrder(client, orderPayload({ email: '', addressExtra: '' })).expect(201);
+    expect(plain.body.order).toMatchObject({ serviceId: null, contact: { email: null, phone: CUSTOMER.phone }, projectAddress: { addressExtra: null } });
     expect(plain.body.order.title).toBe('Warm earth tones, loose brushwork, something calm and quiet.');
 
     const long = 'Een groot doek voor de inkomhal met zachte, warme kleuren en veel ruimte voor licht, zoals een ochtend aan zee.';
@@ -122,13 +125,13 @@ describe('order creation', () => {
   });
 
   it('saves the site language as the communication language', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ communicationLocale: 'tr' })).expect(201);
     expect(res.body.order.contact.communicationLocale).toBe('tr');
   });
 
   it('is idempotent for a repeated submission with the same key', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const payload = orderPayload();
     const first = await submitOrder(client, payload, [pngFile()]).expect(201);
     const second = await submitOrder(client, payload, [pngFile()]).expect(200);
@@ -138,126 +141,69 @@ describe('order creation', () => {
     expect(await ctx.prisma.orderAttachment.count()).toBe(1);
   });
 
-  it('does not let administrators submit orders', async () => {
-    const admin = await signedIn(ctx.app, { email: 'admin@test.local', password: 'admin-password-123' });
-    await submitOrder(admin, orderPayload()).expect(403);
+  it('accepts an order while the artist is signed in (it is not linked to the account)', async () => {
+    const admin = await signedIn(ctx.app, ADMIN);
+    const res = await submitOrder(admin, orderPayload()).expect(201);
+    expect(res.body.tracking.url).toMatch(/\/track#/);
   });
 });
 
-describe('signed-in customer orders', () => {
-  it('links the order to the account without a tracking link', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
-    const res = await submitOrder(client, orderPayload(), [pngFile()]).expect(201);
-    expect(res.body.tracking).toBeNull();
-    expect(res.body.order.attachments[0].url).toBe(`/api/attachments/${res.body.order.attachments[0].id}`);
-    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: res.body.order.id } });
-    expect(stored.customerId).toBe(ctx.ids.customerAId);
-    expect(await ctx.prisma.orderTrackingToken.count()).toBe(0);
-    expect((await client.get('/api/orders').expect(200)).body.total).toBe(1);
-  });
-
-  it('keeps the contact details typed for this order, even when they differ from the profile', async () => {
-    const client = await signedIn(ctx.app, CUSTOMER_A);
-    const res = await submitOrder(client, orderPayload({ fullName: 'Anna P.', email: 'anna.work@test.local' })).expect(201);
-    expect(res.body.order.contact).toMatchObject({ fullName: 'Anna P.', email: 'anna.work@test.local' });
-    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: res.body.order.id } });
-    expect(stored.customerId).toBe(ctx.ids.customerAId);
-  });
-
-  it('refuses an idempotency key that belongs to someone else', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    const b = await signedIn(ctx.app, CUSTOMER_B);
-    const payload = orderPayload();
-    await submitOrder(a, payload).expect(201);
-    const res = await submitOrder(b, { ...payload, email: CUSTOMER_B.email }).expect(409);
-    expect(res.body.error.code).toBe('CONFLICT');
-    expect(await ctx.prisma.order.count()).toBe(1);
-  });
-});
-
-describe('customer order access', () => {
-  it('lists only the customer’s own orders, newest first, paginated', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    for (let i = 0; i < 3; i++) await submitOrder(a, orderPayload({ description: `Order ${i}: a calm painting in warm tones.` })).expect(201);
-    const page = await a.get('/api/orders?page=1&pageSize=2').expect(200);
-    expect(page.body).toMatchObject({ page: 1, pageSize: 2, total: 3, totalPages: 2 });
-    expect(page.body.items.map((o: { title: string }) => o.title.slice(0, 7))).toEqual(['Order 2', 'Order 1']);
-  });
-
-  it('lets the customer cancel before acceptance but not afterwards', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    const { body } = await submitOrder(a, orderPayload()).expect(201);
-    const id = body.order.id as string;
-
-    const accept = await a.post(`/api/orders/${id}/status`).send({ status: 'ACCEPTED' }).expect(409);
-    expect(accept.body.error.code).toBe('ORDER_INVALID_TRANSITION');
-
-    const cancelled = await a.post(`/api/orders/${id}/status`).send({ status: 'CANCELLED' }).expect(200);
-    expect(cancelled.body.status).toBe('CANCELLED');
-    expect(cancelled.body.allowedTransitions).toEqual([]);
-    await a.post(`/api/orders/${id}/status`).send({ status: 'CANCELLED' }).expect(409);
-
-    const admins = await ctx.prisma.notification.findMany({ where: { userId: ctx.ids.adminId, type: 'ORDER_STATUS_CHANGED' } });
-    expect(admins).toHaveLength(1);
-  });
-
-  it('runs the message thread with read state and notifications', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    const admin = await signedIn(ctx.app, { email: 'admin@test.local', password: 'admin-password-123' });
-    const { body } = await submitOrder(a, orderPayload()).expect(201);
-    const id = body.order.id as string;
-
-    await admin.post(`/api/admin/orders/${id}/messages`).send({ body: 'Dag Anna, welk formaat precies?' }).expect(201);
-    expect((await a.get('/api/notifications/unread-count')).body.count).toBe(1);
-    expect((await a.get('/api/orders')).body.items[0].unreadMessages).toBe(1);
-
-    const thread = await a.get(`/api/orders/${id}/messages`).expect(200);
-    expect(thread.body).toEqual([expect.objectContaining({ senderRole: 'ADMIN', senderName: 'Test Atelier', isOwn: false, readAt: null })]);
-
-    await a.post(`/api/orders/${id}/messages/read`).expect(204);
-    expect((await a.get('/api/orders')).body.items[0].unreadMessages).toBe(0);
-    expect((await a.get('/api/notifications/unread-count')).body.count).toBe(0);
-
-    const reply = await a.post(`/api/orders/${id}/messages`).send({ body: '60 op 40 cm graag.' }).expect(201);
-    expect(reply.body).toMatchObject({ senderRole: 'CUSTOMER', senderName: CUSTOMER_A.name, isOwn: true });
-    await a.post(`/api/orders/${id}/messages`).send({ body: '   ' }).expect(400);
-  });
-
-  it('marks notifications as read individually and all at once', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    const admin = await signedIn(ctx.app, { email: 'admin@test.local', password: 'admin-password-123' });
-    const { body } = await submitOrder(a, orderPayload()).expect(201);
-    await admin.post(`/api/admin/orders/${body.order.id}/status`).send({ status: 'UNDER_REVIEW' }).expect(200);
-    await admin.post(`/api/admin/orders/${body.order.id}/messages`).send({ body: 'Hallo' }).expect(201);
-
-    const list = await a.get('/api/notifications').expect(200);
-    expect(list.body.total).toBe(2);
-    expect(list.body.items[1]).toMatchObject({ type: 'ORDER_STATUS_CHANGED', status: 'UNDER_REVIEW', orderReference: body.order.reference });
-
-    await a.post(`/api/notifications/${list.body.items[0].id}/read`).expect(204);
-    expect((await a.get('/api/notifications/unread-count')).body.count).toBe(1);
-    await a.post('/api/notifications/read-all').expect(204);
-    expect((await a.get('/api/notifications/unread-count')).body.count).toBe(0);
-  });
-
+describe('customer updates by email', () => {
   it('emails the customer in their communication language when the admin acts', async () => {
-    const a = await signedIn(ctx.app, CUSTOMER_A);
-    const admin = await signedIn(ctx.app, { email: 'admin@test.local', password: 'admin-password-123' });
-    const { body } = await submitOrder(a, orderPayload({ communicationLocale: 'tr' })).expect(201);
-    await eventually(() => ctx.mailer.sent.length === 1); // new order → admin
-    expect(ctx.mailer.sent[0]!.to).toBe('admin@test.local');
+    const client = await guest(ctx.app);
+    const admin = await signedIn(ctx.app, ADMIN);
+    const order = await createOrder(client, { communicationLocale: 'tr' });
+    await eventually(() => ctx.mailer.sent.length === 2); // tracking link → customer, new order → admin
+    expect(ctx.mailer.sent.map((m) => m.to).sort()).toEqual([ADMIN.email, CUSTOMER.email].sort());
 
-    await admin.post(`/api/admin/orders/${body.order.id}/status`).send({ status: 'UNDER_REVIEW' }).expect(200);
-    await eventually(() => ctx.mailer.sent.length === 2);
-    expect(ctx.mailer.sent[1]).toMatchObject({ to: CUSTOMER_A.email, subject: `${body.order.reference} numaralı siparişiniz güncellendi` });
-    expect(ctx.mailer.sent[1]!.text).toContain('İnceleniyor');
+    await admin.post(`/api/admin/orders/${order.id}/status`).send({ status: 'UNDER_REVIEW' }).expect(200);
+    await eventually(() => ctx.mailer.sent.length === 3);
+    expect(ctx.mailer.sent[2]).toMatchObject({ to: CUSTOMER.email, subject: `${order.reference} numaralı siparişiniz güncellendi` });
+    expect(ctx.mailer.sent[2]!.text).toContain('İnceleniyor');
+    expect(ctx.mailer.sent[2]!.text).not.toContain('/account/');
   });
 
-  it('sends no order emails when the admin switched them off', async () => {
-    const quiet = await setupTest({ settings: { emailNotificationsEnabled: false } });
-    const a = await signedIn(quiet.app, CUSTOMER_A);
-    await submitOrder(a, orderPayload()).expect(201);
+  it('sends the customer nothing by email without an address, but still shows the link', async () => {
+    const client = await guest(ctx.app);
+    const admin = await signedIn(ctx.app, ADMIN);
+    const order = await createOrder(client, { email: '' });
+    expect(order.tracking.emailSent).toBe(false);
+    await admin.post(`/api/admin/orders/${order.id}/status`).send({ status: 'UNDER_REVIEW' }).expect(200);
+    await admin.post(`/api/admin/orders/${order.id}/messages`).send({ body: 'Hallo' }).expect(201);
     await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(quiet.mailer.sent).toHaveLength(0);
+    expect(ctx.mailer.sent.map((m) => m.to)).toEqual([ADMIN.email]);
+    await track(client, 'get', '/order', order.token).expect(200);
+  });
+
+  it('sends no order notification emails when the admin switched them off', async () => {
+    const quiet = await setupTest({ settings: { emailNotificationsEnabled: false } });
+    const client = await guest(quiet.app);
+    const order = await createOrder(client);
+    // The tracking link is part of the order itself, so it is still emailed.
+    await eventually(() => quiet.mailer.sent.length === 1);
+    expect(quiet.mailer.sent[0]!.text).toContain(order.tracking.url);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(quiet.mailer.sent).toHaveLength(1);
+  });
+});
+
+describe('admin notifications', () => {
+  it('notifies the artist in-app about new orders and customer messages, and marks them read', async () => {
+    const client = await guest(ctx.app);
+    const admin = await signedIn(ctx.app, ADMIN);
+    const order = await createOrder(client);
+    await track(client, 'post', '/messages', order.token).send({ body: 'Nog een vraag' }).expect(201);
+
+    const list = await admin.get('/api/notifications').expect(200);
+    expect(list.body.total).toBe(2);
+    expect(list.body.items.map((n: { type: string }) => n.type).sort()).toEqual(['ORDER_MESSAGE', 'ORDER_SUBMITTED']);
+    expect(list.body.items[0]).toMatchObject({ orderReference: order.reference });
+
+    await admin.post(`/api/notifications/${list.body.items[0].id}/read`).expect(204);
+    expect((await admin.get('/api/notifications/unread-count')).body.count).toBe(1);
+    await admin.post('/api/notifications/read-all').expect(204);
+    expect((await admin.get('/api/notifications/unread-count')).body.count).toBe(0);
+    // Only the artist has an account, so these are the only notification rows.
+    expect(await ctx.prisma.notification.count({ where: { userId: { not: ctx.ids.adminId } } })).toBe(0);
   });
 });

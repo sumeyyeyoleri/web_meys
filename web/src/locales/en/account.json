@@ -1,47 +1,35 @@
 {
   "meta": {
-    "title": "My account",
-    "loginTitle": "Log in",
-    "registerTitle": "Create account",
+    "loginTitle": "Log in — Dashboard",
     "forgotTitle": "Forgot password",
     "resetTitle": "New password"
   },
+  "admin": {
+    "title": "Dashboard",
+    "toSite": "To the website"
+  },
   "fields": {
-    "fullName": "Full name",
     "email": "Email address",
     "password": "Password",
     "newPassword": "New password",
     "passwordConfirm": "Repeat the password",
     "passwordHint": "At least {{min}} characters.",
-    "preferredLocale": "Preferred language",
     "showPassword": "Show password",
     "hidePassword": "Hide password"
   },
   "login": {
-    "title": "Welcome back",
-    "intro": "Log in to see your requests and messages.",
+    "intro": "For the artist only. Customers don't need an account.",
     "submit": "Log in",
     "forgot": "Forgot your password?",
-    "noAccount": "No account yet?",
-    "register": "Create an account",
     "welcome": "You are logged in."
-  },
-  "register": {
-    "title": "Create your account",
-    "intro": "With an account you can follow your requests and reply to messages.",
-    "submit": "Create account",
-    "haveAccount": "Already have an account?",
-    "login": "Log in",
-    "welcome": "Welcome! Your account has been created."
   },
   "forgot": {
     "title": "Forgot your password?",
-    "intro": "Enter your email address. We'll send you a link to set a new password.",
+    "intro": "Enter your email address. You'll receive a link to set a new password.",
     "submit": "Send link",
     "sentTitle": "Check your inbox",
-    "sent": "If an account exists for {{email}}, you'll receive an email with a link within a few minutes. The link is valid for 1 hour.",
-    "unavailable": "Password emails can't be sent at the moment. Please contact us and we'll help you.",
-    "contact": "Contact us",
+    "sent": "If {{email}} is the administrator address, you'll receive an email with a link within a few minutes. The link is valid for 1 hour.",
+    "unavailable": "Emails can't be sent right now (SMTP is not configured). Change ADMIN_PASSWORD in the .env file and run the seed again (see README).",
     "back": "Back to login"
   },
   "reset": {

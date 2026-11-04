@@ -49,7 +49,7 @@ describe('api client', () => {
     fetchMock.mockResolvedValueOnce(json(200, { csrfToken: 't.s' })).mockResolvedValueOnce(
       json(400, { error: { code: 'VALIDATION_ERROR', message: 'Validation failed', fields: { email: 'validation.email' } } }),
     );
-    const error = await api.post('/api/auth/register', {}).catch((e: unknown) => e);
+    const error = await api.post('/api/auth/forgot-password', {}).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ status: 400, code: 'VALIDATION_ERROR', fields: { email: 'validation.email' } });
   });

@@ -1,7 +1,6 @@
 import type { RequestHandler } from 'express';
-import type { Role } from '@painter/shared';
 import type { AppConfig } from '../../config/env';
-import { forbidden, unauthenticated } from '../../domain/errors';
+import { unauthenticated } from '../../domain/errors';
 import type { SessionService } from '../../services/session.service';
 import { clearSessionCookie, SESSION_COOKIE, setSessionCookie } from '../cookies';
 import type { RequestAuth } from '../types';
@@ -23,20 +22,13 @@ export function loadSession(sessions: SessionService, config: AppConfig): Reques
   };
 }
 
-export const requireAuth: RequestHandler = (req, _res, next) => {
+/** Every account is the artist's, so a valid session is all an admin route needs. */
+export const requireAdmin: RequestHandler = (req, _res, next) => {
   if (!req.auth) throw unauthenticated();
   next();
 };
 
-export function requireRole(role: Role): RequestHandler {
-  return (req, _res, next) => {
-    if (!req.auth) throw unauthenticated();
-    if (req.auth.user.role !== role) throw forbidden();
-    next();
-  };
-}
-
-/** For handlers behind `requireAuth`. */
+/** For handlers behind `requireAdmin`. */
 export function getAuth(req: Parameters<RequestHandler>[0]): RequestAuth {
   if (!req.auth) throw unauthenticated();
   return req.auth;

@@ -6,8 +6,7 @@ import { createNotificationController } from '../controllers/notification.contro
 import { createOrderController } from '../controllers/order.controller';
 import { createPublicController } from '../controllers/public.controller';
 import { createTrackingController } from '../controllers/tracking.controller';
-import { createUserController } from '../controllers/user.controller';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 import type { RateLimitName } from '../middleware/rate-limit';
 import { requireTrackingToken } from '../middleware/tracking';
 import { orderUpload } from '../middleware/upload';
@@ -17,13 +16,11 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   const router = Router();
   const publicCtrl = createPublicController(container.services);
   const auth = createAuthController(container);
-  const users = createUserController(container.services);
   const orders = createOrderController(container);
   const attachments = createAttachmentController(container.services);
   const notifications = createNotificationController(container.services);
   const tracking = createTrackingController(container.services);
   const tracked = [limiters.tracking, requireTrackingToken(container.services.tracking)];
-  const customerOnly = requireRole('CUSTOMER');
 
   // Public content
   router.get('/site', publicCtrl.site);
@@ -31,29 +28,19 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.get('/portfolio', publicCtrl.portfolio);
   router.get('/portfolio/:id', publicCtrl.portfolioItem);
 
-  // Authentication
+  // Authentication (the artist's account only; customers have none)
   router.get('/auth/csrf', auth.csrf);
   router.get('/auth/me', auth.me);
-  router.post('/auth/register', limiters.register, auth.register);
   router.post('/auth/login', limiters.login, auth.login);
   router.post('/auth/logout', auth.logout);
   router.post('/auth/forgot-password', limiters.forgotPassword, auth.forgotPassword);
   router.post('/auth/reset-password', limiters.resetPassword, auth.resetPassword);
-  router.post('/auth/change-password', requireAuth, auth.changePassword);
+  router.post('/auth/change-password', requireAdmin, auth.changePassword);
 
-  // Profile
-  router.patch('/users/me', requireAuth, users.updateMe);
-
-  // Orders: guests and signed-in customers submit; customers follow their orders in the account
+  // Orders: anyone submits, no account
   router.post('/orders', limiters.orderSubmit, orderUpload, orders.create);
-  router.get('/orders', customerOnly, orders.list);
-  router.get('/orders/:id', customerOnly, orders.detail);
-  router.post('/orders/:id/status', customerOnly, orders.changeStatus);
-  router.get('/orders/:id/messages', customerOnly, orders.listMessages);
-  router.post('/orders/:id/messages', customerOnly, limiters.message, orders.sendMessage);
-  router.post('/orders/:id/messages/read', customerOnly, orders.markMessagesRead);
 
-  // Guest orders through the private tracking link (token in the X-Order-Token header)
+  // The customer's order through the private tracking link (token in the X-Order-Token header)
   router.get('/track/order', tracked, tracking.order);
   router.post('/track/status', tracked, tracking.changeStatus);
   router.get('/track/messages', tracked, tracking.listMessages);
@@ -61,14 +48,14 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.post('/track/messages/read', tracked, tracking.markMessagesRead);
   router.get('/track/attachments/:id', tracked, tracking.attachment);
 
-  // Reference images (owner or admin)
-  router.get('/attachments/:id', requireAuth, attachments.download);
+  // Reference images for the artist (customers use /track/attachments/:id)
+  router.get('/attachments/:id', requireAdmin, attachments.download);
 
-  // In-app notifications
-  router.get('/notifications', requireAuth, notifications.list);
-  router.get('/notifications/unread-count', requireAuth, notifications.unreadCount);
-  router.post('/notifications/read-all', requireAuth, notifications.markAllRead);
-  router.post('/notifications/:id/read', requireAuth, notifications.markRead);
+  // The artist's in-app notifications
+  router.get('/notifications', requireAdmin, notifications.list);
+  router.get('/notifications/unread-count', requireAdmin, notifications.unreadCount);
+  router.post('/notifications/read-all', requireAdmin, notifications.markAllRead);
+  router.post('/notifications/:id/read', requireAdmin, notifications.markRead);
 
   // Administration
   router.use('/admin', createAdminRouter(container.services));

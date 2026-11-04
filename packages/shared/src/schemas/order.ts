@@ -2,14 +2,14 @@ import { z } from 'zod';
 import { DIMENSION_UNITS, MESSAGE_MAX_LENGTH, ORDER_DESCRIPTION_MIN_LENGTH } from '../constants';
 import { ORDER_STATUSES } from '../order-status';
 import {
-  emailSchema,
   emptyToUndefined,
   isoDateSchema,
   localeSchema,
-  optionalPhoneSchema,
+  optionalEmailSchema,
   optionalPositiveNumber,
   optionalString,
   paginationQuerySchema,
+  phoneSchema,
   queryBooleanSchema,
   requiredPositiveNumber,
   requiredString,
@@ -34,8 +34,9 @@ export const orderFormShape = {
     .min(ORDER_DESCRIPTION_MIN_LENGTH, 'validation.descriptionTooShort')
     .max(5000, 'validation.tooLong'),
   fullName: requiredString(120),
-  email: emailSchema,
-  phone: optionalPhoneSchema,
+  phone: phoneSchema,
+  /** Optional: when given, the tracking link and updates are also emailed (if SMTP is configured). */
+  email: optionalEmailSchema,
   country: requiredString(100),
   city: requiredString(100),
   postalCode: requiredString(20),
@@ -108,8 +109,6 @@ export const messageBodySchema = z.object({
 export type MessageBodyInput = z.infer<typeof messageBodySchema>;
 
 /* ---------- Queries ---------- */
-
-export const customerOrderListQuerySchema = paginationQuerySchema;
 
 export const adminOrderListQuerySchema = paginationQuerySchema.extend({
   status: z.preprocess(emptyToUndefined, z.enum(ORDER_STATUSES, { error: 'validation.invalidOption' }).optional()),

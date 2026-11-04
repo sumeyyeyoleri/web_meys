@@ -4,20 +4,17 @@ import { notFound } from '../domain/errors';
 import type { Repositories } from '../repositories';
 import type { EmailRecipient } from './email.service';
 
-type OrderRef = Pick<Order, 'id' | 'customerId' | 'contactEmail' | 'communicationLocale'>;
+type OrderRef = Pick<Order, 'id' | 'contactEmail' | 'communicationLocale'>;
 
 /** Recipients on the "other side" of an order event. */
 async function recipientsFor(repos: Repositories, order: OrderRef, actorRole: Role) {
   if (actorRole === 'ADMIN') {
+    // The customer has no account (no in-app notification) and only gets an email if they gave one.
+    if (!order.contactEmail) return [];
     return [
       {
-        // Guests have no account, so no in-app notification — only the email.
-        userId: order.customerId,
-        email: {
-          email: order.contactEmail,
-          locale: localeFromDb(order.communicationLocale),
-          audience: order.customerId ? ('customer' as const) : ('guest' as const),
-        },
+        userId: null,
+        email: { email: order.contactEmail, locale: localeFromDb(order.communicationLocale), audience: 'customer' as const },
       },
     ];
   }

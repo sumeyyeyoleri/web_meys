@@ -5,12 +5,11 @@ import { buttonClasses, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { cx } from '../../components/ui/cx';
 import { useSite } from '../public/hooks';
-import { AccountMenu } from './AccountMenu';
+import { AdminLogout } from './AdminLogout';
 import { BrandMark } from './BrandMark';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileMenu } from './MobileMenu';
 import { NAV_LINKS } from './nav-links';
-import { NotificationsBell } from './NotificationsBell';
 
 /** Centered floating pill navigation (FRONTEND_DESIGN.md §3). */
 export function FloatingNav() {
@@ -63,8 +62,7 @@ export function FloatingNav() {
 
         <div className="hidden items-center lg:flex">
           <LanguageSwitcher />
-          <NotificationsBell />
-          <AccountMenu />
+          <AdminLogout />
           <Link to="/order" className={buttonClasses('secondary', 'sm', 'ml-1 min-h-11 gap-1.5 px-4')}>
             <Icon name="plane" size={16} />
             {t('nav.order')}
@@ -72,7 +70,6 @@ export function FloatingNav() {
         </div>
 
         <div className="flex items-center lg:hidden">
-          <NotificationsBell />
           <IconButton label={t('nav.openMenu')} aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
             <Icon name="menu" />
           </IconButton>

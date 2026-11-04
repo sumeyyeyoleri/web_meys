@@ -5,17 +5,15 @@ import {
   type CreateOrderInput,
   type Locale,
   type OrderStatus,
-  type StatusActor,
 } from '@painter/shared';
 import { pickTranslation } from '../domain/localization';
-import { AppError, forbidden, notFound, validationError } from '../domain/errors';
+import { AppError, notFound, validationError } from '../domain/errors';
 import { generateOrderReference } from '../domain/order-reference';
 import { assertStatusTransition } from '../domain/order-status';
 import { describeError, logger } from '../infrastructure/logger';
 import type { StorageDriver } from '../infrastructure/storage';
 import { isUniqueViolation, type Repositories, type TransactionRunner } from '../repositories';
 import type { OrderWithDetail } from '../repositories/order.repository';
-import type { UserWithProfile } from '../repositories/user.repository';
 import type { EmailService } from './email.service';
 import { notificationRecorder } from './notification.service';
 import type { TrackingLinkResult, TrackingService } from './tracking.service';
@@ -25,15 +23,15 @@ const MAX_REFERENCE_ATTEMPTS = 5;
 const TITLE_MAX_LENGTH = 80;
 
 /**
- * Who acts on an order: a signed-in user, or a guest holding the private tracking link of
- * exactly one order (`trackedOrderId`, resolved from the token — never from the URL).
+ * Who acts on an order: the signed-in artist, or the customer holding the private tracking link
+ * of exactly one order (`trackedOrderId`, resolved from the token — never from the URL).
  */
-export type Actor = { id: string; role: StatusActor } | { id: null; role: 'CUSTOMER'; trackedOrderId: string };
+export type Actor = { id: string; role: 'ADMIN' } | { id: null; role: 'CUSTOMER'; trackedOrderId: string };
 
-export const guestActor = (trackedOrderId: string): Actor => ({ id: null, role: 'CUSTOMER', trackedOrderId });
+export const adminActor = (id: string): Actor => ({ id, role: 'ADMIN' });
+export const customerActor = (trackedOrderId: string): Actor => ({ id: null, role: 'CUSTOMER', trackedOrderId });
 
 export interface CreateOrderParams {
-  user: UserWithProfile | null;
   /** The `data` multipart field: JSON text. */
   rawData: unknown;
   files: IncomingFile[];
@@ -43,8 +41,7 @@ export interface CreateOrderResult {
   order: OrderWithDetail;
   /** False when an identical submission (same idempotency key) already existed. */
   created: boolean;
-  /** Guest orders only. */
-  tracking: TrackingLinkResult | null;
+  tracking: TrackingLinkResult;
 }
 
 export interface StatusChangeParams {
@@ -83,13 +80,11 @@ function titleFromDescription(description: string): string {
 
 function orderData(
   input: CreateOrderInput,
-  customerId: string | null,
   reference: string,
   title: string,
 ): Prisma.OrderUncheckedCreateInput {
   return {
     reference,
-    customerId,
     idempotencyKey: input.idempotencyKey,
     status: 'SUBMITTED',
     serviceId: input.serviceId ?? null,
@@ -100,8 +95,8 @@ function orderData(
     title,
     description: input.description,
     contactName: input.fullName,
-    contactEmail: input.email,
-    contactPhone: input.phone ?? null,
+    contactEmail: input.email ?? null,
+    contactPhone: input.phone,
     communicationLocale: localeToDb(input.communicationLocale),
     projectCountry: input.country,
     projectCity: input.city,
@@ -146,10 +141,7 @@ export function createOrderService({ repos, transaction, storage, email, trackin
 
   async function findVisible(orderId: string, actor: Actor): Promise<OrderWithDetail | null> {
     if (actor.role === 'ADMIN') return repos.orders.findById(orderId);
-    if (actor.id !== null) return repos.orders.findForCustomer(orderId, actor.id);
-    if (orderId !== actor.trackedOrderId) return null;
-    const order = await repos.orders.findById(orderId);
-    return order && order.customerId === null ? order : null;
+    return orderId === actor.trackedOrderId ? repos.orders.findById(orderId) : null;
   }
 
   async function loadOrder(orderId: string, actor: Actor): Promise<OrderWithDetail> {
@@ -161,14 +153,13 @@ export function createOrderService({ repos, transaction, storage, email, trackin
 
   /**
    * Same idempotency key again (double click, retried request): return the original order.
-   * For a guest a fresh tracking link is issued — the random key proves it is the same submitter,
-   * and the first link (possibly lost with the first response) stays valid.
+   * A fresh tracking link is issued — the random key proves it is the same submitter, and the
+   * first link (possibly lost with the first response) stays valid.
    */
-  async function repeatedSubmission(existing: OrderWithDetail, customerId: string | null, email: string): Promise<CreateOrderResult> {
-    if (existing.customerId !== customerId || (customerId === null && existing.contactEmail !== email)) {
+  async function repeatedSubmission(existing: OrderWithDetail, input: CreateOrderInput): Promise<CreateOrderResult> {
+    if (existing.contactPhone !== input.phone || existing.contactName !== input.fullName) {
       throw new AppError(409, 'CONFLICT', 'This submission key was already used');
     }
-    if (customerId) return { order: existing, created: false, tracking: null };
     const link = await transaction((tx) => tracking.issue(tx, existing.id));
     return { order: existing, created: false, tracking: { ...link, emailSent: false } };
   }
@@ -176,14 +167,11 @@ export function createOrderService({ repos, transaction, storage, email, trackin
   return {
     loadOrder,
 
-    async create({ user, rawData, files }: CreateOrderParams): Promise<CreateOrderResult> {
-      if (user?.role === 'ADMIN') throw forbidden('Administrators cannot submit orders');
+    async create({ rawData, files }: CreateOrderParams): Promise<CreateOrderResult> {
       const input = createOrderSchema.parse(parseJsonField(rawData));
-      // A guest order is never linked to an account, not even one with the same email (privacy).
-      const customerId = user?.id ?? null;
 
       const existing = await repos.orders.findByIdempotencyKey(input.idempotencyKey);
-      if (existing) return repeatedSubmission(existing, customerId, input.email);
+      if (existing) return repeatedSubmission(existing, input);
 
       const locale: Locale = input.communicationLocale;
       let title = '';
@@ -206,7 +194,7 @@ export function createOrderService({ repos, transaction, storage, email, trackin
 
       try {
         const { orderId, link, adminRecipients } = await transaction(async (tx) => {
-          const order = await tx.orders.create(orderData(input, customerId, await uniqueReference(tx), title));
+          const order = await tx.orders.create(orderData(input, await uniqueReference(tx), title));
           await tx.orders.createAttachments(
             images.map((image) => ({
               orderId: order.id,
@@ -220,10 +208,10 @@ export function createOrderService({ repos, transaction, storage, email, trackin
             orderId: order.id,
             fromStatus: null,
             toStatus: 'SUBMITTED',
-            changedById: customerId,
+            changedById: null,
             changedByRole: 'CUSTOMER',
           });
-          const link = customerId ? null : await tracking.issue(tx, order.id);
+          const link = await tracking.issue(tx, order.id);
           const adminRecipients = await notificationRecorder.orderSubmitted(tx, order);
           return { orderId: order.id, link, adminRecipients };
         });
@@ -232,26 +220,16 @@ export function createOrderService({ repos, transaction, storage, email, trackin
         if (!order) throw new Error('Order disappeared after creation');
         void email.sendOrderSubmitted(adminRecipients, order);
         // Awaited: the confirmation page may only say "emailed" when the email was accepted.
-        const trackingResult = link ? { ...link, emailSent: await tracking.sendLink(order, link.url) } : null;
-        return { order, created: true, tracking: trackingResult };
+        return { order, created: true, tracking: { ...link, emailSent: await tracking.sendLink(order, link.url) } };
       } catch (error) {
         await removeFiles(storedKeys);
         if (isUniqueViolation(error, 'idempotencyKey')) {
           // A concurrent duplicate submission won the race: return that order.
           const winner = await repos.orders.findByIdempotencyKey(input.idempotencyKey);
-          if (winner) return repeatedSubmission(winner, customerId, input.email);
+          if (winner) return repeatedSubmission(winner, input);
         }
         throw error;
       }
-    },
-
-    async listForCustomer(customerId: string, page: number, pageSize: number) {
-      const { items, total } = await repos.orders.listForCustomer(customerId, (page - 1) * pageSize, pageSize);
-      const unread = await repos.orders.unreadMessageCounts(
-        items.map((o) => o.id),
-        'ADMIN',
-      );
-      return { items, total, unread };
     },
 
     async getForViewer(orderId: string, actor: Actor) {

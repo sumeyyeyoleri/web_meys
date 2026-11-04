@@ -12,8 +12,8 @@ import type { MailMessage, Mailer } from '../src/infrastructure/mailer';
 import { hashPassword } from '../src/infrastructure/password-hasher';
 
 export const ADMIN = { email: 'admin@test.local', password: 'admin-password-123' };
-export const CUSTOMER_A = { email: 'anna@test.local', password: 'customer-a-password', name: 'Anna Peeters' };
-export const CUSTOMER_B = { email: 'bram@test.local', password: 'customer-b-password', name: 'Bram Janssens' };
+/** Contact details of the default test order (customers have no account). */
+export const CUSTOMER = { name: 'Anna Peeters', email: 'anna@test.local', phone: '+32 470 12 34 56' };
 
 /** Records messages instead of sending them. */
 export class FakeMailer implements Mailer {
@@ -42,7 +42,6 @@ const TABLES = [
   'SiteSettings',
   'PasswordResetToken',
   'Session',
-  'CustomerProfile',
   'User',
 ];
 
@@ -55,7 +54,7 @@ export interface TestContext {
   container: Container;
   prisma: PrismaClient;
   mailer: FakeMailer;
-  ids: { adminId: string; customerAId: string; customerBId: string; serviceId: string; wallServiceId: string };
+  ids: { adminId: string; serviceId: string; wallServiceId: string };
 }
 
 let sharedPrisma: PrismaClient | null = null;
@@ -77,18 +76,9 @@ export async function resetDatabase(prisma: PrismaClient) {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
 }
 
-async function createUser(
-  prisma: PrismaClient,
-  data: { email: string; password: string; name: string; role: 'ADMIN' | 'CUSTOMER' },
-) {
+async function createAdmin(prisma: PrismaClient) {
   return prisma.user.create({
-    data: {
-      email: data.email,
-      passwordHash: await hashPassword(data.password),
-      role: data.role,
-      preferredLocale: 'NL_BE',
-      profile: { create: { fullName: data.name } },
-    },
+    data: { email: ADMIN.email, passwordHash: await hashPassword(ADMIN.password), preferredLocale: 'NL_BE' },
   });
 }
 
@@ -107,9 +97,7 @@ export async function setupTest(
       emailNotificationsEnabled: options.settings?.emailNotificationsEnabled ?? true,
     },
   });
-  const admin = await createUser(prisma, { ...ADMIN, name: 'Admin', role: 'ADMIN' });
-  const customerA = await createUser(prisma, { ...CUSTOMER_A, role: 'CUSTOMER' });
-  const customerB = await createUser(prisma, { ...CUSTOMER_B, role: 'CUSTOMER' });
+  const admin = await createAdmin(prisma);
   const translations = (name: string) => ({
     create: [
       { locale: 'NL_BE' as const, name: `${name} NL` },
@@ -135,8 +123,6 @@ export async function setupTest(
     mailer,
     ids: {
       adminId: admin.id,
-      customerAId: customerA.id,
-      customerBId: customerB.id,
       serviceId: service.id,
       wallServiceId: wallService.id,
     },
@@ -184,7 +170,8 @@ export async function guest(app: Express) {
   return new Client(app).init();
 }
 
-export async function signedIn(app: Express, credentials: { email: string; password: string }) {
+/** A client signed in as the artist (the only account). */
+export async function signedIn(app: Express, credentials: { email: string; password: string } = ADMIN) {
   return (await new Client(app).init()).login(credentials);
 }
 
@@ -197,9 +184,9 @@ export function orderPayload(overrides: Record<string, unknown> = {}) {
     height: 40,
     unit: 'CM',
     description: 'Warm earth tones, loose brushwork, something calm and quiet.',
-    fullName: CUSTOMER_A.name,
-    email: CUSTOMER_A.email,
-    phone: '+32 470 12 34 56',
+    fullName: CUSTOMER.name,
+    email: CUSTOMER.email,
+    phone: CUSTOMER.phone,
     country: 'België',
     city: 'Gent',
     postalCode: '9000',
@@ -250,25 +237,27 @@ export async function eventually(check: () => boolean | Promise<boolean>, timeou
   throw new Error('Condition not met in time');
 }
 
-/** Creates an order for a signed-in customer and returns its id. */
-export async function createOrderAs(client: Client, overrides: Record<string, unknown> = {}, files = [pngFile()]) {
-  const res = await submitOrder(client, orderPayload(overrides), files).expect(201);
-  const body = res.body as { order: { id: string; reference: string; attachments: Array<{ id: string }> } };
-  return body.order;
+export interface CreatedOrder {
+  id: string;
+  reference: string;
+  attachments: Array<{ id: string; url: string }>;
+  /** Token of the private tracking link (`/track#<token>`). */
+  token: string;
+  tracking: { url: string; emailSent: boolean; expiresAt: string };
 }
 
-export const GUEST = { name: 'Gina Gast', email: 'gina@guest.test' };
-
-/** Creates a guest order and returns it together with the token of its tracking link. */
-export async function createGuestOrder(client: Client, overrides: Record<string, unknown> = {}, files = [pngFile()]) {
-  const res = await submitOrder(client, orderPayload({ fullName: GUEST.name, email: GUEST.email, ...overrides }), files).expect(201);
-  const body = res.body as {
-    order: { id: string; reference: string; attachments: Array<{ id: string; url: string }> };
-    tracking: { url: string; emailSent: boolean; expiresAt: string };
-  };
-  return { order: body.order, tracking: body.tracking, token: tokenFromUrl(body.tracking.url) };
+/** Submits an order (no account) and returns it together with its tracking token. */
+export async function createOrder(client: Client, overrides: Record<string, unknown> = {}, files = [pngFile()]): Promise<CreatedOrder> {
+  const res = await submitOrder(client, orderPayload(overrides), files).expect(201);
+  const body = res.body as { order: Omit<CreatedOrder, 'token' | 'tracking'>; tracking: CreatedOrder['tracking'] };
+  return { ...body.order, tracking: body.tracking, token: tokenFromUrl(body.tracking.url) };
 }
 
 export function tokenFromUrl(url: string): string {
   return new URL(url).hash.slice(1);
+}
+
+/** Request to a customer tracking route with the token header. */
+export function track(client: Client, method: 'get' | 'post', path: string, token: string) {
+  return client[method](`/api/track${path}`).set('X-Order-Token', token);
 }

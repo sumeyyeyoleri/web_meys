@@ -7,7 +7,7 @@
     "backToCatalog": "Terug naar de catalogus",
     "eyebrow": "Bestelling op maat",
     "title": "Uw bestelling",
-    "intro": "Vertel kort wat u zoekt. Ik bekijk uw aanvraag persoonlijk en stuur u een offerte op maat. Een account is niet nodig."
+    "intro": "Vertel kort wat u zoekt. Ik bekijk uw aanvraag persoonlijk en stuur u een offerte op maat. U hebt geen account nodig."
   },
   "leave": {
     "title": "Pagina verlaten?",
@@ -40,6 +40,7 @@
     "contact": "Uw gegevens",
     "fullName": "Voor- en achternaam",
     "email": "E-mailadres",
+    "emailHint": "Optioneel. Dan sturen we u de persoonlijke link en updates ook per e-mail.",
     "phone": "Telefoon",
     "phoneHint": "Met landcode, bv. +32 470 12 34 56.",
     "address": "Adres",
@@ -55,13 +56,7 @@
     "privacyLink": "Privacyverklaring lezen",
     "noCharge": "U betaalt nu niets. Ik bekijk uw aanvraag en stuur u een persoonlijke offerte.",
     "submit": "Bestelling versturen",
-    "submitting": "Bezig met versturen…",
-    "haveAccount": "Hebt u een account?",
-    "login": "Meld u aan",
-    "loginDialogTitle": "Aanmelden",
-    "loginDialogIntro": "Na het aanmelden worden uw gegevens ingevuld en komt de bestelling in uw account. Wat u al invulde, blijft bewaard.",
-    "signedInAs": "U bent aangemeld als {{email}}. Uw gegevens zijn ingevuld vanuit uw profiel en de bestelling komt in uw account.",
-    "adminNotAllowed": "U bent aangemeld als beheerder. Beheerders kunnen geen bestellingen plaatsen; meld u af om als klant te bestellen."
+    "submitting": "Bezig met versturen…"
   },
   "photos": {
     "choose": "Bestanden kiezen",
@@ -78,10 +73,8 @@
     "reference": "Uw bestelnummer",
     "nextTitle": "Wat gebeurt er nu?",
     "next1": "Ik bekijk uw aanvraag persoonlijk.",
-    "next2Account": "Als ik vragen heb, stuur ik u een bericht. U ziet het in uw account.",
-    "next2Link": "Als ik vragen heb, stuur ik u een bericht. U leest en beantwoordt het via uw persoonlijke link.",
+    "next2": "Als ik vragen heb, stuur ik u een bericht. U leest en beantwoordt het via uw persoonlijke link.",
     "next3": "U krijgt een persoonlijke offerte. U beslist vrijblijvend of u verdergaat.",
-    "viewOrder": "Uw bestelling bekijken",
     "home": "Terug naar de startpagina"
   },
   "sent": {

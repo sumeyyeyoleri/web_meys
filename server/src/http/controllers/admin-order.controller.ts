@@ -18,6 +18,7 @@ import { toAdminOrderDetailDto, toAdminOrderSummaryDto, toInternalNoteDto } from
 import { toMessageDto } from '../mappers/message.mapper';
 import { getAuth } from '../middleware/auth';
 import { parseBody, parseIdParam, parseQuery } from '../middleware/validation';
+import { adminActor } from '../../services/order.service';
 
 function adminLocale(req: Request): Locale {
   const requested = req.query.locale;
@@ -28,7 +29,7 @@ function adminLocale(req: Request): Locale {
 const listQuery = adminOrderListQuerySchema.extend({ locale: z.string().optional() });
 
 export function createAdminOrderController({ adminOrders, messages, content, tracking }: Services) {
-  const actorOf = (req: Request) => ({ id: getAuth(req).user.id, role: 'ADMIN' as const });
+  const actorOf = (req: Request) => adminActor(getAuth(req).user.id);
 
   async function sendDetail(req: Request, res: Response, id: string) {
     res.json(toAdminOrderDetailDto(await adminOrders.detail(id), adminLocale(req)));
@@ -127,7 +128,7 @@ export function createAdminOrderController({ adminOrders, messages, content, tra
       res.status(204).end();
     },
 
-    /** Guest orders: revokes the earlier links and returns a new one (shown once, emailed when SMTP is configured). */
+    /** Revokes the earlier links of the order and returns a new one (shown once, emailed when possible). */
     async regenerateTrackingLink(req: Request, res: Response) {
       const link = await tracking.regenerate(parseIdParam(req));
       const body: TrackingLinkDto = { url: link.url, expiresAt: toIso(link.expiresAt), emailSent: link.emailSent };

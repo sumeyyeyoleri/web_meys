@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { pipeline } from 'node:stream/promises';
 import type { Services } from '../../container';
 import type { AttachmentService } from '../../services/attachment.service';
-import type { Actor } from '../../services/order.service';
+import { adminActor, type Actor } from '../../services/order.service';
 import { getAuth } from '../middleware/auth';
 import { parseIdParam } from '../middleware/validation';
 
@@ -28,7 +28,7 @@ export function createAttachmentController({ attachments }: Services) {
   return {
     async download(req: Request, res: Response) {
       const { user } = getAuth(req);
-      await sendAttachment(req, res, attachments, { id: user.id, role: user.role });
+      await sendAttachment(req, res, attachments, adminActor(user.id));
     },
   };
 }

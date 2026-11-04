@@ -3,7 +3,6 @@
   "invalid": "Bu değer geçerli değil.",
   "invalidOption": "Geçerli bir seçenek seçin.",
   "email": "Geçerli bir e-posta adresi girin.",
-  "emailInUse": "Bu e-posta adresiyle bir hesap zaten var.",
   "passwordTooShort": "Şifreniz en az {{min}} karakter olmalıdır.",
   "passwordTooLong": "Bu şifre çok uzun.",
   "passwordsDontMatch": "Şifreler eşleşmiyor.",

@@ -7,7 +7,7 @@ export interface RateLimitRule {
   limit: number;
 }
 
-export const RATE_LIMIT_NAMES = ['login', 'register', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message', 'tracking'] as const;
+export const RATE_LIMIT_NAMES = ['login', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message', 'tracking'] as const;
 export type RateLimitName = (typeof RATE_LIMIT_NAMES)[number];
 export type RateLimitConfig = Record<RateLimitName, RateLimitRule>;
 
@@ -15,7 +15,6 @@ const MINUTE = 60 * 1000;
 
 export const DEFAULT_RATE_LIMITS: RateLimitConfig = {
   login: { windowMs: 15 * MINUTE, limit: 10 },
-  register: { windowMs: 60 * MINUTE, limit: 10 },
   forgotPassword: { windowMs: 60 * MINUTE, limit: 5 },
   resetPassword: { windowMs: 60 * MINUTE, limit: 10 },
   orderSubmit: { windowMs: 60 * MINUTE, limit: 10 },
@@ -38,7 +37,6 @@ export function createRateLimiters(config: RateLimitConfig): Record<RateLimitNam
     });
   return {
     login: make(config.login),
-    register: make(config.register),
     forgotPassword: make(config.forgotPassword),
     resetPassword: make(config.resetPassword),
     orderSubmit: make(config.orderSubmit),

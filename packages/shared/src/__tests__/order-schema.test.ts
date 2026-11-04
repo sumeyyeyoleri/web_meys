@@ -38,12 +38,12 @@ describe('order form', () => {
     expect(result.serviceId).toBe(validOrder.serviceId);
   });
 
-  it('keeps the service, phone, photos-related and extra address fields optional', () => {
-    const result = createOrderSchema.safeParse({ ...validOrder, serviceId: '', phone: '', addressExtra: '' });
+  it('keeps the service, email and extra address line optional', () => {
+    const result = createOrderSchema.safeParse({ ...validOrder, serviceId: '', email: '', addressExtra: '' });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.serviceId).toBeUndefined();
-      expect(result.data.phone).toBeUndefined();
+      expect(result.data.email).toBeUndefined();
       expect(result.data.addressExtra).toBeUndefined();
     }
   });
@@ -60,7 +60,7 @@ describe('order form', () => {
       unit: 'validation.invalidOption',
       description: 'validation.required',
       fullName: 'validation.required',
-      email: 'validation.required',
+      phone: 'validation.required',
       country: 'validation.required',
       city: 'validation.required',
       postalCode: 'validation.required',

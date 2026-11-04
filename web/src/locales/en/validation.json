@@ -3,7 +3,6 @@
   "invalid": "This value is not valid.",
   "invalidOption": "Choose a valid option.",
   "email": "Enter a valid email address.",
-  "emailInUse": "An account with this email address already exists.",
   "passwordTooShort": "Your password must be at least {{min}} characters long.",
   "passwordTooLong": "This password is too long.",
   "passwordsDontMatch": "The passwords do not match.",

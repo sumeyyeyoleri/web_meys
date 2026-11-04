@@ -1,9 +1,9 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CreateOrderResultDto, OrderDetailDto, UserDto } from '@painter/shared';
+import type { CreateOrderResultDto, OrderDetailDto } from '@painter/shared';
 import { setLocale } from '../../lib/i18n';
-import { customer, json, mockApi, uid } from '../../test/fixtures';
+import { json, mockApi, uid } from '../../test/fixtures';
 import { renderApp } from '../../test/render';
 
 beforeEach(() => setLocale('nl-BE'));
@@ -29,7 +29,7 @@ function orderResult(data: Record<string, unknown>): OrderDetailDto {
   } as OrderDetailDto;
 }
 
-function guestResult(data: Record<string, unknown>, emailSent = true): CreateOrderResultDto {
+function orderCreated(data: Record<string, unknown>, emailSent = true): CreateOrderResultDto {
   return {
     order: orderResult(data),
     created: true,
@@ -42,7 +42,7 @@ async function fillRequiredFields() {
   await user.type(field('Hoogte'), '40');
   await user.type(field(/Uw wens/), 'Een rustige nachthemel met heuvels voor de kinderkamer.');
   await user.type(field('Voor- en achternaam'), 'Lotte Peeters');
-  await user.type(field('E-mailadres'), 'lotte@example.be');
+  await user.type(field(/^Telefoon/), '+32 470 12 34 56');
   await user.type(field('Gemeente'), 'Gent');
   await user.type(field('Postcode'), '9000');
   await user.type(field('Straat'), 'Veldstraat');
@@ -59,11 +59,13 @@ describe('order form', () => {
     expect(await screen.findByRole('radio', { name: /Schilderij op maat/ })).toBeTruthy();
     expect(screen.getByText(/Bijvoorbeeld: 30 × 40 cm/)).toBeTruthy();
     expect(field('Land').value).toBe('België');
-    expect(field(/Telefoon/)).toBeTruthy();
+    expect(field(/E-mailadres/)).toBeTruthy();
     expect(screen.getByLabelText('Bestanden kiezen', { selector: 'input' })).toBeTruthy();
     expect(screen.queryByLabelText(/Budget/)).toBeNull();
     expect(screen.queryByLabelText(/datum/i)).toBeNull();
     expect(screen.queryByLabelText(/wachtwoord/i)).toBeNull();
+    // Nobody needs an account.
+    expect(screen.queryByRole('button', { name: 'Meld u aan' })).toBeNull();
   });
 
   it('validates on the client with the shared schema and focuses the first invalid field', async () => {
@@ -77,7 +79,7 @@ describe('order form', () => {
 
     await user.clear(field('Land'));
     await user.type(field('Breedte'), '-1');
-    await user.type(field(/Telefoon/), '0470');
+    await user.type(field(/^Telefoon/), '0470');
     await user.click(submitButton());
     expect(await screen.findByText('Vul een getal groter dan 0 in.')).toBeTruthy();
     expect(fetchMock.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
@@ -89,7 +91,7 @@ describe('order form', () => {
       routes: {
         'POST /api/orders': (init) => {
           sent = dataOf(init);
-          return json(201, guestResult(sent));
+          return json(201, orderCreated(sent));
         },
       },
     });
@@ -106,7 +108,7 @@ describe('order form', () => {
 
   it('removes the catalog work when asked', async () => {
     let sent: Record<string, unknown> = {};
-    mockApi({ routes: { 'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, guestResult(sent))) } });
+    mockApi({ routes: { 'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, orderCreated(sent))) } });
     renderApp(`/order?from=${uid('a2')}`);
     await screen.findByText(/U vertrekt van het werk ‘Maanlichtheuvels’/);
     await user.click(screen.getByRole('button', { name: 'Verwijderen' }));
@@ -118,7 +120,7 @@ describe('order form', () => {
     expect(sent.inspirationItemId).toBe('');
   });
 
-  it('sends a guest order once and shows the order number and the private link', async () => {
+  it('sends the order once and shows the order number and the private link', async () => {
     let sent: FormData | undefined;
     let posts = 0;
     let release: () => void = () => {};
@@ -128,14 +130,14 @@ describe('order form', () => {
           posts++;
           sent = init?.body as FormData;
           await new Promise<void>((resolve) => (release = resolve));
-          return json(201, guestResult(dataOf(init)));
+          return json(201, orderCreated(dataOf(init)));
         },
       },
     });
     const { router } = renderApp(`/order?service=${uid('s1')}`);
     await screen.findByRole('heading', { level: 1, name: 'Uw bestelling' });
     await fillRequiredFields();
-    await user.type(field(/Telefoon/), '+32 470 12 34 56');
+    await user.type(field(/E-mailadres/), 'lotte@example.be');
     const photo = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], 'muur.png', { type: 'image/png' });
     await user.upload(screen.getByLabelText('Bestanden kiezen', { selector: 'input' }), photo);
     expect(await screen.findByText('1 van 8 foto\'s')).toBeTruthy();
@@ -172,10 +174,10 @@ describe('order form', () => {
     expect(screen.getByText('We stuurden de link ook naar lotte@example.be.')).toBeTruthy();
   });
 
-  it('saves the site language as the communication language and never claims an email without SMTP', async () => {
+  it('saves the site language as the communication language and works without an email address', async () => {
     await setLocale('tr');
     let sent: Record<string, unknown> = {};
-    mockApi({ routes: { 'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, guestResult(sent, false))) } });
+    mockApi({ routes: { 'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, orderCreated(sent, false))) } });
     renderApp('/order');
     await screen.findByRole('heading', { level: 1, name: 'Siparişiniz' });
     expect(field('Ülke').value).toBe('Belçika');
@@ -183,7 +185,7 @@ describe('order form', () => {
     await user.type(field('Yükseklik'), '40');
     await user.type(field(/İstek/), 'Yumuşak mavi tonlarda sakin bir manzara istiyorum.');
     await user.type(field('Ad Soyad'), 'Ayşe Yılmaz');
-    await user.type(field('E-posta'), 'ayse@example.com');
+    await user.type(field(/^Telefon/), '+32 470 12 34 56');
     await user.type(field('Şehir'), 'Gent');
     await user.type(field('Posta kodu'), '9000');
     await user.type(field('Sokak'), 'Veldstraat');
@@ -192,37 +194,8 @@ describe('order form', () => {
     await user.click(screen.getByRole('button', { name: 'Siparişi Gönder' }));
     expect(await screen.findByText('Bu linki saklayın.')).toBeTruthy();
     expect(sent.communicationLocale).toBe('tr');
+    expect(sent.email).toBeUndefined();
     expect(screen.queryByText(/adresine de gönderdik/)).toBeNull();
-  });
-
-  it('prefills a signed-in customer and links the order to the account', async () => {
-    const signedIn: UserDto = {
-      ...customer,
-      profile: { fullName: 'Anna Peeters', phone: '+32 470 00 00 00', country: 'België', city: 'Antwerpen', postalCode: '2000', street: 'Meir', houseNumber: '1', addressExtra: null },
-    } as UserDto;
-    let sent: Record<string, unknown> = {};
-    mockApi({
-      user: signedIn,
-      routes: {
-        'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, { order: orderResult(sent), created: true, tracking: null })),
-        'GET /api/orders/o1': () => json(200, orderResult({})),
-      },
-    });
-    const { router } = renderApp('/order');
-    expect(await screen.findByText(/U bent aangemeld als anna@example.com/)).toBeTruthy();
-    await waitFor(() => expect(field('Gemeente').value).toBe('Antwerpen'));
-    expect(field('Voor- en achternaam').value).toBe('Anna Peeters');
-    expect(field('E-mailadres').value).toBe('anna@example.com');
-    expect(field(/Telefoon/).value).toBe('+32 470 00 00 00');
-    expect(screen.queryByRole('button', { name: 'Meld u aan' })).toBeNull();
-
-    await user.type(field('Breedte'), '50');
-    await user.type(field('Hoogte'), '70');
-    await user.type(field(/Uw wens/), 'Een portret van onze hond in warme kleuren.');
-    await user.click(screen.getByRole('checkbox', { name: /privacyverklaring/ }));
-    await user.click(submitButton());
-    await waitFor(() => expect(router.state.location.pathname).toBe('/order/confirmation/o1'));
-    expect(sent).toMatchObject({ fullName: 'Anna Peeters', city: 'Antwerpen', street: 'Meir' });
   });
 
   it('shows server-side field errors on the right fields', async () => {

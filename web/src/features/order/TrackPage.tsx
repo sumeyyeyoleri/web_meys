@@ -9,6 +9,7 @@ import { ErrorState } from '../../components/ui/States';
 import { isApiError, trackingApi } from '../../lib/api';
 import { formatDate, formatDateTime, formatDimensions } from '../../lib/format';
 import { useLocale } from '../../lib/i18n';
+import { queryKeys } from '../../lib/query-keys';
 import { usePageTitle } from '../../lib/use-page-title';
 
 /** The token from `/track#<token>` (the fragment is never sent to the server by the browser). */
@@ -17,7 +18,7 @@ function useTrackingToken(): string {
 }
 
 /**
- * Guest order page opened with the private tracking link: reference, status and its history.
+ * The customer's order page, opened with the private tracking link: reference, status and its history.
  * (Phase 8 adds the reference images, the message thread and accept/cancel here.)
  */
 export function TrackPage() {
@@ -26,7 +27,7 @@ export function TrackPage() {
   const locale = useLocale();
   const token = useTrackingToken();
   const order = useQuery({
-    queryKey: ['track', 'order', token, locale],
+    queryKey: queryKeys.track.order(token, locale),
     queryFn: ({ signal }) => trackingApi(token).get<OrderDetailDto>('/api/track/order', { locale }, signal),
     enabled: token.length > 0,
     retry: (count, error) => !isApiError(error, 'NOT_FOUND') && count < 2,

@@ -16,23 +16,11 @@ export interface Paginated<T> {
 
 /* ---------- Users ---------- */
 
-export interface CustomerProfileDto {
-  fullName: string;
-  phone: string | null;
-  country: string | null;
-  city: string | null;
-  postalCode: string | null;
-  street: string | null;
-  houseNumber: string | null;
-  addressExtra: string | null;
-}
-
+/** The signed-in artist (the only accounts; customers order without one). */
 export interface UserDto {
   id: string;
   email: string;
-  role: Role;
   preferredLocale: Locale;
-  profile: CustomerProfileDto | null;
   createdAt: string;
 }
 
@@ -98,7 +86,7 @@ export interface AttachmentDto {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
-  /** Authorized URL: `/api/attachments/:id`, or `/api/track/attachments/:id` (with the tracking token) for guests. */
+  /** Authorized URL: `/api/attachments/:id` for the admin, `/api/track/attachments/:id` (with the tracking token) for the customer. */
   url: string;
   createdAt: string;
 }
@@ -169,7 +157,9 @@ export interface OrderDetailDto extends OrderSummaryDto {
   extraInstructions: string | null;
   contact: {
     fullName: string;
-    email: string;
+    /** Optional since the single-page form without accounts. */
+    email: string | null;
+    /** Required for new orders; may be empty on older ones. */
     phone: string | null;
     communicationLocale: Locale;
   };
@@ -201,8 +191,8 @@ export interface TrackingLinkDto {
 export interface CreateOrderResultDto {
   order: OrderDetailDto;
   created: boolean;
-  /** Guest orders only: the private link to follow the order. */
-  tracking: TrackingLinkDto | null;
+  /** The private link to follow the order (customers have no account). */
+  tracking: TrackingLinkDto;
 }
 
 /* ---------- Notifications ---------- */
@@ -226,10 +216,8 @@ export interface UnreadCountDto {
 
 export interface AdminOrderSummaryDto extends OrderSummaryDto {
   customerName: string;
-  customerEmail: string;
+  customerEmail: string | null;
   customerPhone: string | null;
-  /** Submitted without an account (followed through a tracking link). */
-  isGuest: boolean;
   archivedAt: string | null;
 }
 
@@ -241,10 +229,6 @@ export interface InternalNoteDto {
 }
 
 export interface AdminOrderDetailDto extends OrderDetailDto {
-  /** Null for guest orders. */
-  customerId: string | null;
-  customerAccountEmail: string | null;
-  isGuest: boolean;
   internalNotes: InternalNoteDto[];
   canArchive: boolean;
 }

@@ -19,6 +19,8 @@ datasource db {
 // Enums
 // ---------------------------------------------------------------------------
 
+/// Side of an order that wrote a message or changed a status. Only the artist (ADMIN) has an
+/// account; the customer acts through the private tracking link.
 enum Role {
   ADMIN
   CUSTOMER
@@ -76,42 +78,23 @@ enum NotificationType {
 // Users & authentication
 // ---------------------------------------------------------------------------
 
+/// The artist's login (the only accounts: customers order without one, see Order).
 model User {
   id              String   @id @default(uuid()) @db.Uuid
   /// Always stored lower-cased.
   email           String   @unique
   passwordHash    String
-  role            Role     @default(CUSTOMER)
   /// UI language and preferred communication language.
   preferredLocale Locale   @default(NL_BE)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  profile             CustomerProfile?
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
-  orders              Order[]
   messages            OrderMessage[]
   internalNotes       InternalAdminNote[]
   statusChanges       OrderStatusHistory[]
   notifications       Notification[]
-}
-
-model CustomerProfile {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @unique @db.Uuid
-  fullName     String
-  phone        String?
-  country      String?
-  city         String?
-  postalCode   String?
-  street       String?
-  houseNumber  String?
-  addressExtra String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 /// Server-side session. Only sha256(token) is stored; the raw token lives in an HttpOnly cookie.
@@ -150,18 +133,12 @@ model PasswordResetToken {
 /// A custom order request.
 ///
 /// Contact details and the project address are stored ON THE ORDER as they were
-/// submitted, not referenced from the customer profile: the project location can
-/// differ from the customer's own address, and the order must keep showing what
-/// was originally submitted even if the profile changes later.
-///
-/// Guest orders have no account (`customerId` null): they are followed through a private
-/// tracking link (OrderTrackingToken) and are never linked to an account automatically.
+/// submitted. Customers have no account: they follow the order through a private
+/// tracking link (OrderTrackingToken), and the order keeps exactly what was submitted.
 model Order {
   id             String      @id @default(uuid()) @db.Uuid
   /// Human-readable, non-sequential reference, e.g. ORD-2026-7K3QXM.
   reference      String      @unique
-  /// Null for guest orders.
-  customerId     String?     @db.Uuid
   /// Client-generated UUID; a repeated submission returns the existing order.
   idempotencyKey String      @unique @db.Uuid
   status         OrderStatus @default(SUBMITTED)
@@ -199,7 +176,8 @@ model Order {
 
   // Contact & project address as submitted (see model comment)
   contactName         String
-  contactEmail        String
+  /// Optional: when given, the tracking link and updates are also emailed.
+  contactEmail        String?
   contactPhone        String?
   /// The site language at the moment of submitting.
   communicationLocale Locale
@@ -220,7 +198,6 @@ model Order {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  customer        User?                @relation(fields: [customerId], references: [id], onDelete: Restrict)
   service         Service?             @relation(fields: [serviceId], references: [id], onDelete: Restrict)
   inspirationItem PortfolioItem?       @relation(fields: [inspirationItemId], references: [id], onDelete: SetNull)
   attachments     OrderAttachment[]
@@ -232,7 +209,6 @@ model Order {
 
   @@index([status])
   @@index([createdAt])
-  @@index([customerId])
   @@index([archivedAt])
   @@index([serviceId])
   @@index([inspirationItemId])
@@ -276,7 +252,7 @@ model OrderAttachment {
 model OrderMessage {
   id         String    @id @default(uuid()) @db.Uuid
   orderId    String    @db.Uuid
-  /// Null for messages written by a guest through the tracking link.
+  /// The artist who wrote it; null for customer messages (written through the tracking link).
   senderId   String?   @db.Uuid
   senderRole Role
   body       String
@@ -310,7 +286,7 @@ model OrderStatusHistory {
   /// Null for the initial SUBMITTED entry.
   fromStatus    OrderStatus?
   toStatus      OrderStatus
-  /// Null when a guest acted through the tracking link.
+  /// The artist who acted; null when the customer acted through the tracking link.
   changedById   String?      @db.Uuid
   changedByRole Role
   note          String?

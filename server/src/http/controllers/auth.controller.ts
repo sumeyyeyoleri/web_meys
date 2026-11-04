@@ -3,7 +3,6 @@ import {
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
-  registerSchema,
   resetPasswordSchema,
   type CsrfDto,
 } from '@painter/shared';
@@ -28,12 +27,6 @@ export function createAuthController({ services, config }: Container) {
     csrf(req: Request, res: Response) {
       const body: CsrfDto = { csrfToken: ensureCsrfToken(req, res, config) };
       res.json(body);
-    },
-
-    async register(req: Request, res: Response) {
-      const user = await auth.register(parseBody(registerSchema, req));
-      await startSession(req, res, user.id);
-      res.status(201).json(toUserDto(user));
     },
 
     async login(req: Request, res: Response) {

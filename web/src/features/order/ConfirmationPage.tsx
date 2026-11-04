@@ -9,19 +9,19 @@ import { useLocale } from '../../lib/i18n';
 import { formatDate } from '../../lib/format';
 import { usePageTitle } from '../../lib/use-page-title';
 import { NextSteps } from './NextSteps';
-import type { GuestConfirmationState } from './useSubmitOrder';
+import type { ConfirmationState } from './useSubmitOrder';
 
 /**
- * Shown once after a guest submitted: the reference and the private tracking link. The link is
- * only in the router state (it survives a reload of this tab, but is never stored by the site).
+ * Shown once after submitting: the reference and the private tracking link (customers have no
+ * account, so this link is their way back to the order). The link is only in the router state (it survives a reload of this tab, but is never stored by the site).
  */
-export function GuestConfirmationPage() {
+export function ConfirmationPage() {
   const { t } = useTranslation('order');
   usePageTitle(t('meta.confirmationTitle'));
   const locale = useLocale();
   const toast = useToast();
   const linkRef = useRef<HTMLInputElement>(null);
-  const state = useLocation().state as GuestConfirmationState | null;
+  const state = useLocation().state as ConfirmationState | null;
 
   if (!state?.tracking) {
     return (
@@ -82,10 +82,10 @@ export function GuestConfirmationPage() {
             <p className="font-semibold">{t('sent.saveWarning')}</p>
             <p className="mt-1 text-text-muted">{t('sent.saveWarningBody', { date: formatDate(tracking.expiresAt, locale) })}</p>
           </FormAlert>
-          {tracking.emailSent ? <FormAlert tone="success">{t('sent.emailed', { email })}</FormAlert> : null}
+          {tracking.emailSent && email ? <FormAlert tone="success">{t('sent.emailed', { email })}</FormAlert> : null}
         </section>
 
-        <NextSteps where="link" />
+        <NextSteps />
 
         <ButtonLink to="/" variant="secondary" className="self-center">
           {t('confirmation.home')}

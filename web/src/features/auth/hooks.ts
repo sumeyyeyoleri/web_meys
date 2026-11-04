@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { ForgotPasswordInput, LoginInput, RegisterInput, ResetPasswordInput, UserDto } from '@painter/shared';
+import type { ForgotPasswordInput, LoginInput, ResetPasswordInput, UserDto } from '@painter/shared';
 import { useToast } from '../../components/ui/Toast';
 import { api } from '../../lib/api';
 import { setLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
 
+/** The signed-in artist, or null (customers have no account). */
 export function useMe() {
   return useQuery({
     queryKey: queryKeys.me,
@@ -35,7 +36,7 @@ export function useLogout() {
     mutationFn: () => api.post('/api/auth/logout'),
     onSuccess: () => {
       queryClient.setQueryData(queryKeys.me, { user: null });
-      for (const key of [queryKeys.orders.all, queryKeys.notifications.all, queryKeys.admin.all]) {
+      for (const key of [queryKeys.notifications.all, queryKeys.admin.all]) {
         queryClient.removeQueries({ queryKey: key });
       }
       toast.success(t('toast.loggedOut'));
@@ -49,14 +50,6 @@ export function useLoginMutation() {
   const applyUser = useApplySignedInUser();
   return useMutation({
     mutationFn: (input: LoginInput) => api.post<UserDto>('/api/auth/login', input),
-    onSuccess: (user) => applyUser(user),
-  });
-}
-
-export function useRegisterMutation() {
-  const applyUser = useApplySignedInUser();
-  return useMutation({
-    mutationFn: (input: RegisterInput) => api.post<UserDto>('/api/auth/register', input),
     onSuccess: (user) => applyUser(user),
   });
 }

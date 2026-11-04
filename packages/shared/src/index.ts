@@ -6,7 +6,6 @@ export * from './uploads';
 export * from './dto';
 export * from './schemas/common';
 export * from './schemas/auth';
-export * from './schemas/profile';
 export * from './schemas/order';
 export * from './schemas/notes';
 export * from './schemas/content';

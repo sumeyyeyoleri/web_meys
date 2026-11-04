@@ -1,16 +1,15 @@
 import type { Role } from '@prisma/client';
 import type { Db } from './db';
 
-const messageInclude = { sender: { select: { profile: { select: { fullName: true } } } } } as const;
 
 export function createMessageRepository(db: Db) {
   return {
     listForOrder(orderId: string) {
-      return db.orderMessage.findMany({ where: { orderId }, include: messageInclude, orderBy: { createdAt: 'asc' } });
+      return db.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: 'asc' } });
     },
 
     create(data: { orderId: string; senderId: string | null; senderRole: Role; body: string }) {
-      return db.orderMessage.create({ data, include: messageInclude });
+      return db.orderMessage.create({ data });
     },
 
     /** Marks every unread message written by `senderRole` in this thread as read. */

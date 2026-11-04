@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
-/** "What happens next?" on the confirmation pages; messages are read in the account or via the tracking link. */
-export function NextSteps({ where }: { where: 'account' | 'link' }) {
+/** "What happens next?" on the confirmation page; messages are read through the tracking link. */
+export function NextSteps() {
   const { t } = useTranslation('order');
-  const steps = [t('confirmation.next1'), t(where === 'account' ? 'confirmation.next2Account' : 'confirmation.next2Link'), t('confirmation.next3')];
+  const steps = [t('confirmation.next1'), t('confirmation.next2'), t('confirmation.next3')];
   return (
     <section aria-labelledby="next-title" className="rounded-[var(--radius-panel)] border border-border bg-surface p-6 sm:p-8">
       <h2 id="next-title" className="mb-5 text-3xl">

@@ -2,12 +2,14 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   ADMIN,
   closeTestPrisma,
-  createOrderAs,
-  CUSTOMER_A,
-  CUSTOMER_B,
+  eventually,
+  createOrder,
+  CUSTOMER,
+  guest,
   IMAGES,
   setupTest,
   signedIn,
+  track,
   type Client,
   type TestContext,
 } from './helpers';
@@ -18,7 +20,7 @@ let customer: Client;
 beforeEach(async () => {
   ctx = await setupTest();
   admin = await signedIn(ctx.app, ADMIN);
-  customer = await signedIn(ctx.app, CUSTOMER_A);
+  customer = await guest(ctx.app);
 });
 afterAll(closeTestPrisma);
 
@@ -27,10 +29,9 @@ const move = (id: string, status: string, extra: Record<string, unknown> = {}) =
 
 describe('admin order list', () => {
   it('filters, searches and paginates on the server', async () => {
-    const b = await signedIn(ctx.app, CUSTOMER_B);
-    const first = await createOrderAs(customer, { title: 'Mural' });
-    await createOrderAs(customer, { title: 'Portrait', phone: '+32 499 55 44 33' });
-    await createOrderAs(b, { title: 'Canvas', fullName: CUSTOMER_B.name, email: CUSTOMER_B.email });
+    const first = await createOrder(customer);
+    await createOrder(customer, { phone: '+32 499 55 44 33' });
+    await createOrder(customer, { fullName: 'Bram Janssens', email: 'bram@test.local' });
     await move(first.id, 'UNDER_REVIEW').expect(200);
 
     const all = await admin.get('/api/admin/orders?pageSize=2').expect(200);
@@ -47,7 +48,7 @@ describe('admin order list', () => {
     const byRef = await admin.get(`/api/admin/orders?q=${first.reference.slice(-6).toLowerCase()}`).expect(200);
     expect(byRef.body.total).toBe(1);
     expect((await admin.get('/api/admin/orders?q=bram')).body.total).toBe(1);
-    expect((await admin.get(`/api/admin/orders?q=${encodeURIComponent(CUSTOMER_B.email)}`)).body.total).toBe(1);
+    expect((await admin.get(`/api/admin/orders?q=${encodeURIComponent('bram@test.local')}`)).body.total).toBe(1);
     expect((await admin.get('/api/admin/orders?q=499 55')).body.total).toBe(1);
 
     const today = new Date().toISOString().slice(0, 10);
@@ -61,15 +62,15 @@ describe('admin order list', () => {
 
 describe('status transitions', () => {
   it('walks an order from SUBMITTED to COMPLETED', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     await move(order.id, 'UNDER_REVIEW').expect(200);
     await move(order.id, 'AWAITING_CUSTOMER_INFO', { note: 'Need wall photos' }).expect(200);
     const quoted = await move(order.id, 'QUOTE_SENT', { quoteAmount: 1250.5 }).expect(200);
     expect(quoted.body).toMatchObject({ status: 'QUOTE_SENT', quoteAmount: 1250.5 });
 
-    const customerView = await customer.get(`/api/orders/${order.id}`).expect(200);
+    const customerView = await track(customer, 'get', '/order', order.token).expect(200);
     expect(customerView.body.allowedTransitions).toEqual(['ACCEPTED', 'CANCELLED']);
-    await customer.post(`/api/orders/${order.id}/status`).send({ status: 'ACCEPTED' }).expect(200);
+    await track(customer, 'post', '/status', order.token).send({ status: 'ACCEPTED' }).expect(200);
 
     await move(order.id, 'IN_PROGRESS').expect(200);
     const done = await move(order.id, 'COMPLETED').expect(200);
@@ -88,7 +89,7 @@ describe('status transitions', () => {
   });
 
   it('rejects invalid transitions with 409 ORDER_INVALID_TRANSITION', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     for (const status of ['QUOTE_SENT', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'SUBMITTED']) {
       const res = await move(order.id, status, { quoteAmount: 100 });
       expect(res.status, status).toBe(409);
@@ -99,7 +100,7 @@ describe('status transitions', () => {
   });
 
   it('requires a quote amount for QUOTE_SENT', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     await move(order.id, 'UNDER_REVIEW').expect(200);
     const missing = await move(order.id, 'QUOTE_SENT').expect(400);
     expect(missing.body.error.fields).toEqual({ quoteAmount: 'validation.quoteRequired' });
@@ -108,17 +109,18 @@ describe('status transitions', () => {
     expect(order2.status).toBe('UNDER_REVIEW');
   });
 
-  it('notifies the customer about every admin status change', async () => {
-    const order = await createOrderAs(customer);
+  it('emails the customer about admin status changes, without in-app notifications', async () => {
+    const order = await createOrder(customer);
+    ctx.mailer.sent.length = 0;
     await move(order.id, 'UNDER_REVIEW').expect(200);
-    const notifications = await ctx.prisma.notification.findMany({ where: { userId: ctx.ids.customerAId } });
-    expect(notifications).toEqual([expect.objectContaining({ type: 'ORDER_STATUS_CHANGED', status: 'UNDER_REVIEW' })]);
+    await eventually(() => ctx.mailer.sent.some((m) => m.to === CUSTOMER.email));
+    expect(await ctx.prisma.notification.count({ where: { type: 'ORDER_STATUS_CHANGED' } })).toBe(0);
   });
 });
 
 describe('internal notes', () => {
   it('are visible to admins but never appear in customer responses', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     const secret = 'INTERNAL-ONLY-margin-is-thin';
     await admin.post(`/api/admin/orders/${order.id}/notes`).send({ body: secret }).expect(201);
     await admin.post(`/api/admin/orders/${order.id}/messages`).send({ body: 'Public reply' }).expect(201);
@@ -129,10 +131,8 @@ describe('internal notes', () => {
     expect((await admin.get(`/api/admin/orders/${order.id}/notes`)).body).toHaveLength(1);
 
     const responses = await Promise.all([
-      customer.get(`/api/orders/${order.id}`),
-      customer.get('/api/orders'),
-      customer.get(`/api/orders/${order.id}/messages`),
-      customer.get('/api/notifications'),
+      track(customer, 'get', '/order', order.token),
+      track(customer, 'get', '/messages', order.token),
     ]);
     for (const res of responses) {
       expect(res.status).toBe(200);
@@ -145,7 +145,7 @@ describe('internal notes', () => {
 
 describe('archiving', () => {
   it('only archives COMPLETED or CANCELLED orders', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     const refused = await admin.post(`/api/admin/orders/${order.id}/archive`).expect(409);
     expect(refused.body.error.code).toBe('ORDER_NOT_ARCHIVABLE');
 
@@ -162,7 +162,7 @@ describe('archiving', () => {
 
 describe('order editing and stats', () => {
   it('edits order details and reports dashboard numbers', async () => {
-    const order = await createOrderAs(customer);
+    const order = await createOrder(customer);
     const detail = (await admin.get(`/api/admin/orders/${order.id}`).expect(200)).body;
     const update = {
       customRequest: detail.customRequest,
@@ -184,11 +184,11 @@ describe('order editing and stats', () => {
     const edited = await admin.put(`/api/admin/orders/${order.id}`).send(update).expect(200);
     expect(edited.body).toMatchObject({ title: 'Corrected title', width: 80, contact: { communicationLocale: 'en' } });
 
-    await customer.post(`/api/orders/${order.id}/messages`).send({ body: 'Question' }).expect(201);
+    await track(customer, 'post', '/messages', order.token).send({ body: 'Question' }).expect(201);
     const stats = await admin.get('/api/admin/stats').expect(200);
     expect(stats.body).toMatchObject({ totalOrders: 1, newOrders: 1, inReview: 0, unreadCustomerMessages: 1 });
     expect(stats.body.recentOrders[0]).toMatchObject({ id: order.id, unreadMessages: 1 });
-    expect(stats.body.recentMessages[0]).toMatchObject({ body: 'Question', customerName: CUSTOMER_A.name });
+    expect(stats.body.recentMessages[0]).toMatchObject({ body: 'Question', customerName: CUSTOMER.name });
 
     await admin.post(`/api/admin/orders/${order.id}/messages/read`).expect(204);
     expect((await admin.get('/api/admin/stats')).body.unreadCustomerMessages).toBe(0);
@@ -199,7 +199,7 @@ describe('content management', () => {
   const translations = (name: string) => ({ 'nl-BE': { name }, en: { name }, tr: { name } });
 
   it('blocks deleting a service that orders use, and allows deactivating it', async () => {
-    await createOrderAs(customer, { serviceId: ctx.ids.serviceId });
+    await createOrder(customer, { serviceId: ctx.ids.serviceId });
     const res = await admin.delete(`/api/admin/services/${ctx.ids.serviceId}`).expect(409);
     expect(res.body.error.code).toBe('SERVICE_IN_USE');
     await admin.post(`/api/admin/services/${ctx.ids.serviceId}/active`).send({ value: false }).expect(200);
@@ -321,9 +321,9 @@ describe('brand and welcome screen', () => {
     await customer.get(second).expect(404);
   });
 
-  it('only lets administrators change the logo', async () => {
-    await uploadLogo(customer, logoSvg, 'logo.svg', 'image/svg+xml').expect(403);
-    await customer.delete('/api/admin/settings/logo').expect(403);
+  it('only lets the signed-in artist change the logo', async () => {
+    await uploadLogo(customer, logoSvg, 'logo.svg', 'image/svg+xml').expect(401);
+    await customer.delete('/api/admin/settings/logo').expect(401);
   });
 
   it('saves the welcome screen settings and tagline', async () => {

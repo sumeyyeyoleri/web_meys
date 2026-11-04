@@ -1,7 +1,7 @@
-import type { UserWithProfile } from '../repositories/user.repository';
+import type { AdminUser } from '../repositories/user.repository';
 
 export interface RequestAuth {
-  user: UserWithProfile;
+  user: AdminUser;
   sessionToken: string;
 }
 
@@ -9,7 +9,7 @@ declare global {
   namespace Express {
     interface Request {
       auth?: RequestAuth;
-      /** Set by `requireTrackingToken`: the one guest order the request's tracking token opens. */
+      /** Set by `requireTrackingToken`: the one order the request's tracking token opens. */
       trackedOrderId?: string;
     }
   }

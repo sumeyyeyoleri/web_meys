@@ -3,13 +3,14 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   ADMIN,
   closeTestPrisma,
-  CUSTOMER_A,
   guest,
   orderPayload,
   pngFile,
   setupTest,
   signedIn,
   submitOrder,
+  tokenFromUrl,
+  track,
   type TestContext,
 } from './helpers';
 
@@ -45,7 +46,7 @@ async function createItem(
 describe('orders inspired by a catalog item', () => {
   it('stores the inspiration and returns it in the order locale for customer and admin', async () => {
     const item = await createItem();
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
       orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.wallServiceId, communicationLocale: 'tr' }),
@@ -59,7 +60,7 @@ describe('orders inspired by a catalog item', () => {
     // The catalog item is a reference, not an upload: it does not use an attachment slot.
     expect(res.body.order.attachments).toHaveLength(1);
 
-    const customerView = await client.get(`/api/orders/${res.body.order.id}?locale=en`).expect(200);
+    const customerView = await track(client, 'get', '/order?locale=en', tokenFromUrl(res.body.tracking.url)).expect(200);
     expect(customerView.body.inspiration).toEqual(expected);
     const admin = await signedIn(ctx.app, ADMIN);
     const adminView = await admin.get(`/api/admin/orders/${res.body.order.id}`).expect(200);
@@ -68,17 +69,17 @@ describe('orders inspired by a catalog item', () => {
 
   it('accepts a catalog example without a service', async () => {
     const item = await createItem();
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
     expect(res.body.order).toMatchObject({ serviceId: null, title: 'Maanlichtheuvels' });
   });
 
-  it('works for guests too', async () => {
+  it('works without an email address too', async () => {
     const item = await createItem();
     const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
-      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.serviceId, email: 'inspired@test.local' }),
+      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.serviceId, email: '' }),
     ).expect(201);
     expect(res.body.order.inspiration.id).toBe(item.id);
     expect(res.body.order.serviceId).toBe(ctx.ids.serviceId);
@@ -88,7 +89,7 @@ describe('orders inspired by a catalog item', () => {
   it('rejects unpublished, disabled and unknown catalog items', async () => {
     const unpublished = await createItem({ isPublished: false });
     const disabled = await createItem({ allowSimilarRequest: false });
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     for (const id of [unpublished.id, disabled.id, randomUUID()]) {
       const res = await submitOrder(client, orderPayload({ inspirationItemId: id })).expect(400);
       expect(res.body.error).toMatchObject({
@@ -101,7 +102,7 @@ describe('orders inspired by a catalog item', () => {
 
   it('returns null when there is no inspiration, and after the item is deleted', async () => {
     const item = await createItem();
-    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const client = await guest(ctx.app);
     // Fields of the former wizard are no longer accepted for new orders.
     const plain = await submitOrder(client, orderPayload({ additionalSpecs: 'ignored', budgetMin: 100 })).expect(201);
     expect(plain.body.order.inspiration).toBeNull();
@@ -111,7 +112,7 @@ describe('orders inspired by a catalog item', () => {
     const inspired = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
     const admin = await signedIn(ctx.app, ADMIN);
     await admin.delete(`/api/admin/portfolio/${item.id}`).expect(204);
-    const after = await client.get(`/api/orders/${inspired.body.order.id}`).expect(200);
+    const after = await track(client, 'get', '/order', tokenFromUrl(inspired.body.tracking.url)).expect(200);
     expect(after.body.inspiration).toBeNull();
     // The derived title was stored with the order, so it stays.
     expect(after.body.title).toBe('Maanlichtheuvels');

@@ -58,12 +58,11 @@ export const services: ServiceDto[] = [
   { id: uid('s2'), name: 'Muurschildering', description: 'Op de muur.', imageUrl: null, isWallService: true },
 ];
 
-export const customer: UserDto = {
+/** The artist (the only account). */
+export const adminUser: UserDto = {
   id: 'u1',
-  email: 'anna@example.com',
-  role: 'CUSTOMER',
+  email: 'atelier@example.com',
   preferredLocale: 'nl-BE',
-  profile: null,
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 

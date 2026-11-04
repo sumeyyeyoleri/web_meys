@@ -21,11 +21,6 @@ export function createOrderRepository(db: Db) {
       return db.order.findUnique({ where: { id }, include: orderDetailInclude });
     },
 
-    /** Returns the order only if it belongs to the customer (otherwise null → 404). */
-    findForCustomer(id: string, customerId: string) {
-      return db.order.findFirst({ where: { id, customerId }, include: orderDetailInclude });
-    },
-
     findByIdempotencyKey(idempotencyKey: string) {
       return db.order.findUnique({ where: { idempotencyKey }, include: orderDetailInclude });
     },
@@ -59,15 +54,6 @@ export function createOrderRepository(db: Db) {
       return result.count === 1;
     },
 
-    async listForCustomer(customerId: string, skip: number, take: number) {
-      const where = { customerId };
-      const [items, total] = await Promise.all([
-        db.order.findMany({ where, include: orderSummaryInclude, orderBy: { createdAt: 'desc' }, skip, take }),
-        db.order.count({ where }),
-      ]);
-      return { items, total };
-    },
-
     /** Unread messages per order written by the given sender role. */
     async unreadMessageCounts(orderIds: string[], senderRole: Role): Promise<Map<string, number>> {
       if (orderIds.length === 0) return new Map();
@@ -79,11 +65,8 @@ export function createOrderRepository(db: Db) {
       return new Map(rows.map((row) => [row.orderId, row._count._all]));
     },
 
-    findAttachmentWithOwner(id: string) {
-      return db.orderAttachment.findUnique({
-        where: { id },
-        include: { order: { select: { customerId: true } } },
-      });
+    findAttachment(id: string) {
+      return db.orderAttachment.findUnique({ where: { id } });
     },
   };
 }

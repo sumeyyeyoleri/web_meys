@@ -7,7 +7,7 @@
     "backToCatalog": "Back to the catalog",
     "eyebrow": "Custom order",
     "title": "Your order",
-    "intro": "Tell me briefly what you're looking for. I review your request personally and send you a quote. No account needed."
+    "intro": "Tell me briefly what you're looking for. I review your request personally and send you a quote. You don't need an account."
   },
   "leave": {
     "title": "Leave this page?",
@@ -40,6 +40,7 @@
     "contact": "Your details",
     "fullName": "Full name",
     "email": "Email address",
+    "emailHint": "Optional. We'll then also email you the private link and updates.",
     "phone": "Phone",
     "phoneHint": "With country code, e.g. +32 470 12 34 56.",
     "address": "Address",
@@ -55,13 +56,7 @@
     "privacyLink": "Read the privacy policy",
     "noCharge": "You don't pay anything now. I'll review your request and send you a personal quote.",
     "submit": "Send order",
-    "submitting": "Sending…",
-    "haveAccount": "Have an account?",
-    "login": "Log in",
-    "loginDialogTitle": "Log in",
-    "loginDialogIntro": "After logging in your details are filled in and the order goes to your account. What you already entered is kept.",
-    "signedInAs": "You're logged in as {{email}}. Your details were filled in from your profile and the order goes to your account.",
-    "adminNotAllowed": "You're logged in as an administrator. Administrators can't place orders; log out to order as a customer."
+    "submitting": "Sending…"
   },
   "photos": {
     "choose": "Choose files",
@@ -78,10 +73,8 @@
     "reference": "Your order number",
     "nextTitle": "What happens next?",
     "next1": "I review your request personally.",
-    "next2Account": "If I have questions, I'll send you a message. You'll see it in your account.",
-    "next2Link": "If I have questions, I'll send you a message. You read and answer it through your private link.",
+    "next2": "If I have questions, I'll send you a message. You read and answer it through your private link.",
     "next3": "You receive a personal quote. You decide, without obligation, whether to go ahead.",
-    "viewOrder": "View your order",
     "home": "Back to the home page"
   },
   "sent": {

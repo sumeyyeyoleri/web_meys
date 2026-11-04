@@ -15,7 +15,7 @@ import { useLoginMutation } from './hooks';
 
 type LoginValues = z.input<typeof loginSchema>;
 
-/** Login form; also used inside the order form so the form keeps its state. */
+/** The artist's login form (`/admin/login`). */
 export function LoginForm({ defaultEmail, onSuccess }: { defaultEmail?: string; onSuccess: (user: UserDto) => void }) {
   const { t } = useTranslation('account');
   const errorMessage = useErrorMessage();
@@ -43,7 +43,7 @@ export function LoginForm({ defaultEmail, onSuccess }: { defaultEmail?: string; 
       <Field label={t('fields.password')} error={errors.password?.message} required>
         {(p) => <PasswordInput {...p} autoComplete="current-password" {...form.register('password')} />}
       </Field>
-      <Link to="/forgot-password" className="-mt-2 inline-flex min-h-11 items-center self-start text-sm text-text-muted underline-offset-4 hover:text-text hover:underline">
+      <Link to="/admin/forgot-password" className="-mt-2 inline-flex min-h-11 items-center self-start text-sm text-text-muted underline-offset-4 hover:text-text hover:underline">
         {t('login.forgot')}
       </Link>
       <Button type="submit" loading={form.formState.isSubmitting}>

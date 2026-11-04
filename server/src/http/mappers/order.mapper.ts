@@ -27,7 +27,7 @@ export function toOrderSummaryDto(order: OrderWithSummary, locale: Locale, unrea
   };
 }
 
-/** Guests load images through the tracking routes (with the token header), everyone else with the session. */
+/** Customers load images through the tracking routes (with the token header), the artist with the session. */
 function toAttachmentDto(attachment: OrderWithDetail['attachments'][number], viaTracking: boolean): AttachmentDto {
   return {
     id: attachment.id,

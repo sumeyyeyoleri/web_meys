@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { customerStatusActionSchema, isLocale, localeFromDb, messageBodySchema, type Locale } from '@painter/shared';
 import type { Services } from '../../container';
 import type { OrderWithDetail } from '../../repositories/order.repository';
-import { guestActor } from '../../services/order.service';
+import { customerActor } from '../../services/order.service';
 import { toMessageDto } from '../mappers/message.mapper';
 import { toOrderDetailDto } from '../mappers/order.mapper';
 import { getTrackedOrderId } from '../middleware/tracking';
@@ -16,11 +16,11 @@ function trackingLocale(req: Request, order: OrderWithDetail): Locale {
 }
 
 /**
- * Guest orders through the private tracking link: the same order detail, status actions and
- * message thread as in the account, authorised by the token instead of a session.
+ * The customer's view of an order through the private tracking link: order detail, status
+ * actions and the message thread, authorised by the token (customers have no account).
  */
 export function createTrackingController({ orders, messages, attachments, content }: Services) {
-  const actorOf = (req: Request) => guestActor(getTrackedOrderId(req));
+  const actorOf = (req: Request) => customerActor(getTrackedOrderId(req));
 
   return {
     async order(req: Request, res: Response) {

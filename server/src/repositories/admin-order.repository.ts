@@ -11,10 +11,7 @@ export interface AdminOrderFilter {
   includeArchived?: boolean;
 }
 
-export const adminOrderSummaryInclude = {
-  ...orderSummaryInclude,
-  customer: { select: { email: true } },
-} as const satisfies Prisma.OrderInclude;
+export const adminOrderSummaryInclude = orderSummaryInclude;
 
 export type AdminOrderWithSummary = Prisma.OrderGetPayload<{ include: typeof adminOrderSummaryInclude }>;
 
@@ -37,8 +34,6 @@ function buildWhere(filter: AdminOrderFilter): Prisma.OrderWhereInput {
       { contactName: contains },
       { contactEmail: contains },
       { contactPhone: contains },
-      { customer: { email: contains } },
-      { customer: { profile: { fullName: contains } } },
       ...(digits.length >= 4 ? [{ contactPhone: { contains: digits } }] : []),
     ];
   }
@@ -54,10 +49,6 @@ export function createAdminOrderRepository(db: Db) {
         db.order.count({ where }),
       ]);
       return { items, total };
-    },
-
-    findCustomerEmail(orderId: string) {
-      return db.order.findUnique({ where: { id: orderId }, select: { customer: { select: { email: true } } } });
     },
 
     update(id: string, data: Prisma.OrderUncheckedUpdateInput) {

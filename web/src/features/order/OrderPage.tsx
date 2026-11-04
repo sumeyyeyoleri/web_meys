@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { DIMENSION_UNITS, ORDER_FORM_FIELDS, orderFormSchema } from '@painter/shared';
 import type { z } from 'zod';
 import { Button } from '../../components/ui/Button';
-import { ConfirmDialog, Dialog } from '../../components/ui/Dialog';
+import { ConfirmDialog } from '../../components/ui/Dialog';
 import { Field, FieldError } from '../../components/ui/Field';
 import { FormAlert } from '../../components/ui/FormAlert';
 import { Icon } from '../../components/ui/Icon';
@@ -17,22 +17,20 @@ import { useToast } from '../../components/ui/Toast';
 import { isApiError } from '../../lib/api';
 import { useLocale, useValidationMessage, VALIDATION_PARAMS } from '../../lib/i18n';
 import { usePageTitle } from '../../lib/use-page-title';
-import { useMe } from '../auth/hooks';
-import { LoginForm } from '../auth/LoginForm';
 import { ArtworkImage } from '../public/ArtworkImage';
 import { usePortfolioItem, useServices } from '../public/hooks';
 import { InspirationBanner } from './InspirationBanner';
-import { initialValues, newIdempotencyKey, profileValues, splitServerErrors, type OrderFile, type OrderFormValues } from './order-form';
+import { initialValues, newIdempotencyKey, splitServerErrors, type OrderFile, type OrderFormValues } from './order-form';
 import { PhotoPicker } from './PhotoPicker';
 import { matchServiceForCategory } from './service-match';
 import { useLeaveGuard } from './useLeaveGuard';
-import { useSubmitOrder, type GuestConfirmationState } from './useSubmitOrder';
+import { useSubmitOrder, type ConfirmationState } from './useSubmitOrder';
 
 const decimal = { type: 'text', inputMode: 'decimal' as const, autoComplete: 'off' };
 
 type OrderFormOutput = z.output<typeof orderFormSchema>;
 
-/** Single-page order form (PROMPT.md §6): guests and signed-in customers, no account required. */
+/** Single-page order form (PROMPT.md §6). Nobody needs an account: the customer gets a private tracking link. */
 export function OrderPage() {
   const { t } = useTranslation('order');
   const { t: tc } = useTranslation();
@@ -43,7 +41,6 @@ export function OrderPage() {
   const translate = useValidationMessage();
   const locale = useLocale();
   const [params] = useSearchParams();
-  const { data: user } = useMe();
   const services = useServices();
   const submit = useSubmitOrder();
   const [idempotencyKey] = useState(newIdempotencyKey);
@@ -59,9 +56,7 @@ export function OrderPage() {
   const r = form.register;
   const [files, setFiles] = useState<OrderFile[]>([]);
   const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
-  const [loginOpen, setLoginOpen] = useState(false);
   const guard = useLeaveGuard((isDirty || files.length > 0) && !submit.isSuccess);
-  const isAdmin = user?.role === 'ADMIN';
 
   // Catalog example (`?from=<id>`), attached as a reference until removed.
   const fromId = params.get('from');
@@ -84,18 +79,6 @@ export function OrderPage() {
     if (serviceId) form.setValue('serviceId', serviceId);
     if (!requested && matched) setMatchedServiceId(matched);
   }, [services.data, inspiration, inspirationId, inspirationQuery.isPending, params, form, tc]);
-
-  // Signed-in customers: fill empty contact fields from the profile (typed values win).
-  const prefilledFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (!user || user.role === 'ADMIN' || prefilledFor.current === user.id) return;
-    prefilledFor.current = user.id;
-    for (const [name, value] of Object.entries(profileValues(user)) as Array<[keyof OrderFormValues, string]>) {
-      const current = form.getValues(name);
-      const untouched = typeof current !== 'string' || !current.trim() || (name === 'country' && current === defaultCountry);
-      if (untouched) form.setValue(name, value);
-    }
-  }, [user, form, defaultCountry]);
 
   // Object URLs are released when files are removed (below) and when the page closes.
   const filesRef = useRef(files);
@@ -124,17 +107,13 @@ export function OrderPage() {
       {
         onSuccess: (result) => {
           guard.allow();
-          if (result.tracking) {
-            const state: GuestConfirmationState = {
-              reference: result.order.reference,
-              tracking: result.tracking,
-              email: values.email,
-              inspirationTitle: result.order.inspiration?.title ?? null,
-            };
-            navigate('/order/sent', { state });
-          } else {
-            navigate(`/order/confirmation/${result.order.id}`);
-          }
+          const state: ConfirmationState = {
+            reference: result.order.reference,
+            tracking: result.tracking,
+            email: result.tracking.emailSent ? (values.email ?? null) : null,
+            inspirationTitle: result.order.inspiration?.title ?? null,
+          };
+          navigate('/order/sent', { state });
         },
         onError: (error) => {
           if (isApiError(error) && Object.keys(error.fields).length) {
@@ -190,8 +169,6 @@ export function OrderPage() {
         {inspiration ? (
           <InspirationBanner item={inspiration} serviceMatched={!!matchedServiceId && selectedServiceId === matchedServiceId} onRemove={removeInspiration} />
         ) : null}
-        {isAdmin ? <FormAlert>{t('form.adminNotAllowed')}</FormAlert> : null}
-        {user && !isAdmin ? <FormAlert tone="info">{t('form.signedInAs', { email: user.email })}</FormAlert> : null}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-10" aria-busy={submit.isPending || undefined}>
           {/* 1. Service (optional) */}
@@ -291,7 +268,7 @@ export function OrderPage() {
             />
           </section>
 
-          {/* 5–7. Contact and address */}
+          {/* 5–7. Contact (name and phone required, email optional) and address */}
           <section aria-labelledby="contact-title" className="flex flex-col gap-5">
             <h2 id="contact-title" className={sectionTitle}>
               {t('form.contact')}
@@ -300,12 +277,12 @@ export function OrderPage() {
               <Field label={t('form.fullName')} error={errors.fullName?.message} required>
                 {(p) => <Input {...p} autoComplete="name" {...r('fullName')} />}
               </Field>
-              <Field label={t('form.email')} error={errors.email?.message} required>
-                {(p) => <Input {...p} type="email" inputMode="email" autoComplete="email" {...r('email')} />}
+              <Field label={t('form.phone')} hint={t('form.phoneHint')} error={errors.phone?.message} required>
+                {(p) => <Input {...p} type="tel" inputMode="tel" autoComplete="tel" {...r('phone')} />}
               </Field>
             </div>
-            <Field label={t('form.phone')} hint={t('form.phoneHint')} error={errors.phone?.message} optional className="sm:max-w-sm">
-              {(p) => <Input {...p} type="tel" inputMode="tel" autoComplete="tel" {...r('phone')} />}
+            <Field label={t('form.email')} hint={t('form.emailHint')} error={errors.email?.message} optional className="sm:max-w-md">
+              {(p) => <Input {...p} type="email" inputMode="email" autoComplete="email" {...r('email')} />}
             </Field>
           </section>
 
@@ -354,24 +331,12 @@ export function OrderPage() {
               {errors.privacyAccepted?.message ? <FieldError id="privacy-error">{translate(errors.privacyAccepted.message)}</FieldError> : null}
             </div>
             <p className="text-sm text-text-muted">{t('form.noCharge')}</p>
-            <Button type="submit" loading={submit.isPending} disabled={isAdmin} className="w-full sm:w-auto sm:self-start">
+            <Button type="submit" loading={submit.isPending} className="w-full sm:w-auto sm:self-start">
               {submit.isPending ? t('form.submitting') : t('form.submit')}
             </Button>
-            {!user ? (
-              <p className="text-sm text-text-muted">
-                {t('form.haveAccount')}{' '}
-                <button type="button" onClick={() => setLoginOpen(true)} className="inline-flex min-h-11 items-center font-semibold text-text underline underline-offset-4">
-                  {t('form.login')}
-                </button>
-              </p>
-            ) : null}
           </div>
         </form>
       </div>
-
-      <Dialog open={loginOpen} onClose={() => setLoginOpen(false)} title={t('form.loginDialogTitle')} description={t('form.loginDialogIntro')}>
-        <LoginForm defaultEmail={form.getValues('email')} onSuccess={() => setLoginOpen(false)} />
-      </Dialog>
 
       <ConfirmDialog
         open={guard.blocked}

@@ -1,19 +1,29 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
-import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage';
-import { LoginPage } from '../features/auth/LoginPage';
-import { RegisterPage } from '../features/auth/RegisterPage';
-import { ResetPasswordPage } from '../features/auth/ResetPasswordPage';
+import { AdminForgotPasswordPage } from '../features/auth/AdminForgotPasswordPage';
+import { AdminLoginPage } from '../features/auth/AdminLoginPage';
+import { AdminResetPasswordPage } from '../features/auth/AdminResetPasswordPage';
 import { CatalogPage } from '../features/public/CatalogPage';
 import { ContactPage } from '../features/public/ContactPage';
 import { HomePage } from '../features/public/HomePage';
 import { PrivacyPage } from '../features/public/PrivacyPage';
 import { ServicesPage } from '../features/public/ServicesPage';
 import { PublicLayout } from './layouts/PublicLayout';
-import { RequireAuth } from './guards';
 import { ErrorPage } from './pages/ErrorPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export const routes: RouteObject[] = [
+  {
+    // The artist's sign-in pages: own dark screen without the public navigation (§18.3).
+    path: 'admin',
+    errorElement: <ErrorPage />,
+    children: [
+      // The dashboard itself follows in phase 9; until then /admin leads to the login.
+      { index: true, element: <Navigate to="/admin/login" replace /> },
+      { path: 'login', element: <AdminLoginPage /> },
+      { path: 'forgot-password', element: <AdminForgotPasswordPage /> },
+      { path: 'reset-password', element: <AdminResetPasswordPage /> },
+    ],
+  },
   {
     element: <PublicLayout />,
     errorElement: <ErrorPage />,
@@ -24,10 +34,6 @@ export const routes: RouteObject[] = [
       { path: 'services', element: <ServicesPage /> },
       { path: 'contact', element: <ContactPage /> },
       { path: 'privacy', element: <PrivacyPage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
-      { path: 'forgot-password', element: <ForgotPasswordPage /> },
-      { path: 'reset-password', element: <ResetPasswordPage /> },
       {
         // Loaded on demand: the order form is not needed for browsing.
         path: 'order',
@@ -35,23 +41,10 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'order/sent',
-        lazy: async () => ({ Component: (await import('../features/order/GuestConfirmationPage')).GuestConfirmationPage }),
+        lazy: async () => ({ Component: (await import('../features/order/ConfirmationPage')).ConfirmationPage }),
       },
       {
-        path: 'order/confirmation/:orderId',
-        lazy: async () => {
-          const { ConfirmationPage } = await import('../features/order/ConfirmationPage');
-          return {
-            Component: () => (
-              <RequireAuth role="CUSTOMER">
-                <ConfirmationPage />
-              </RequireAuth>
-            ),
-          };
-        },
-      },
-      {
-        // Guest orders: private link `/track#<token>`.
+        // The customer's order: private link `/track#<token>` (customers have no account).
         path: 'track',
         lazy: async () => ({ Component: (await import('../features/order/TrackPage')).TrackPage }),
       },

@@ -1,14 +1,14 @@
 import type { AppConfig } from '../config/env';
 import { generateToken, sha256 } from '../infrastructure/crypto';
 import type { Repositories } from '../repositories';
-import type { UserWithProfile } from '../repositories/user.repository';
+import type { AdminUser } from '../repositories/user.repository';
 
 /** Sliding expiry is refreshed at most once per hour per session to limit writes. */
 const SLIDE_INTERVAL_MS = 60 * 60 * 1000;
 
 export interface ResolvedSession {
   sessionId: string;
-  user: UserWithProfile;
+  user: AdminUser;
   /** Present when the expiry was extended and the cookie should be re-sent. */
   renewedExpiresAt: Date | null;
 }

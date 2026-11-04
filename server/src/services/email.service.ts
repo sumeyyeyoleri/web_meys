@@ -9,8 +9,8 @@ import { emailCopy, wrapEmail } from './email-templates';
 export interface EmailRecipient {
   email: string;
   locale: Locale;
-  /** Admins get links to the admin dashboard, customers to their account, guests a hint to their tracking link. */
-  audience: 'admin' | 'customer' | 'guest';
+  /** The artist gets a link to the dashboard; customers a hint to open their saved tracking link. */
+  audience: 'admin' | 'customer';
 }
 
 interface Deps {
@@ -33,8 +33,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
     return (await repos.content.getSettings())?.emailNotificationsEnabled ?? false;
   }
 
-  const orderLink = (recipient: EmailRecipient, orderId: string) =>
-    recipient.audience === 'admin' ? `${config.webOrigin}/admin/orders/${orderId}` : `${config.webOrigin}/account/orders/${orderId}`;
+  const adminLink = (orderId: string) => `${config.webOrigin}/admin/orders/${orderId}`;
 
   return {
     get isConfigured() {
@@ -43,7 +42,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
 
     /** Returns true only if the email was actually accepted by the SMTP server. */
     async sendPasswordReset(recipient: { email: string; locale: Locale }, token: string): Promise<boolean> {
-      const link = `${config.webOrigin}/reset-password?token=${encodeURIComponent(token)}`;
+      const link = `${config.webOrigin}/admin/reset-password?token=${encodeURIComponent(token)}`;
       if (!mailer.configured) {
         if (config.env === 'development') {
           // Development aid only: SMTP is not configured, so the link is printed instead of emailed.
@@ -62,7 +61,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
     },
 
     /**
-     * The private tracking link of a guest order. Sent whenever SMTP is configured — like the
+     * The private tracking link of an order. Sent whenever SMTP is configured — like the
      * password reset it is part of the order itself, not an optional notification.
      * Returns true only if the email was actually accepted by the SMTP server.
      */
@@ -71,8 +70,8 @@ export function createEmailService({ mailer, repos, config }: Deps) {
       const copy = emailCopy(recipient.locale);
       return mailer.send({
         to: recipient.email,
-        subject: copy.guest.trackingLink.subject(reference),
-        text: wrapEmail(recipient.locale, await businessName(), copy.guest.trackingLink.body(reference, link)),
+        subject: copy.customer.trackingLink.subject(reference),
+        text: wrapEmail(recipient.locale, await businessName(), copy.customer.trackingLink.body(reference, link)),
       });
     },
 
@@ -88,9 +87,9 @@ export function createEmailService({ mailer, repos, config }: Deps) {
             text: wrapEmail(
               recipient.locale,
               name,
-              recipient.audience === 'guest'
-                ? copy.guest.statusChanged(order.reference, copy.statusLabels[status])
-                : copy.statusChanged.body(order.reference, copy.statusLabels[status], orderLink(recipient, order.id)),
+              recipient.audience === 'customer'
+                ? copy.customer.statusChanged(order.reference, copy.statusLabels[status])
+                : copy.statusChanged.body(order.reference, copy.statusLabels[status], adminLink(order.id)),
             ),
           });
         }),
@@ -109,9 +108,9 @@ export function createEmailService({ mailer, repos, config }: Deps) {
             text: wrapEmail(
               recipient.locale,
               name,
-              recipient.audience === 'guest'
-                ? copy.guest.newMessage(order.reference)
-                : copy.newMessage.body(order.reference, orderLink(recipient, order.id)),
+              recipient.audience === 'customer'
+                ? copy.customer.newMessage(order.reference)
+                : copy.newMessage.body(order.reference, adminLink(order.id)),
             ),
           });
         }),
@@ -130,7 +129,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
             text: wrapEmail(
               recipient.locale,
               name,
-              copy.orderSubmitted.body(order.reference, orderLink(recipient, order.id)),
+              copy.orderSubmitted.body(order.reference, adminLink(order.id)),
             ),
           });
         }),

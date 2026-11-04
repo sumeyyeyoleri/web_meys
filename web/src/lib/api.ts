@@ -121,7 +121,7 @@ export const api = {
 };
 
 /**
- * Client for the guest tracking routes (`/api/track/*`): every request carries the token from
+ * Client for the customer tracking routes (`/api/track/*`): every request carries the token from
  * the private link in the `X-Order-Token` header (never in the URL).
  */
 export function trackingApi(token: string) {

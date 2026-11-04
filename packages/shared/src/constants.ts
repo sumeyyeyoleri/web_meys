@@ -17,11 +17,15 @@ export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 200;
 export const ORDER_DESCRIPTION_MIN_LENGTH = 20;
 
-/** Private link for guest orders (`/track#<token>`): 32 random bytes, only the hash is stored. */
+/** Private link to an order (`/track#<token>`): 32 random bytes, only the hash is stored. */
 export const TRACKING_TOKEN_TTL_DAYS = 365;
 /** Request header that carries the tracking token to `/api/track/*`. */
 export const ORDER_TOKEN_HEADER = 'X-Order-Token';
 
+/**
+ * The two sides of an order: the artist (ADMIN, the only accounts) and the customer, who has no
+ * account and acts through the private tracking link. Used for messages and status history.
+ */
 export const ROLES = ['ADMIN', 'CUSTOMER'] as const;
 export type Role = (typeof ROLES)[number];
 

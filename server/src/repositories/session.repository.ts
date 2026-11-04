@@ -7,7 +7,7 @@ export function createSessionRepository(db: Db) {
     },
 
     findByTokenHash(tokenHash: string) {
-      return db.session.findUnique({ where: { tokenHash }, include: { user: { include: { profile: true } } } });
+      return db.session.findUnique({ where: { tokenHash }, include: { user: true } });
     },
 
     extend(id: string, expiresAt: Date, lastUsedAt: Date) {

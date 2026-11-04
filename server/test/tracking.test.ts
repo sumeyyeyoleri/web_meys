@@ -3,11 +3,10 @@ import { sha256 } from '../src/infrastructure/crypto';
 import {
   ADMIN,
   closeTestPrisma,
-  createGuestOrder,
-  CUSTOMER_A,
+  createOrder,
+  CUSTOMER,
   eventually,
   FakeMailer,
-  GUEST,
   guest,
   IMAGES,
   orderPayload,
@@ -16,6 +15,7 @@ import {
   signedIn,
   submitOrder,
   tokenFromUrl,
+  track,
   type Client,
   type TestContext,
 } from './helpers';
@@ -28,16 +28,18 @@ afterAll(closeTestPrisma);
 
 const NOT_FOUND = { error: { code: 'NOT_FOUND', message: 'Order not found' } };
 
-/** Request to a tracking route with the token header. */
-const track = (client: Client, method: 'get' | 'post', path: string, token: string) =>
-  client[method](`/api/track${path}`).set('X-Order-Token', token);
+/** An order together with its tracking link and token. */
+async function orderWithLink(client: Client, overrides: Record<string, unknown> = {}) {
+  const order = await createOrder(client, overrides);
+  return { order, tracking: order.tracking, token: order.token };
+}
 
-describe('guest orders', () => {
+describe('orders and their private link', () => {
   it('stores the order without an account and returns a private tracking link', async () => {
     const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
-      orderPayload({ fullName: GUEST.name, email: GUEST.email, communicationLocale: 'en' }),
+      orderPayload({ fullName: CUSTOMER.name, email: CUSTOMER.email, communicationLocale: 'en' }),
       [pngFile()],
     ).expect(201);
 
@@ -49,9 +51,8 @@ describe('guest orders', () => {
     expect(order.attachments[0].url).toBe(`/api/track/attachments/${order.attachments[0].id}`);
     expect(order.statusHistory).toEqual([expect.objectContaining({ toStatus: 'SUBMITTED', changedByRole: 'CUSTOMER' })]);
 
-    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
-    expect(stored.customerId).toBeNull();
-    expect(await ctx.prisma.user.count({ where: { email: GUEST.email } })).toBe(0);
+    // No account is created: the artist's login stays the only one.
+    expect(await ctx.prisma.user.count()).toBe(1);
 
     // Only the hash of the token is stored.
     const token = tokenFromUrl(tracking.url);
@@ -63,9 +64,9 @@ describe('guest orders', () => {
 
   it('emails the link when SMTP is configured and says so', async () => {
     const client = await guest(ctx.app);
-    const { tracking, order } = await createGuestOrder(client, { communicationLocale: 'tr' });
+    const { tracking, order } = await orderWithLink(client, { communicationLocale: 'tr' });
     expect(tracking.emailSent).toBe(true);
-    const mail = ctx.mailer.sent.find((m) => m.to === GUEST.email);
+    const mail = ctx.mailer.sent.find((m) => m.to === CUSTOMER.email);
     expect(mail?.subject).toBe(`${order.reference} numaralı siparişiniz için özel link`);
     expect(mail?.text).toContain(tracking.url);
   });
@@ -73,26 +74,22 @@ describe('guest orders', () => {
   it('never claims the link was emailed without SMTP', async () => {
     const offline = await setupTest({ mailer: new FakeMailer(false) });
     const client = await guest(offline.app);
-    const { tracking } = await createGuestOrder(client);
+    const { tracking } = await orderWithLink(client);
     expect(tracking.emailSent).toBe(false);
     expect(offline.mailer.sent).toHaveLength(0);
   });
 
-  it('does not link a guest order to an existing account with the same email', async () => {
+  it('emails the link only when the customer gave an email address', async () => {
     const client = await guest(ctx.app);
-    const { order } = await createGuestOrder(client, { email: CUSTOMER_A.email, fullName: CUSTOMER_A.name });
-    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
-    expect(stored.customerId).toBeNull();
-
-    const anna = await signedIn(ctx.app, CUSTOMER_A);
-    expect((await anna.get('/api/orders').expect(200)).body.total).toBe(0);
-    await anna.get(`/api/orders/${order.id}`).expect(404);
-    await anna.get(`/api/attachments/${order.attachments[0]!.id}`).expect(404);
+    const { tracking } = await orderWithLink(client, { email: '' });
+    expect(tracking.emailSent).toBe(false);
+    await eventually(() => ctx.mailer.sent.length === 1);
+    expect(ctx.mailer.sent.map((m) => m.to)).toEqual([ADMIN.email]);
   });
 
   it('returns the same order for a repeated submission and issues a fresh link', async () => {
     const client = await guest(ctx.app);
-    const payload = orderPayload({ fullName: GUEST.name, email: GUEST.email });
+    const payload = orderPayload({ fullName: CUSTOMER.name, email: CUSTOMER.email });
     const first = await submitOrder(client, payload, [pngFile()]).expect(201);
     const second = await submitOrder(client, payload, [pngFile()]).expect(200);
     expect(second.body.created).toBe(false);
@@ -105,26 +102,21 @@ describe('guest orders', () => {
     for (const res of [first, second]) {
       await track(client, 'get', '/order', tokenFromUrl(res.body.tracking.url)).expect(200);
     }
-    // The same key with another email, or from a signed-in customer, is refused.
-    await submitOrder(client, { ...payload, email: 'someone@else.test' }).expect(409);
-    const anna = await signedIn(ctx.app, CUSTOMER_A);
-    await submitOrder(anna, payload).expect(409);
+    // The same key with other contact details is refused.
+    await submitOrder(client, { ...payload, phone: '+32 499 00 00 00' }).expect(409);
   });
 
-  it('is shown as a guest order to the admin', async () => {
+  it('shows the order to the artist with the contact details as submitted', async () => {
     const client = await guest(ctx.app);
-    const { order } = await createGuestOrder(client);
-    const anna = await signedIn(ctx.app, CUSTOMER_A);
-    await submitOrder(anna, orderPayload()).expect(201);
-
+    const { order } = await orderWithLink(client, { email: '' });
     const admin = await signedIn(ctx.app, ADMIN);
     const list = await admin.get('/api/admin/orders').expect(200);
-    const flags = Object.fromEntries(list.body.items.map((o: { id: string; isGuest: boolean }) => [o.id, o.isGuest]));
-    expect(flags[order.id]).toBe(true);
-    expect(Object.values(flags).filter((v) => v === false)).toHaveLength(1);
+    expect(list.body.items[0]).toMatchObject({ id: order.id, customerName: CUSTOMER.name, customerEmail: null, customerPhone: CUSTOMER.phone });
+    expect(list.body.items[0]).not.toHaveProperty('isGuest');
 
     const detail = await admin.get(`/api/admin/orders/${order.id}`).expect(200);
-    expect(detail.body).toMatchObject({ isGuest: true, customerId: null, customerAccountEmail: null, contact: { fullName: GUEST.name } });
+    expect(detail.body.contact).toMatchObject({ fullName: CUSTOMER.name, email: null, phone: CUSTOMER.phone });
+    expect(detail.body).not.toHaveProperty('customerId');
     expect(detail.body.attachments[0].url).toBe(`/api/attachments/${order.attachments[0]!.id}`);
     await admin.get(detail.body.attachments[0].url).expect(200);
   });
@@ -133,8 +125,8 @@ describe('guest orders', () => {
 describe('tracking link access', () => {
   it('opens the order, its images and nothing else', async () => {
     const client = await guest(ctx.app);
-    const { order, token } = await createGuestOrder(client);
-    const other = await createGuestOrder(await guest(ctx.app), { email: 'other@guest.test' });
+    const { order, token } = await orderWithLink(client);
+    const other = await orderWithLink(await guest(ctx.app), { email: 'other@test.local' });
 
     const detail = await track(client, 'get', '/order?locale=en', token).expect(200);
     expect(detail.body).toMatchObject({ id: order.id, reference: order.reference, status: 'SUBMITTED', allowedTransitions: ['CANCELLED'] });
@@ -143,16 +135,16 @@ describe('tracking link access', () => {
     const image = await track(client, 'get', `/attachments/${order.attachments[0]!.id}`, token).expect(200);
     expect(image.headers['content-type']).toBe('image/png');
     expect(image.headers['cache-control']).toBe('private, max-age=300');
-    // Another order's image, even another guest's, is not reachable with this token.
+    // Another order's image is not reachable with this token.
     await track(client, 'get', `/attachments/${other.order.attachments[0]!.id}`, token).expect(404);
-    // Session routes stay closed to guests.
-    await client.get(`/api/orders/${order.id}`).expect(401);
+    // The artist's routes stay closed.
+    await client.get(`/api/admin/orders/${order.id}`).expect(401);
     await client.get(`/api/attachments/${order.attachments[0]!.id}`).expect(401);
   });
 
   it('rejects missing, malformed, unknown, expired and revoked tokens with the same 404', async () => {
     const client = await guest(ctx.app);
-    const { order, token } = await createGuestOrder(client);
+    const { order, token } = await orderWithLink(client);
 
     const responses = [
       await client.get('/api/track/order'),
@@ -176,7 +168,7 @@ describe('tracking link access', () => {
 
   it('requires the CSRF header for actions', async () => {
     const client = await guest(ctx.app);
-    const { token } = await createGuestOrder(client);
+    const { token } = await orderWithLink(client);
     const res = await client.agent.post('/api/track/messages').set('X-Order-Token', token).send({ body: 'Hallo' }).expect(403);
     expect(res.body.error.code).toBe('CSRF_INVALID');
   });
@@ -191,21 +183,21 @@ describe('tracking link access', () => {
   });
 });
 
-describe('guest messaging and status actions', () => {
-  it('runs the message thread between guest and artist', async () => {
+describe('customer messaging and status actions', () => {
+  it('runs the message thread between customer and artist', async () => {
     const client = await guest(ctx.app);
-    const { order, token } = await createGuestOrder(client);
+    const { order, token } = await orderWithLink(client);
     const admin = await signedIn(ctx.app, ADMIN);
 
     const sent = await track(client, 'post', '/messages', token).send({ body: 'Kan het ook in het blauw?' }).expect(201);
-    expect(sent.body).toMatchObject({ senderRole: 'CUSTOMER', senderName: GUEST.name, isOwn: true });
+    expect(sent.body).toMatchObject({ senderRole: 'CUSTOMER', senderName: CUSTOMER.name, isOwn: true });
     const adminThread = await admin.get(`/api/admin/orders/${order.id}/messages`).expect(200);
-    expect(adminThread.body).toEqual([expect.objectContaining({ senderName: GUEST.name, isOwn: false, readAt: null })]);
+    expect(adminThread.body).toEqual([expect.objectContaining({ senderName: CUSTOMER.name, isOwn: false, readAt: null })]);
 
     await admin.post(`/api/admin/orders/${order.id}/messages`).send({ body: 'Zeker, ik stuur een voorstel.' }).expect(201);
-    // The guest has no account: an email (without an account link), no in-app notification.
-    await eventually(() => ctx.mailer.sent.some((m) => m.to === GUEST.email && m.subject.startsWith('Nieuw bericht')));
-    const mail = ctx.mailer.sent.find((m) => m.to === GUEST.email && m.subject.startsWith('Nieuw bericht'))!;
+    // The customer has no account: an email (without an account link), no in-app notification.
+    await eventually(() => ctx.mailer.sent.some((m) => m.to === CUSTOMER.email && m.subject.startsWith('Nieuw bericht')));
+    const mail = ctx.mailer.sent.find((m) => m.to === CUSTOMER.email && m.subject.startsWith('Nieuw bericht'))!;
     expect(mail.text).not.toContain('/account/');
     expect(mail.text).toContain('volglink');
     expect(await ctx.prisma.notification.count({ where: { type: 'ORDER_MESSAGE' } })).toBe(1); // the admin's only
@@ -222,9 +214,9 @@ describe('guest messaging and status actions', () => {
     await track(client, 'post', '/messages', token).send({ body: '  ' }).expect(400);
   });
 
-  it('lets the guest accept a quote', async () => {
+  it('lets the customer accept a quote', async () => {
     const client = await guest(ctx.app);
-    const { order, token } = await createGuestOrder(client);
+    const { order, token } = await orderWithLink(client);
     const admin = await signedIn(ctx.app, ADMIN);
     await admin.post(`/api/admin/orders/${order.id}/status`).send({ status: 'UNDER_REVIEW' }).expect(200);
     await admin.post(`/api/admin/orders/${order.id}/status`).send({ status: 'QUOTE_SENT', quoteAmount: 450 }).expect(200);
@@ -236,13 +228,13 @@ describe('guest messaging and status actions', () => {
     expect(accepted.body.statusHistory.at(-1)).toMatchObject({ fromStatus: 'QUOTE_SENT', toStatus: 'ACCEPTED', changedByRole: 'CUSTOMER' });
     const history = await ctx.prisma.orderStatusHistory.findFirstOrThrow({ where: { toStatus: 'ACCEPTED' } });
     expect(history.changedById).toBeNull();
-    // Admins are notified as for any customer.
+    // The artist is notified in-app.
     expect(await ctx.prisma.notification.count({ where: { userId: ctx.ids.adminId, type: 'ORDER_STATUS_CHANGED' } })).toBe(1);
   });
 
-  it('lets the guest cancel, but only through allowed transitions', async () => {
+  it('lets the customer cancel, but only through allowed transitions', async () => {
     const client = await guest(ctx.app);
-    const { token } = await createGuestOrder(client);
+    const { token } = await orderWithLink(client);
     const accept = await track(client, 'post', '/status', token).send({ status: 'ACCEPTED' }).expect(409);
     expect(accept.body.error.code).toBe('ORDER_INVALID_TRANSITION');
     await track(client, 'post', '/status', token).send({ status: 'COMPLETED' }).expect(400);
@@ -254,7 +246,7 @@ describe('guest messaging and status actions', () => {
 describe('admin: new tracking link', () => {
   it('revokes the old link, shows the new one once and emails it', async () => {
     const client = await guest(ctx.app);
-    const { order, token } = await createGuestOrder(client);
+    const { order, token } = await orderWithLink(client);
     const admin = await signedIn(ctx.app, ADMIN);
     ctx.mailer.sent.length = 0;
 
@@ -263,7 +255,7 @@ describe('admin: new tracking link', () => {
     expect(res.body.emailSent).toBe(true);
     const newToken = tokenFromUrl(res.body.url);
     expect(newToken).not.toBe(token);
-    expect(ctx.mailer.sent).toEqual([expect.objectContaining({ to: GUEST.email, text: expect.stringContaining(res.body.url) })]);
+    expect(ctx.mailer.sent).toEqual([expect.objectContaining({ to: CUSTOMER.email, text: expect.stringContaining(res.body.url) })]);
 
     await track(client, 'get', '/order', token).expect(404);
     await track(client, 'get', '/order', newToken).expect(200);
@@ -274,30 +266,25 @@ describe('admin: new tracking link', () => {
 
   it('reports honestly when the email could not be sent', async () => {
     const offline = await setupTest({ mailer: new FakeMailer(false) });
-    const { order } = await createGuestOrder(await guest(offline.app));
+    const { order } = await orderWithLink(await guest(offline.app));
     const admin = await signedIn(offline.app, ADMIN);
     const res = await admin.post(`/api/admin/orders/${order.id}/tracking-link`).expect(201);
     expect(res.body.emailSent).toBe(false);
   });
 
-  it('is only for guest orders and only for administrators', async () => {
-    const anna = await signedIn(ctx.app, CUSTOMER_A);
-    const own = (await submitOrder(anna, orderPayload()).expect(201)).body.order;
+  it('is only for the artist', async () => {
+    const client = await guest(ctx.app);
+    const { order } = await orderWithLink(client);
+    await client.post(`/api/admin/orders/${order.id}/tracking-link`).expect(401);
     const admin = await signedIn(ctx.app, ADMIN);
-    const conflict = await admin.post(`/api/admin/orders/${own.id}/tracking-link`).expect(409);
-    expect(conflict.body.error.code).toBe('CONFLICT');
-
-    const { order } = await createGuestOrder(await guest(ctx.app));
-    await anna.post(`/api/admin/orders/${order.id}/tracking-link`).expect(403);
-    await (await guest(ctx.app)).post(`/api/admin/orders/${order.id}/tracking-link`).expect(401);
     await admin.post('/api/admin/orders/00000000-0000-4000-8000-000000000000/tracking-link').expect(404);
   });
 });
 
-describe('guest uploads', () => {
-  it('applies the same file rules to guests', async () => {
+describe('uploads', () => {
+  it('stores nothing (no order, no link) when a file is rejected', async () => {
     const client = await guest(ctx.app);
-    const payload = orderPayload({ fullName: GUEST.name, email: GUEST.email });
+    const payload = orderPayload({ fullName: CUSTOMER.name, email: CUSTOMER.email });
     const spoofed = await submitOrder(client, payload, [{ buffer: IMAGES.text, name: 'evil.png', type: 'image/png' }]).expect(400);
     expect(spoofed.body.error.code).toBe('UPLOAD_INVALID_TYPE');
     const tooMany = Array.from({ length: 9 }, (_, i) => pngFile(`p${i}.png`));

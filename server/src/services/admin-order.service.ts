@@ -23,12 +23,8 @@ export function createAdminOrderService({
 
   async function detail(id: string) {
     const order = await requireOrder(id);
-    const [notes, owner, unread] = await Promise.all([
-      repos.adminOrders.listNotes(id),
-      repos.adminOrders.findCustomerEmail(id),
-      repos.orders.unreadMessageCounts([id], 'CUSTOMER'),
-    ]);
-    return { order, notes, customerAccountEmail: owner?.customer?.email ?? null, unreadMessages: unread.get(id) ?? 0 };
+    const [notes, unread] = await Promise.all([repos.adminOrders.listNotes(id), repos.orders.unreadMessageCounts([id], 'CUSTOMER')]);
+    return { order, notes, unreadMessages: unread.get(id) ?? 0 };
   }
 
   return {
@@ -60,8 +56,8 @@ export function createAdminOrderService({
         title: input.title,
         description: input.description,
         contactName: input.fullName,
-        contactEmail: input.email,
-        contactPhone: input.phone ?? null,
+        contactEmail: input.email ?? null,
+        contactPhone: input.phone,
         communicationLocale: localeToDb(input.communicationLocale),
         projectCountry: input.country,
         projectCity: input.city,

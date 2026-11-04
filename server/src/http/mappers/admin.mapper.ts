@@ -25,7 +25,6 @@ export function toAdminOrderSummaryDto(order: AdminOrderWithSummary, locale: Loc
     customerName: order.contactName,
     customerEmail: order.contactEmail,
     customerPhone: order.contactPhone,
-    isGuest: order.customerId === null,
     archivedAt: toIsoOrNull(order.archivedAt),
   };
 }
@@ -35,15 +34,12 @@ export function toInternalNoteDto(note: InternalNoteWithAuthor): InternalNoteDto
 }
 
 export function toAdminOrderDetailDto(
-  detail: { order: OrderWithDetail; notes: InternalNoteWithAuthor[]; customerAccountEmail: string | null; unreadMessages: number },
+  detail: { order: OrderWithDetail; notes: InternalNoteWithAuthor[]; unreadMessages: number },
   locale: Locale,
 ): AdminOrderDetailDto {
   const { order } = detail;
   return {
     ...toOrderDetailDto(order, locale, 'ADMIN', detail.unreadMessages),
-    customerId: order.customerId,
-    customerAccountEmail: detail.customerAccountEmail,
-    isGuest: order.customerId === null,
     internalNotes: detail.notes.map(toInternalNoteDto),
     canArchive: !order.archivedAt && canArchive(order.status),
   };

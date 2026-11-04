@@ -1,18 +1,10 @@
-import {
-  localeFromDb,
-  localeToDb,
-  type ChangePasswordInput,
-  type LoginInput,
-  type RegisterInput,
-  type ResetPasswordInput,
-} from '@painter/shared';
+import { localeFromDb, type ChangePasswordInput, type LoginInput, type ResetPasswordInput } from '@painter/shared';
 import { AppError } from '../domain/errors';
 import { generateToken, sha256 } from '../infrastructure/crypto';
 import { describeError, logger } from '../infrastructure/logger';
 import { hashPassword, verifyPassword } from '../infrastructure/password-hasher';
 import type { Repositories } from '../repositories';
-import { isUniqueViolation } from '../repositories';
-import type { UserWithProfile } from '../repositories/user.repository';
+import type { AdminUser } from '../repositories/user.repository';
 import type { EmailService } from './email.service';
 import type { SessionService } from './session.service';
 
@@ -32,32 +24,8 @@ export function createAuthService({ repos, sessions, email }: Deps) {
   const getDummyHash = () => (dummyHash ??= hashPassword('timing-equaliser-not-a-real-password'));
 
   return {
-    async register(input: RegisterInput): Promise<UserWithProfile> {
-      if (await repos.users.findByEmail(input.email)) {
-        throw new AppError(409, 'EMAIL_IN_USE', 'An account with this email already exists', {
-          email: 'validation.emailInUse',
-        });
-      }
-      try {
-        return await repos.users.create({
-          email: input.email,
-          passwordHash: await hashPassword(input.password),
-          role: 'CUSTOMER',
-          preferredLocale: localeToDb(input.preferredLocale),
-          profile: { fullName: input.fullName },
-        });
-      } catch (error) {
-        if (isUniqueViolation(error, 'email')) {
-          throw new AppError(409, 'EMAIL_IN_USE', 'An account with this email already exists', {
-            email: 'validation.emailInUse',
-          });
-        }
-        throw error;
-      }
-    },
-
     /** Never reveals whether the email exists. */
-    async login(input: LoginInput): Promise<UserWithProfile> {
+    async login(input: LoginInput): Promise<AdminUser> {
       const user = await repos.users.findByEmail(input.email);
       if (!user) {
         await verifyPassword(await getDummyHash(), input.password);

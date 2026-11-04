@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Services } from '../../container';
 import { createAdminContentController } from '../controllers/admin-content.controller';
 import { createAdminOrderController } from '../controllers/admin-order.controller';
-import { requireRole } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 import { logoUpload, mediaUpload } from '../middleware/media-upload';
 
 /** Everything under /api/admin requires an administrator session. */
@@ -11,7 +11,7 @@ export function createAdminRouter(services: Services): Router {
   const orders = createAdminOrderController(services);
   const content = createAdminContentController(services);
 
-  router.use(requireRole('ADMIN'));
+  router.use(requireAdmin);
 
   router.get('/stats', orders.stats);
 

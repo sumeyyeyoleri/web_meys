@@ -40,6 +40,7 @@
     "contact": "Bilgileriniz",
     "fullName": "Ad Soyad",
     "email": "E-posta",
+    "emailHint": "İsteğe bağlı. Girerseniz özel linki ve güncellemeleri e-postayla da göndeririz.",
     "phone": "Telefon",
     "phoneHint": "Ülke koduyla, ör. +32 470 12 34 56.",
     "address": "Adres",
@@ -55,13 +56,7 @@
     "privacyLink": "Gizlilik politikasını okuyun",
     "noCharge": "Şimdi hiçbir ödeme yapmazsınız. Talebinizi inceleyip size kişisel bir teklif gönderirim.",
     "submit": "Siparişi Gönder",
-    "submitting": "Gönderiliyor…",
-    "haveAccount": "Hesabınız var mı?",
-    "login": "Giriş yapın",
-    "loginDialogTitle": "Giriş yap",
-    "loginDialogIntro": "Giriş yaptıktan sonra bilgileriniz doldurulur ve sipariş hesabınıza eklenir. Girdikleriniz korunur.",
-    "signedInAs": "{{email}} olarak giriş yaptınız. Bilgileriniz profilinizden dolduruldu ve sipariş hesabınıza eklenecek.",
-    "adminNotAllowed": "Yönetici olarak giriş yaptınız. Yöneticiler sipariş veremez; müşteri olarak sipariş vermek için çıkış yapın."
+    "submitting": "Gönderiliyor…"
   },
   "photos": {
     "choose": "Dosya seçin",
@@ -78,10 +73,8 @@
     "reference": "Sipariş numaranız",
     "nextTitle": "Bundan sonra ne olacak?",
     "next1": "Talebinizi kişisel olarak incelerim.",
-    "next2Account": "Sorum olursa size mesaj gönderirim. Mesajı hesabınızda görürsünüz.",
-    "next2Link": "Sorum olursa size mesaj gönderirim. Mesajı özel linkiniz üzerinden okuyup yanıtlarsınız.",
+    "next2": "Sorum olursa size mesaj gönderirim. Mesajı özel linkiniz üzerinden okuyup yanıtlarsınız.",
     "next3": "Size kişisel bir teklif gelir. Devam edip etmeyeceğinize hiçbir yükümlülük olmadan siz karar verirsiniz.",
-    "viewOrder": "Siparişinizi görüntüleyin",
     "home": "Ana sayfaya dön"
   },
   "sent": {

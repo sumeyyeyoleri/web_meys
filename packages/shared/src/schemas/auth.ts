@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../constants';
-import { emailSchema, localeSchema, requiredString } from './common';
+import { emailSchema } from './common';
 
 export const passwordSchema = z
   .string({ error: 'validation.required' })
@@ -19,17 +19,6 @@ export function refinePasswordConfirmation<T extends Record<string, unknown>>(
     }
   };
 }
-
-export const registerSchema = z
-  .object({
-    fullName: requiredString(120),
-    email: emailSchema,
-    password: passwordSchema,
-    passwordConfirm: z.string({ error: 'validation.required' }).min(1, 'validation.required'),
-    preferredLocale: localeSchema,
-  })
-  .superRefine(refinePasswordConfirmation('password', 'passwordConfirm'));
-export type RegisterInput = z.infer<typeof registerSchema>;
 
 /** Login deliberately does not apply the password policy, so it never hints at account details. */
 export const loginSchema = z.object({

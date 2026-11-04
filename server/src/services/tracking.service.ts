@@ -1,7 +1,7 @@
 import { localeFromDb, TRACKING_TOKEN_TTL_DAYS } from '@painter/shared';
 import type { Order } from '@prisma/client';
 import type { AppConfig } from '../config/env';
-import { AppError, notFound } from '../domain/errors';
+import { notFound } from '../domain/errors';
 import { generateToken, sha256 } from '../infrastructure/crypto';
 import type { Repositories, TransactionRunner } from '../repositories';
 import type { EmailService } from './email.service';
@@ -27,8 +27,8 @@ interface Deps {
 }
 
 /**
- * Private tracking links for guest orders (`/track#<token>`). Only sha256(token) is stored;
- * the order reference alone never grants access.
+ * Private tracking links (`/track#<token>`): the customer's only way to their order.
+ * Only sha256(token) is stored; the order reference alone never grants access.
  */
 export function createTrackingService({ repos, transaction, email, config }: Deps) {
   /** Creates a new token for the order (inside the caller's transaction) and returns the link. */
@@ -40,8 +40,9 @@ export function createTrackingService({ repos, transaction, email, config }: Dep
     return { url: `${config.webOrigin}/track#${token}`, expiresAt };
   }
 
-  /** Emails the link to the order's contact address when SMTP is configured. */
-  function sendLink(order: Pick<Order, 'contactEmail' | 'communicationLocale' | 'reference'>, url: string) {
+  /** Emails the link when the customer gave an email address and SMTP is configured. */
+  async function sendLink(order: Pick<Order, 'contactEmail' | 'communicationLocale' | 'reference'>, url: string): Promise<boolean> {
+    if (!order.contactEmail) return false;
     return email.sendTrackingLink(
       { email: order.contactEmail, locale: localeFromDb(order.communicationLocale) },
       order.reference,
@@ -60,13 +61,10 @@ export function createTrackingService({ repos, transaction, email, config }: Dep
       return found?.orderId ?? null;
     },
 
-    /** Admin: revokes every earlier link of a guest order and issues a new one (shown once). */
+    /** Admin: revokes every earlier link of the order and issues a new one (shown once). */
     async regenerate(orderId: string): Promise<TrackingLinkResult> {
       const order = await repos.orders.findById(orderId);
       if (!order) throw notFound('Order not found');
-      if (order.customerId) {
-        throw new AppError(409, 'CONFLICT', 'Only guest orders have a tracking link; customers use their account');
-      }
       const link = await transaction(async (tx) => {
         await tx.trackingTokens.revokeAllForOrder(order.id, new Date());
         return issue(tx, order.id);

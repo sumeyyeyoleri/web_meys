@@ -16,13 +16,11 @@ import {
   loginSchema,
   messageBodySchema,
   portfolioItemSchema,
-  registerSchema,
   reorderSchema,
   resetPasswordSchema,
   serviceSchema,
   siteSettingsSchema,
   toggleSchema,
-  updateProfileSchema,
   ERROR_CODES,
   LOCALES,
   ORDER_STATUSES,
@@ -104,24 +102,11 @@ const schemas: Record<string, Json> = {
   },
   User: {
     type: 'object',
+    description: "The artist's account (customers have no account).",
     properties: {
       id: { type: 'string', format: 'uuid' },
       email: str,
-      role: { type: 'string', enum: ['ADMIN', 'CUSTOMER'] },
       preferredLocale: locale,
-      profile: {
-        type: ['object', 'null'],
-        properties: {
-          fullName: str,
-          phone: nstr,
-          country: nstr,
-          city: nstr,
-          postalCode: nstr,
-          street: nstr,
-          houseNumber: nstr,
-          addressExtra: nstr,
-        },
-      },
       createdAt: dateTime,
     },
   },
@@ -227,7 +212,7 @@ const schemas: Record<string, Json> = {
       ref('OrderSummary'),
       {
         type: 'object',
-        properties: { customerName: str, customerEmail: str, customerPhone: nstr, isGuest: bool, archivedAt: nDateTime },
+        properties: { customerName: str, customerEmail: nstr, customerPhone: nstr, archivedAt: nDateTime },
       },
     ],
   },
@@ -237,9 +222,6 @@ const schemas: Record<string, Json> = {
       {
         type: 'object',
         properties: {
-          customerId: { ...nstr, description: 'Null for guest orders' },
-          customerAccountEmail: nstr,
-          isGuest: bool,
           internalNotes: { type: 'array', items: ref('InternalNote') },
           canArchive: bool,
         },
@@ -248,11 +230,11 @@ const schemas: Record<string, Json> = {
   },
   CreateOrderResult: {
     type: 'object',
-    properties: { order: ref('OrderDetail'), created: bool, tracking: { oneOf: [ref('TrackingLink'), { type: 'null' }] } },
+    properties: { order: ref('OrderDetail'), created: bool, tracking: ref('TrackingLink') },
   },
   TrackingLink: {
     type: 'object',
-    description: 'Private link of a guest order. The token inside is only returned this once (only its hash is stored).',
+    description: 'Private link to an order (the customer has no account). The token inside is only returned this once (only its hash is stored).',
     properties: {
       url: { type: 'string', example: 'https://example.be/track#<token>' },
       expiresAt: dateTime,
@@ -364,15 +346,14 @@ export function buildOpenApiSpec(): Json {
       version: '1.0.0',
       description:
         'All non-GET requests require the `X-CSRF-Token` header matching the `csrf` cookie (get one from `GET /api/auth/csrf`). ' +
-        'Authentication uses the HttpOnly `sid` session cookie; guest orders use the `X-Order-Token` header from their tracking link. Validation messages are i18n keys.',
+        'The artist signs in with the HttpOnly `sid` session cookie; customers have no account and use the `X-Order-Token` header from their tracking link. Validation messages are i18n keys.',
     },
     servers: [{ url: '/' }],
     tags: [
       { name: 'Public' },
       { name: 'Auth' },
-      { name: 'Profile' },
       { name: 'Orders' },
-      { name: 'Tracking', description: 'Guest orders through the private tracking link' },
+      { name: 'Tracking', description: "The customer's order through the private tracking link" },
       { name: 'Notifications' },
       { name: 'Admin: orders' },
       { name: 'Admin: content' },
@@ -388,8 +369,8 @@ export function buildOpenApiSpec(): Json {
         E400: errorResponse('Validation error (VALIDATION_ERROR, upload errors, ORDER_QUOTE_REQUIRED, …)'),
         E401: errorResponse('Not signed in (UNAUTHENTICATED) or wrong credentials (INVALID_CREDENTIALS)'),
         E403: errorResponse('Forbidden (FORBIDDEN) or CSRF failure (CSRF_INVALID)'),
-        E404: errorResponse('Not found — also returned for other customers’ resources'),
-        E409: errorResponse('Conflict (ORDER_INVALID_TRANSITION, EMAIL_IN_USE, SERVICE_IN_USE, …)'),
+        E404: errorResponse('Not found — also returned for unknown, expired or revoked tracking tokens'),
+        E409: errorResponse('Conflict (ORDER_INVALID_TRANSITION, SERVICE_IN_USE, …)'),
         E429: errorResponse('Rate limited (RATE_LIMITED)'),
       },
     },
@@ -433,15 +414,12 @@ export function buildOpenApiSpec(): Json {
       '/api/auth/me': {
         get: {
           tags: ['Auth'],
-          summary: 'Current user (null when signed out)',
+          summary: 'The signed-in artist (null when signed out)',
           responses: { 200: ok('User', { type: 'object', properties: { user: { oneOf: [ref('User'), { type: 'null' }] } } }) },
         },
       },
-      '/api/auth/register': {
-        post: { tags: ['Auth'], summary: 'Create a customer account and sign in', security: csrf, requestBody: body(registerSchema), responses: { 201: ok('Created', ref('User')), ...errors(400, 403, 409, 429) } },
-      },
       '/api/auth/login': {
-        post: { tags: ['Auth'], summary: 'Sign in (rotates the session)', security: csrf, requestBody: body(loginSchema), responses: { 200: ok('Signed in', ref('User')), ...errors(400, 401, 403, 429) } },
+        post: { tags: ['Auth'], summary: 'Artist sign-in (rotates the session)', security: csrf, requestBody: body(loginSchema), responses: { 200: ok('Signed in', ref('User')), ...errors(400, 401, 403, 429) } },
       },
       '/api/auth/logout': {
         post: { tags: ['Auth'], summary: 'Sign out', security: csrf, responses: { 204: ok('Signed out'), ...errors(403) } },
@@ -461,15 +439,12 @@ export function buildOpenApiSpec(): Json {
       '/api/auth/change-password': {
         post: { tags: ['Auth'], summary: 'Change password (ends all other sessions)', security: csrf, requestBody: body(changePasswordSchema), responses: { 204: ok('Password changed'), ...errors(400, 401, 403) } },
       },
-      '/api/users/me': {
-        patch: { tags: ['Profile'], summary: 'Update profile and preferred language', security: csrf, requestBody: body(updateProfileSchema), responses: { 200: ok('Updated', ref('User')), ...errors(400, 401, 403) } },
-      },
 
       '/api/orders': {
         post: {
           tags: ['Orders'],
-          summary: 'Submit a custom order (guest or signed-in customer)',
-          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. No account is needed: a guest order is stored without an account (never linked to an existing account with the same email) and the response contains a private \`tracking\` link, shown only once and emailed when SMTP is configured. A signed-in customer's order is linked to the account (\`tracking\` is null). A repeated idempotencyKey returns the existing order with 200 (guests get a fresh tracking link); a key used by someone else gives 409. An optional \`inspirationItemId\` must reference a published catalog item that allows similar requests (otherwise 400 \`validation.invalidInspiration\`); it does not count against the file limit.`,
+          summary: 'Submit a custom order (no account)',
+          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. Customers have no account: the response contains the private \`tracking\` link, shown only once, and also emailed when an email address was given and SMTP is configured (\`emailSent\`). Name and phone are required, the email is optional. A repeated idempotencyKey returns the existing order with 200 and a fresh tracking link; the same key with other contact details gives 409. An optional \`inspirationItemId\` must reference a published catalog item that allows similar requests (otherwise 400 \`validation.invalidInspiration\`); it does not count against the file limit.`,
           security: csrf,
           requestBody: {
             required: true,
@@ -492,23 +467,9 @@ export function buildOpenApiSpec(): Json {
             ...errors(400, 403, 409, 429),
           },
         },
-        get: { tags: ['Orders'], summary: 'My orders', security: session, parameters: [...pageParams, localeParam], responses: { 200: ok('Page', paginated('OrderSummary')), ...errors(401, 403) } },
-      },
-      '/api/orders/{id}': {
-        get: { tags: ['Orders'], summary: 'My order detail', security: session, parameters: [idParam, localeParam], responses: { 200: ok('Order', ref('OrderDetail')), ...errors(401, 404) } },
-      },
-      '/api/orders/{id}/status': {
-        post: { tags: ['Orders'], summary: 'Accept a quote or cancel', security: csrf, parameters: [idParam], requestBody: body(customerStatusActionSchema), responses: { 200: ok('Order', ref('OrderDetail')), ...errors(400, 401, 404, 409) } },
-      },
-      '/api/orders/{id}/messages': {
-        get: { tags: ['Orders'], summary: 'Message thread', security: session, parameters: [idParam], responses: { 200: ok('Messages', { type: 'array', items: ref('Message') }), ...errors(401, 404) } },
-        post: { tags: ['Orders'], summary: 'Send a message', security: csrf, parameters: [idParam], requestBody: body(messageBodySchema), responses: { 201: ok('Sent', ref('Message')), ...errors(400, 401, 404, 429) } },
-      },
-      '/api/orders/{id}/messages/read': {
-        post: { tags: ['Orders'], summary: 'Mark the thread as read', security: csrf, parameters: [idParam], responses: { 204: ok('Done'), ...errors(401, 404) } },
       },
       '/api/track/order': {
-        get: { tags: ['Tracking'], summary: 'Guest order detail', security: tracking, parameters: [localeParam], responses: { 200: ok('Order', ref('OrderDetail')), ...errors(404, 429) } },
+        get: { tags: ['Tracking'], summary: 'Order detail', security: tracking, parameters: [localeParam], responses: { 200: ok('Order', ref('OrderDetail')), ...errors(404, 429) } },
       },
       '/api/track/status': {
         post: { tags: ['Tracking'], summary: 'Accept a quote or cancel', security: trackingCsrf, requestBody: body(customerStatusActionSchema), responses: { 200: ok('Order', ref('OrderDetail')), ...errors(400, 403, 404, 409, 429) } },
@@ -532,7 +493,7 @@ export function buildOpenApiSpec(): Json {
       '/api/attachments/{id}': {
         get: {
           tags: ['Orders'],
-          summary: 'Reference image (owner or admin only)',
+          summary: 'Reference image (artist only; customers use /api/track/attachments/{id})',
           security: session,
           parameters: [idParam, { name: 'download', in: 'query', schema: { type: 'string', enum: ['1'] } }],
           responses: { 200: { description: 'Image', content: { 'image/*': { schema: { type: 'string', format: 'binary' } } } }, ...errors(401, 404) },
@@ -592,11 +553,11 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/orders/{id}/tracking-link': {
         post: {
           tags: ['Admin: orders'],
-          summary: 'Create a new tracking link for a guest order',
-          description: 'Revokes every earlier link of the order and returns a new one (shown only once). Emailed to the order contact when SMTP is configured. 409 for orders that belong to an account.',
+          summary: 'Create a new tracking link',
+          description: 'Revokes every earlier link of the order and returns a new one (shown only once). Emailed to the order contact when an email address is known and SMTP is configured.',
           security: csrf,
           parameters: [idParam],
-          responses: { 201: ok('New link', ref('TrackingLink')), ...errors(401, 403, 404, 409) },
+          responses: { 201: ok('New link', ref('TrackingLink')), ...errors(401, 403, 404) },
         },
       },
       '/api/admin/orders/{id}/notes': {

@@ -15,7 +15,6 @@ import { createNotificationService } from './services/notification.service';
 import { createOrderService } from './services/order.service';
 import { createSessionService } from './services/session.service';
 import { createTrackingService } from './services/tracking.service';
-import { createUserService } from './services/user.service';
 
 export interface ContainerOverrides {
   prisma?: PrismaClient;
@@ -45,7 +44,6 @@ export function createContainer(config: AppConfig, overrides: ContainerOverrides
     services: {
       auth: createAuthService({ repos, sessions, email }),
       sessions,
-      users: createUserService({ repos }),
       content,
       orders,
       tracking,
