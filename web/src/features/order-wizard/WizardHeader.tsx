@@ -2,18 +2,18 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/ui/Icon';
 import { cx } from '../../components/ui/cx';
+import { BrandMark } from '../layout/BrandMark';
 import { STEPS, type StepKey } from './wizard-model';
 
 interface WizardHeaderProps {
-  businessName: string;
   current: number;
   /** Highest step reached; earlier steps can be revisited from the indicator. */
   reached: number;
   onJump: (step: StepKey) => void;
 }
 
-/** "Back to catalog" · business name · "Step X / 6", then 6 equal segments (active = accent). */
-export function WizardHeader({ businessName, current, reached, onJump }: WizardHeaderProps) {
+/** "Back to catalog" · brand · "Step X / 6", then 6 equal segments (active = accent). */
+export function WizardHeader({ current, reached, onJump }: WizardHeaderProps) {
   const { t } = useTranslation('order');
   return (
     <div className="flex flex-col gap-6">
@@ -22,7 +22,9 @@ export function WizardHeader({ businessName, current, reached, onJump }: WizardH
           <Icon name="arrowLeft" size={18} />
           {t('header.backToCatalog')}
         </Link>
-        <span className="hidden font-display text-xl sm:block">{businessName}</span>
+        <span className="hidden sm:block">
+          <BrandMark className="text-xl" logoClassName="h-7 w-auto max-w-[160px]" />
+        </span>
         <span className="eyebrow" aria-hidden="true">
           {t('header.step', { current: current + 1, total: STEPS.length })}
         </span>

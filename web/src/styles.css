@@ -182,3 +182,13 @@
     transform: none;
   }
 }
+
+/* Welcome screen fade-in (used with motion-safe:, so never with reduced motion). */
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

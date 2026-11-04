@@ -116,5 +116,7 @@ export const siteSettingsSchema = z.object({
   budgetRequired: z.boolean(),
   deadlineRequired: z.boolean(),
   emailNotificationsEnabled: z.boolean(),
+  welcomeEnabled: z.boolean(),
+  welcomeImageUrl: optionalImageUrlSchema,
 });
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;

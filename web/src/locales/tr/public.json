@@ -105,5 +105,10 @@
     "title": "Gizlilik politikası",
     "notice": "Bu metin bir örnektir. Site yayına girmeden önce işletme sahibi tarafından gözden geçirilip uyarlanmalıdır. Bu sayfa hukuki tavsiye değildir ve yasal uyumluluğu garanti etmez.",
     "empty": "Henüz bir gizlilik politikası girilmedi."
+  },
+  "welcome": {
+    "label": "Hoş geldiniz",
+    "enter": "Galeriye girin",
+    "skip": "Geç"
   }
 }

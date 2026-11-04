@@ -135,6 +135,7 @@ const schemas: Record<string, Json> = {
     type: 'object',
     properties: {
       businessName: str,
+      logoUrl: { type: 'string', nullable: true, description: 'Uploaded logo; null → the name is shown as a wordmark' },
       accentColor: str,
       instagramUrl: nstr,
       contactEmail: nstr,
@@ -144,6 +145,8 @@ const schemas: Record<string, Json> = {
       budgetRequired: bool,
       deadlineRequired: bool,
       emailAvailable: { type: 'boolean', description: 'SMTP configured — the site can send emails' },
+      welcomeEnabled: { type: 'boolean', description: 'Home page welcome screen, once per browser session' },
+      welcomeImageUrl: { type: 'string', nullable: true, description: 'Welcome background; null → the first featured artwork' },
     },
   },
   AdminSettings: {
@@ -589,6 +592,19 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/settings': {
         get: { tags: ['Admin: content'], summary: 'Site settings incl. SMTP status', security: session, responses: { 200: ok('Settings', ref('AdminSettings')), ...errors(401, 403) } },
         put: { tags: ['Admin: content'], summary: 'Update settings', security: csrf, requestBody: body(siteSettingsSchema), responses: { 200: ok('Settings', ref('AdminSettings')), ...errors(400, 401, 403) } },
+      },
+      '/api/admin/settings/logo': {
+        post: {
+          tags: ['Admin: content'],
+          summary: 'Upload the site logo (SVG, PNG or WebP; SVGs with scripts, event handlers or external references are rejected)',
+          security: csrf,
+          requestBody: {
+            required: true,
+            content: { 'multipart/form-data': { schema: { type: 'object', required: ['file'], properties: { file: { type: 'string', format: 'binary' } } } } },
+          },
+          responses: { 200: ok('Settings', ref('AdminSettings')), ...errors(400, 401, 403) },
+        },
+        delete: { tags: ['Admin: content'], summary: 'Remove the logo (back to the wordmark)', security: csrf, responses: { 200: ok('Settings', ref('AdminSettings')), ...errors(401, 403) } },
       },
       '/api/admin/media': {
         post: {

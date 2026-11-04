@@ -49,7 +49,18 @@ export function createApp(container: Container, options: AppOptions = {}): Expre
   if (storage.localPublicDir) {
     app.use(
       '/media',
-      express.static(storage.localPublicDir, { index: false, dotfiles: 'ignore', maxAge: '7d', fallthrough: false }),
+      express.static(storage.localPublicDir, {
+        index: false,
+        dotfiles: 'ignore',
+        maxAge: '7d',
+        fallthrough: false,
+        // Uploaded SVG logos are checked on upload; if one is opened directly it still cannot run anything.
+        setHeaders: (res, filePath) => {
+          if (filePath.toLowerCase().endsWith('.svg')) {
+            res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox");
+          }
+        },
+      }),
     );
   }
 

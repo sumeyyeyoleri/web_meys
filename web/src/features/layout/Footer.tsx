@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Icon } from '../../components/ui/Icon';
 import { usePortfolio, useSite } from '../public/hooks';
+import { BrandMark } from './BrandMark';
 import { NAV_LINKS } from './nav-links';
 
 export function Footer() {
@@ -16,7 +17,9 @@ export function Footer() {
     <footer className="mt-auto border-t border-border bg-bg">
       <div className="container-content grid gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
         <div className="flex flex-col gap-3">
-          <p className="font-display text-3xl text-text">{settings?.businessName}</p>
+          <p>
+            <BrandMark className="text-3xl" logoClassName="h-12 w-auto max-w-[220px]" />
+          </p>
           {site?.content['footer.tagline'] ? <p className="max-w-sm text-text-muted">{site.content['footer.tagline']}</p> : null}
           {settings?.instagramUrl ? (
             <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" className={`${linkClass} gap-2 self-start`}>

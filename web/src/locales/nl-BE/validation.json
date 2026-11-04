@@ -31,5 +31,7 @@
   "fileEmpty": "Dit bestand is leeg.",
   "tooManyFiles": "U kunt maximaal {{maxFiles}} afbeeldingen toevoegen.",
   "defaultLocaleRequired": "Nederlands (België) moet altijd ingeschakeld blijven.",
-  "invalidInspiration": "Dit voorbeeld uit de catalogus is niet meer beschikbaar. Kies een ander voorbeeld of ga verder zonder."
+  "invalidInspiration": "Dit voorbeeld uit de catalogus is niet meer beschikbaar. Kies een ander voorbeeld of ga verder zonder.",
+  "logoType": "Enkel SVG-, PNG- en WebP-logo’s zijn toegestaan.",
+  "svgUnsafe": "Dit SVG-bestand bevat scripts, externe links of andere actieve inhoud en kan niet gebruikt worden. Exporteer het logo opnieuw als eenvoudige SVG of als PNG."
 }

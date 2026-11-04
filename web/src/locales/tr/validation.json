@@ -31,5 +31,7 @@
   "fileEmpty": "Bu dosya boş.",
   "tooManyFiles": "En fazla {{maxFiles}} görsel ekleyebilirsiniz.",
   "defaultLocaleRequired": "Felemenkçe (Belçika) her zaman etkin kalmalıdır.",
-  "invalidInspiration": "Bu katalog örneği artık mevcut değil. Başka bir örnek seçin ya da örneksiz devam edin."
+  "invalidInspiration": "Bu katalog örneği artık mevcut değil. Başka bir örnek seçin ya da örneksiz devam edin.",
+  "logoType": "Yalnızca SVG, PNG ve WebP logolar kabul edilir.",
+  "svgUnsafe": "Bu SVG dosyası betik, dış bağlantı veya başka etkin içerik barındırdığı için kullanılamaz. Logoyu sade bir SVG ya da PNG olarak yeniden dışa aktarın."
 }

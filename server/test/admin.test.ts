@@ -279,3 +279,68 @@ describe('content management', () => {
     expect(spoofed.body.error.fields).toEqual({ file: 'validation.fileType' });
   });
 });
+
+describe('brand and welcome screen', () => {
+  const logoSvg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0h10v10z"/></svg>');
+  const uploadLogo = (client: Client, buffer: Buffer, filename: string, contentType: string) =>
+    client.post('/api/admin/settings/logo').attach('file', buffer, { filename, contentType });
+
+  it('stores a safe SVG logo, serves it locked down and exposes it publicly', async () => {
+    const res = await uploadLogo(admin, logoSvg, 'logo.svg', 'image/svg+xml').expect(200);
+    expect(res.body.logoUrl).toMatch(/^\/media\/uploads\/logo\/[0-9a-f-]{36}\.svg$/);
+    const served = await customer.get(res.body.logoUrl).expect(200);
+    expect(served.headers['content-type']).toContain('image/svg+xml');
+    expect(served.headers['content-security-policy']).toContain("default-src 'none'");
+    expect((await customer.get('/api/site').expect(200)).body.settings.logoUrl).toBe(res.body.logoUrl);
+  });
+
+  it('rejects SVGs with active content and files that are not SVG/PNG/WebP', async () => {
+    const script = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+    const unsafe = await uploadLogo(admin, script, 'logo.svg', 'image/svg+xml').expect(400);
+    expect(unsafe.body.error).toMatchObject({ code: 'UPLOAD_UNSAFE_SVG', fields: { file: 'validation.svgUnsafe' } });
+
+    const handler = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>');
+    await uploadLogo(admin, handler, 'logo.svg', 'image/svg+xml').expect(400);
+
+    const jpeg = await uploadLogo(admin, IMAGES.jpeg, 'logo.jpg', 'image/jpeg').expect(400);
+    expect(jpeg.body.error.fields).toEqual({ file: 'validation.logoType' });
+    // A PNG pretending to be an SVG.
+    await uploadLogo(admin, IMAGES.png, 'logo.svg', 'image/svg+xml').expect(400);
+    expect((await admin.get('/api/admin/settings').expect(200)).body.logoUrl).toBeNull();
+  });
+
+  it('replaces and removes the logo, deleting the old file', async () => {
+    const first = (await uploadLogo(admin, IMAGES.png, 'logo.png', 'image/png').expect(200)).body.logoUrl as string;
+    const second = (await uploadLogo(admin, IMAGES.webp, 'logo.webp', 'image/webp').expect(200)).body.logoUrl as string;
+    expect(second).toMatch(/\.webp$/);
+    await customer.get(first).expect(404);
+    const removed = await admin.delete('/api/admin/settings/logo').expect(200);
+    expect(removed.body.logoUrl).toBeNull();
+    await customer.get(second).expect(404);
+  });
+
+  it('only lets administrators change the logo', async () => {
+    await uploadLogo(customer, logoSvg, 'logo.svg', 'image/svg+xml').expect(403);
+    await customer.delete('/api/admin/settings/logo').expect(403);
+  });
+
+  it('saves the welcome screen settings and tagline', async () => {
+    const settings = (await admin.get('/api/admin/settings').expect(200)).body;
+    expect(settings).toMatchObject({ welcomeEnabled: true, welcomeImageUrl: null });
+
+    const image = (await admin.post('/api/admin/media').attach('file', IMAGES.png, { filename: 'bg.png', contentType: 'image/png' }).expect(201)).body.url;
+    await admin.put('/api/admin/settings').send({ ...settings, welcomeEnabled: false, welcomeImageUrl: image }).expect(200);
+    await admin
+      .put('/api/admin/content')
+      .send({ items: [{ key: 'welcome.tagline', locale: 'en', value: 'Hand-painted art, made for your space.' }] })
+      .expect(200);
+
+    const site = (await customer.get('/api/site?locale=en').expect(200)).body;
+    expect(site.settings).toMatchObject({ welcomeEnabled: false, welcomeImageUrl: image });
+    expect(site.content['welcome.tagline']).toBe('Hand-painted art, made for your space.');
+
+    // Clearing the background falls back to the featured artwork and deletes the unused upload.
+    await admin.put('/api/admin/settings').send({ ...settings, welcomeImageUrl: '' }).expect(200);
+    await customer.get(image).expect(404);
+  });
+});

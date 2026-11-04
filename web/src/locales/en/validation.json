@@ -31,5 +31,7 @@
   "fileEmpty": "This file is empty.",
   "tooManyFiles": "You can add up to {{maxFiles}} images.",
   "defaultLocaleRequired": "Dutch (Belgium) must always stay enabled.",
-  "invalidInspiration": "This catalog example is no longer available. Choose another one or continue without it."
+  "invalidInspiration": "This catalog example is no longer available. Choose another one or continue without it.",
+  "logoType": "Only SVG, PNG and WebP logos are allowed.",
+  "svgUnsafe": "This SVG contains scripts, external links or other active content and cannot be used. Export the logo again as a plain SVG or as a PNG."
 }

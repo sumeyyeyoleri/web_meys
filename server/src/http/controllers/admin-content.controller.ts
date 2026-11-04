@@ -86,6 +86,14 @@ export function createAdminContentController({ adminContent }: Services) {
       const { settings, smtpConfigured } = await adminContent.updateSettings(parseBody(siteSettingsSchema, req));
       res.json(toAdminSettingsDto(settings, smtpConfigured));
     },
+    async uploadLogo(req: Request, res: Response) {
+      const { settings, smtpConfigured } = await adminContent.uploadLogo(incomingFile(req));
+      res.json(toAdminSettingsDto(settings, smtpConfigured));
+    },
+    async removeLogo(_req: Request, res: Response) {
+      const { settings, smtpConfigured } = await adminContent.removeLogo();
+      res.json(toAdminSettingsDto(settings, smtpConfigured));
+    },
 
     /* Media */
     async uploadMedia(req: Request, res: Response) {

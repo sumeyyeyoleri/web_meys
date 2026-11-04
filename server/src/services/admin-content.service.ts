@@ -16,7 +16,7 @@ import { AppError, notFound } from '../domain/errors';
 import { describeError, logger } from '../infrastructure/logger';
 import type { StorageDriver } from '../infrastructure/storage';
 import type { Repositories, TransactionRunner } from '../repositories';
-import { validateImages, type IncomingFile } from './upload-validation';
+import { validateImages, validateLogo, type IncomingFile } from './upload-validation';
 
 /** Admin uploads live under this prefix; only these files are ever deleted automatically. */
 const UPLOAD_PREFIX = 'uploads';
@@ -65,6 +65,12 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
         value: rows.find((r) => r.key === key && localeFromDb(r.locale) === locale)?.value ?? '',
       })),
     );
+  }
+
+  async function getSettings() {
+    const settings = await repos.content.getSettings();
+    if (!settings) throw new Error('Site settings are missing — run the database seed.');
+    return { settings, smtpConfigured };
   }
 
   async function requirePortfolio(id: string) {
@@ -215,13 +221,10 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
 
     /* ---------- Settings ---------- */
 
-    async getSettings() {
-      const settings = await repos.content.getSettings();
-      if (!settings) throw new Error('Site settings are missing — run the database seed.');
-      return { settings, smtpConfigured };
-    },
+    getSettings,
 
     async updateSettings(input: SiteSettingsInput) {
+      const { settings: existing } = await getSettings();
       const settings = await repos.adminContent.updateSettings({
         businessName: input.businessName,
         accentColor: input.accentColor.toUpperCase(),
@@ -233,7 +236,31 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
         budgetRequired: input.budgetRequired,
         deadlineRequired: input.deadlineRequired,
         emailNotificationsEnabled: input.emailNotificationsEnabled,
+        welcomeEnabled: input.welcomeEnabled,
+        welcomeImageUrl: input.welcomeImageUrl ?? null,
       });
+      if (existing.welcomeImageUrl !== settings.welcomeImageUrl) await releaseImage(existing.welcomeImageUrl);
+      return { settings, smtpConfigured };
+    },
+
+    /** Validates (SVG safety check or magic bytes) and stores the logo, replacing the previous one. */
+    async uploadLogo(file: IncomingFile | undefined) {
+      if (!file) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'A logo file is required', { file: 'validation.required' });
+      }
+      const logo = validateLogo(file, `${UPLOAD_PREFIX}/logo`);
+      const { settings: existing } = await getSettings();
+      const logoUrl = await storage.putPublic(logo.storageKey, logo.buffer, logo.mimeType);
+      const settings = await repos.adminContent.updateSettings({ logoUrl });
+      await releaseImage(existing.logoUrl);
+      return { settings, smtpConfigured };
+    },
+
+    /** Back to the wordmark. */
+    async removeLogo() {
+      const { settings: existing } = await getSettings();
+      const settings = await repos.adminContent.updateSettings({ logoUrl: null });
+      await releaseImage(existing.logoUrl);
       return { settings, smtpConfigured };
     },
 

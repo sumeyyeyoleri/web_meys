@@ -8,6 +8,11 @@ export const UPLOAD_ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'] as c
 /** Limits for admin-uploaded public media (portfolio and service images). */
 export const MEDIA_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
+/** Site logo upload (admin settings). SVGs are checked for active content on the server. */
+export const LOGO_MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+export const LOGO_ALLOWED_MIME_TYPES = ['image/svg+xml', 'image/png', 'image/webp'] as const;
+export type LogoMimeType = (typeof LOGO_ALLOWED_MIME_TYPES)[number];
+
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 200;
 export const ORDER_DESCRIPTION_MIN_LENGTH = 20;
@@ -40,6 +45,7 @@ export const CONTENT_KEYS = [
   'contact.businessHours',
   'footer.tagline',
   'privacy.body',
+  'welcome.tagline',
 ] as const;
 export type ContentKey = (typeof CONTENT_KEYS)[number];
 

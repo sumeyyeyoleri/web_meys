@@ -111,7 +111,8 @@
     "UPLOAD_FILE_TOO_LARGE": "Bir dosya çok büyük.",
     "UPLOAD_INVALID_TYPE": "Yalnızca JPG, PNG ve WebP görselleri kabul edilir.",
     "PAYLOAD_TOO_LARGE": "İstek çok büyük.",
-    "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Lütfen daha sonra tekrar deneyin."
+    "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
+    "UPLOAD_UNSAFE_SVG": "Bu SVG dosyası etkin içerik barındırdığı için reddedildi."
   },
   "pages": {
     "notFound": {

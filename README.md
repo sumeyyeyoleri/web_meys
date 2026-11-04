@@ -1,4 +1,4 @@
-# Painter & Wall Painting Service
+# MeysArt — Painter & Wall Painting Service
 
 Multilingual (nl-BE / en / tr) portfolio and custom-order website for an independent painter:
 a dark-gallery Inspiration Catalog, a six-step order wizard with reference images, customer

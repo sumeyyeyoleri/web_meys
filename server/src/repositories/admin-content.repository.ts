@@ -139,11 +139,12 @@ export function createAdminContentRepository(db: Db) {
 
     /** Number of portfolio items and services still pointing at an image URL. */
     async countImageReferences(imageUrl: string): Promise<number> {
-      const [portfolio, services] = await Promise.all([
+      const [portfolio, services, settings] = await Promise.all([
         db.portfolioItem.count({ where: { imageUrl } }),
         db.service.count({ where: { imageUrl } }),
+        db.siteSettings.count({ where: { OR: [{ logoUrl: imageUrl }, { welcomeImageUrl: imageUrl }] } }),
       ]);
-      return portfolio + services;
+      return portfolio + services + settings;
     },
 
     /* ---------- Text blocks & settings ---------- */

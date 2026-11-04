@@ -366,6 +366,11 @@ export const SEED_CONTENT: Record<ContentKey, PerLocale<string>> = {
     en: 'Hand-painted art and custom murals.',
     tr: 'El yapımı tablolar ve size özel duvar resimleri.',
   },
+  'welcome.tagline': {
+    'nl-BE': 'Handgeschilderde kunst, gemaakt voor uw ruimte.',
+    en: 'Hand-painted art, made for your space.',
+    tr: 'Mekânınız için el yapımı sanat.',
+  },
   'privacy.body': {
     'nl-BE':
       'VOORBEELDTEKST — door de zaakvoerder na te kijken en aan te passen vóór de lancering.\n\nWelke gegevens verzamelen we?\nWanneer u een aanvraag indient, verwerken we uw naam, e-mailadres, gsm-nummer, adres, de gegevens van uw project en de afbeeldingen die u opstuurt.\n\nWaarvoor gebruiken we die?\nUitsluitend om uw aanvraag te behandelen, u een voorstel te bezorgen en met u te communiceren over uw bestelling.\n\nHoe lang bewaren we ze?\nVul hier de bewaartermijn in.\n\nUw rechten\nU kunt uw gegevens inkijken, laten verbeteren of laten verwijderen. Neem hiervoor contact met ons op.',
@@ -379,7 +384,7 @@ export const SEED_CONTENT: Record<ContentKey, PerLocale<string>> = {
  * ------------------------------------------------------------------------- */
 
 export const SEED_SETTINGS = {
-  businessName: 'Atelier Voorbeeld',
+  businessName: 'MeysArt',
   instagramUrl: 'https://www.instagram.com/',
   contactEmail: 'contact@example.com',
   contactPhone: '+32 470 00 00 00',

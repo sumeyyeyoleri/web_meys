@@ -105,5 +105,10 @@
     "title": "Privacyverklaring",
     "notice": "Deze tekst is een voorbeeld. De zaakvoerder moet hem nakijken en aanpassen vóór de website live gaat. Deze pagina is geen juridisch advies en garandeert geen naleving van de wetgeving.",
     "empty": "Er is nog geen privacyverklaring ingevuld."
+  },
+  "welcome": {
+    "label": "Welkom",
+    "enter": "Betreed de galerie",
+    "skip": "Overslaan"
   }
 }

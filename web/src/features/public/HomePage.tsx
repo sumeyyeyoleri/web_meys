@@ -5,6 +5,7 @@ import { ContactDetails } from './ContactDetails';
 import { FeaturedGallery } from './FeaturedGallery';
 import { useSite } from './hooks';
 import { AboutSection, HowItWorks, InstagramBand, ServicesPreview } from './HomeSections';
+import { WelcomeScreen } from './WelcomeScreen';
 
 function Hero() {
   const { data: site, isPending } = useSite();
@@ -36,6 +37,7 @@ export function HomePage() {
   usePageTitle(t('meta.homeTitle'));
   return (
     <>
+      <WelcomeScreen />
       <Hero />
       <FeaturedGallery />
       <HowItWorks />

@@ -6,6 +6,7 @@ import { Icon } from '../../components/ui/Icon';
 import { cx } from '../../components/ui/cx';
 import { useSite } from '../public/hooks';
 import { AccountMenu } from './AccountMenu';
+import { BrandMark } from './BrandMark';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileMenu } from './MobileMenu';
 import { NAV_LINKS } from './nav-links';
@@ -35,8 +36,8 @@ export function FloatingNav() {
           scrolled ? 'border-border-strong bg-surface-2/95 shadow-2xl shadow-black/70 backdrop-blur-md' : 'border-border',
         )}
       >
-        <Link to="/" className="mr-auto min-w-0 truncate font-display text-[22px] leading-none text-text">
-          {businessName || <span className="sr-only">{t('nav.home')}</span>}
+        <Link to="/" className="mr-auto flex min-h-11 min-w-0 items-center truncate">
+          {businessName ? <BrandMark className="text-[24px]" /> : <span className="sr-only">{t('nav.home')}</span>}
         </Link>
 
         <nav aria-label={t('nav.main')} className="hidden lg:block">

@@ -74,7 +74,7 @@ export function OrderWizardPage() {
 
   return (
     <div className="container-content pt-32 pb-40 sm:pt-40 lg:pb-24">
-      <WizardHeader businessName={site?.settings.businessName ?? ''} current={wizard.step} reached={wizard.reached} onJump={wizard.jumpTo} />
+      <WizardHeader current={wizard.step} reached={wizard.reached} onJump={wizard.jumpTo} />
       <div className="mt-10 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-12">
         <div className="flex min-w-0 flex-col gap-6">
           {wizard.inspirationUnavailable && wizard.step === 0 ? <FormAlert tone="info">{t('inspiration.unavailable')}</FormAlert> : null}

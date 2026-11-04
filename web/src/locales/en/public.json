@@ -105,5 +105,10 @@
     "title": "Privacy policy",
     "notice": "This text is an example. The business owner must review and adapt it before the website goes live. This page is not legal advice and does not guarantee legal compliance.",
     "empty": "No privacy policy has been filled in yet."
+  },
+  "welcome": {
+    "label": "Welcome",
+    "enter": "Enter the gallery",
+    "skip": "Skip"
   }
 }

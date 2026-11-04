@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import {
+  LOGO_MAX_FILE_SIZE_BYTES,
   UPLOAD_ALLOWED_EXTENSIONS,
   UPLOAD_ALLOWED_MIME_TYPES,
   UPLOAD_MAX_FILE_SIZE_BYTES,
   UPLOAD_MAX_FILES,
+  type ErrorCode,
+  type LogoMimeType,
   type UploadMimeType,
 } from '@painter/shared';
 import { AppError } from '../domain/errors';
+import { decodeSvg, findUnsafeSvgContent } from '../domain/svg-safety';
 import { detectImageType, EXTENSION_FOR_MIME } from '../domain/upload-signature';
 
 /** Transport-independent view of an uploaded file. */
@@ -31,6 +35,42 @@ const EXTENSIONS_BY_MIME: Record<UploadMimeType, readonly string[]> = {
   'image/png': ['.png'],
   'image/webp': ['.webp'],
 };
+
+export interface ValidatedLogo {
+  mimeType: LogoMimeType;
+  buffer: Buffer;
+  storageKey: string;
+}
+
+/**
+ * Site logo: SVG, PNG or WebP. Raster files must match their magic bytes; SVGs must be
+ * well-formed UTF-8 markup without scripts, event handlers or external references.
+ * Errors point at `file`.
+ */
+export function validateLogo(file: IncomingFile, keyPrefix: string): ValidatedLogo {
+  const invalid = (code: ErrorCode, message: string, key: string) => new AppError(400, code, message, { file: key });
+  if (file.size > LOGO_MAX_FILE_SIZE_BYTES) throw invalid('UPLOAD_FILE_TOO_LARGE', 'File is too large', 'validation.fileTooLarge');
+  if (file.size === 0) throw invalid('UPLOAD_INVALID_TYPE', 'File is empty', 'validation.fileEmpty');
+
+  const lower = sanitizeFileName(file.originalName).toLowerCase();
+  const declared = file.declaredMimeType.toLowerCase();
+  const wrongType = () => invalid('UPLOAD_INVALID_TYPE', 'Only SVG, PNG and WebP logos are allowed', 'validation.logoType');
+
+  if (declared === 'image/svg+xml' || lower.endsWith('.svg')) {
+    if (declared !== 'image/svg+xml' || !lower.endsWith('.svg') || detectImageType(file.buffer) !== null) throw wrongType();
+    const text = decodeSvg(file.buffer);
+    const problem = text === null ? 'invalid UTF-8' : findUnsafeSvgContent(text);
+    if (problem) {
+      throw invalid('UPLOAD_UNSAFE_SVG', `The SVG was rejected: ${problem}`, 'validation.svgUnsafe');
+    }
+    return { mimeType: 'image/svg+xml', buffer: file.buffer, storageKey: `${keyPrefix}/${randomUUID()}.svg` };
+  }
+
+  const detected = detectImageType(file.buffer);
+  if (detected === null || detected === 'image/jpeg' || detected !== declared) throw wrongType();
+  if (!EXTENSIONS_BY_MIME[detected].some((ext) => lower.endsWith(ext))) throw wrongType();
+  return { mimeType: detected, buffer: file.buffer, storageKey: `${keyPrefix}/${randomUUID()}${EXTENSION_FOR_MIME[detected]}` };
+}
 
 /** Removes any path, control characters and excess length from a client-supplied file name. */
 export function sanitizeFileName(name: string): string {

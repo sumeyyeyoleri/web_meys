@@ -52,7 +52,12 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req, res, next
     send(res, ...multerToError(error));
     return;
   }
-  const bodyError = error as { type?: unknown };
+  const bodyError = error as { type?: unknown; status?: unknown };
+  // Static media (express.static with fallthrough: false) reports missing files this way.
+  if (bodyError.status === 404) {
+    send(res, 404, 'NOT_FOUND', 'File not found');
+    return;
+  }
   if (bodyError.type === 'entity.too.large') {
     send(res, 413, 'PAYLOAD_TOO_LARGE', 'Request body is too large');
     return;

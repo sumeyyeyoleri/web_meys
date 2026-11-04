@@ -111,7 +111,8 @@
     "UPLOAD_FILE_TOO_LARGE": "A file is too large.",
     "UPLOAD_INVALID_TYPE": "Only JPG, PNG and WebP images are allowed.",
     "PAYLOAD_TOO_LARGE": "The request is too large.",
-    "INTERNAL_ERROR": "Something went wrong on our side. Please try again later."
+    "INTERNAL_ERROR": "Something went wrong on our side. Please try again later.",
+    "UPLOAD_UNSAFE_SVG": "This SVG file contains active content and was rejected."
   },
   "pages": {
     "notFound": {

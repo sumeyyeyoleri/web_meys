@@ -111,7 +111,8 @@
     "UPLOAD_FILE_TOO_LARGE": "Een bestand is te groot.",
     "UPLOAD_INVALID_TYPE": "Enkel JPG-, PNG- en WebP-afbeeldingen zijn toegestaan.",
     "PAYLOAD_TOO_LARGE": "De aanvraag is te groot.",
-    "INTERNAL_ERROR": "Er ging iets mis aan onze kant. Probeer het later opnieuw."
+    "INTERNAL_ERROR": "Er ging iets mis aan onze kant. Probeer het later opnieuw.",
+    "UPLOAD_UNSAFE_SVG": "Dit SVG-bestand bevat actieve inhoud en werd geweigerd."
   },
   "pages": {
     "notFound": {

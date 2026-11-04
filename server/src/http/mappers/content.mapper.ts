@@ -6,6 +6,7 @@ import { toNumberOrNull } from './common';
 export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: boolean): PublicSettingsDto {
   return {
     businessName: settings.businessName,
+    logoUrl: settings.logoUrl,
     accentColor: settings.accentColor,
     instagramUrl: settings.instagramUrl,
     contactEmail: settings.contactEmail,
@@ -15,6 +16,8 @@ export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: bool
     budgetRequired: settings.budgetRequired,
     deadlineRequired: settings.deadlineRequired,
     emailAvailable,
+    welcomeEnabled: settings.welcomeEnabled,
+    welcomeImageUrl: settings.welcomeImageUrl,
   };
 }
 

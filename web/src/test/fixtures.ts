@@ -9,6 +9,7 @@ export const site: SiteDto = {
   locale: 'nl-BE',
   settings: {
     businessName: 'Atelier Test',
+    logoUrl: null,
     accentColor: '#1F3A5F',
     instagramUrl: 'https://www.instagram.com/example',
     contactEmail: 'hello@example.com',
@@ -18,6 +19,8 @@ export const site: SiteDto = {
     budgetRequired: false,
     deadlineRequired: false,
     emailAvailable: true,
+    welcomeEnabled: false,
+    welcomeImageUrl: null,
   },
   content: {
     'hero.title': 'Kunst op maat',
@@ -25,6 +28,7 @@ export const site: SiteDto = {
     'footer.tagline': 'Handgeschilderd.',
     'contact.businessHours': 'Ma–vr 9–17',
     'privacy.body': 'Wij verwerken uw gegevens zorgvuldig.',
+    'welcome.tagline': 'Handgeschilderde kunst, gemaakt voor uw ruimte.',
   },
 };
 

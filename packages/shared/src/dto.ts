@@ -44,6 +44,8 @@ export interface CsrfDto {
 
 export interface PublicSettingsDto {
   businessName: string;
+  /** Uploaded logo; when null the business name is shown as a wordmark. */
+  logoUrl: string | null;
   accentColor: string;
   instagramUrl: string | null;
   contactEmail: string | null;
@@ -54,6 +56,10 @@ export interface PublicSettingsDto {
   deadlineRequired: boolean;
   /** Whether the site can send emails (SMTP configured); e.g. for password reset links. */
   emailAvailable: boolean;
+  /** Home page welcome screen (once per browser session). */
+  welcomeEnabled: boolean;
+  /** Welcome background; null → the first featured artwork. */
+  welcomeImageUrl: string | null;
 }
 
 export interface SiteDto {

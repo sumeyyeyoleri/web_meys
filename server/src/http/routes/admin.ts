@@ -3,7 +3,7 @@ import type { Services } from '../../container';
 import { createAdminContentController } from '../controllers/admin-content.controller';
 import { createAdminOrderController } from '../controllers/admin-order.controller';
 import { requireRole } from '../middleware/auth';
-import { mediaUpload } from '../middleware/media-upload';
+import { logoUpload, mediaUpload } from '../middleware/media-upload';
 
 /** Everything under /api/admin requires an administrator session. */
 export function createAdminRouter(services: Services): Router {
@@ -45,6 +45,8 @@ export function createAdminRouter(services: Services): Router {
 
   router.get('/settings', content.getSettings);
   router.put('/settings', content.updateSettings);
+  router.post('/settings/logo', logoUpload, content.uploadLogo);
+  router.delete('/settings/logo', content.removeLogo);
 
   router.post('/media', mediaUpload, content.uploadMedia);
 
