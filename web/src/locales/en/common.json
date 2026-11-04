@@ -101,7 +101,6 @@
     "RATE_LIMITED": "Too many attempts. Please wait a moment and try again.",
     "INVALID_CREDENTIALS": "Incorrect email address or password.",
     "EMAIL_IN_USE": "An account with this email address already exists.",
-    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "An account with this email already exists. Please log in to continue.",
     "RESET_TOKEN_INVALID": "This link is invalid or has expired.",
     "ORDER_INVALID_TRANSITION": "This status change is not (or no longer) possible.",
     "ORDER_QUOTE_REQUIRED": "Enter the quote amount.",

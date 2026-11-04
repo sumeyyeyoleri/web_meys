@@ -32,6 +32,7 @@ const TABLES = [
   'InternalAdminNote',
   'OrderMessage',
   'OrderAttachment',
+  'OrderTrackingToken',
   'Order',
   'ServiceTranslation',
   'Service',
@@ -93,7 +94,7 @@ async function createUser(
 
 /** Fresh database + app for one test. */
 export async function setupTest(
-  options: { rateLimits?: Partial<RateLimitConfig>; mailer?: FakeMailer; settings?: { budgetRequired?: boolean; deadlineRequired?: boolean; emailNotificationsEnabled?: boolean } } = {},
+  options: { rateLimits?: Partial<RateLimitConfig>; mailer?: FakeMailer; settings?: { emailNotificationsEnabled?: boolean } } = {},
 ): Promise<TestContext> {
   const prisma = testPrisma();
   await resetDatabase(prisma);
@@ -103,8 +104,6 @@ export async function setupTest(
       id: 1,
       businessName: 'Test Atelier',
       enabledLocales: ['NL_BE', 'EN', 'TR'],
-      budgetRequired: options.settings?.budgetRequired ?? false,
-      deadlineRequired: options.settings?.deadlineRequired ?? false,
       emailNotificationsEnabled: options.settings?.emailNotificationsEnabled ?? true,
     },
   });
@@ -194,11 +193,9 @@ export async function signedIn(app: Express, credentials: { email: string; passw
 export function orderPayload(overrides: Record<string, unknown> = {}) {
   return {
     idempotencyKey: randomUUID(),
-    customRequest: 'A small abstract painting for the hallway',
     width: 60,
     height: 40,
     unit: 'CM',
-    title: 'Hallway painting',
     description: 'Warm earth tones, loose brushwork, something calm and quiet.',
     fullName: CUSTOMER_A.name,
     email: CUSTOMER_A.email,
@@ -258,4 +255,20 @@ export async function createOrderAs(client: Client, overrides: Record<string, un
   const res = await submitOrder(client, orderPayload(overrides), files).expect(201);
   const body = res.body as { order: { id: string; reference: string; attachments: Array<{ id: string }> } };
   return body.order;
+}
+
+export const GUEST = { name: 'Gina Gast', email: 'gina@guest.test' };
+
+/** Creates a guest order and returns it together with the token of its tracking link. */
+export async function createGuestOrder(client: Client, overrides: Record<string, unknown> = {}, files = [pngFile()]) {
+  const res = await submitOrder(client, orderPayload({ fullName: GUEST.name, email: GUEST.email, ...overrides }), files).expect(201);
+  const body = res.body as {
+    order: { id: string; reference: string; attachments: Array<{ id: string; url: string }> };
+    tracking: { url: string; emailSent: boolean; expiresAt: string };
+  };
+  return { order: body.order, tracking: body.tracking, token: tokenFromUrl(body.tracking.url) };
+}
+
+export function tokenFromUrl(url: string): string {
+  return new URL(url).hash.slice(1);
 }

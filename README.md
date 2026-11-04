@@ -1,8 +1,9 @@
 # MeysArt — Painter & Wall Painting Service
 
 Multilingual (nl-BE / en / tr) portfolio and custom-order website for an independent painter:
-a dark-gallery Inspiration Catalog, a six-step order wizard with reference images, customer
-accounts with message threads, and a protected admin dashboard.
+a dark-gallery Inspiration Catalog, a single-page order form with reference images (no account
+needed — guests follow their order through a private tracking link), customer accounts with
+message threads, and a protected admin dashboard.
 
 > This README is completed in the final project phase (setup, deployment and the
 > "Before launch" checklist).

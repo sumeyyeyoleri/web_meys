@@ -5,7 +5,6 @@ import type { Repositories, TransactionRunner } from '../repositories';
 import type { OrderService } from './order.service';
 
 const RECENT_LIMIT = 5;
-const dec = (value: number | undefined) => (value === undefined ? null : new Prisma.Decimal(value));
 
 export function createAdminOrderService({
   repos,
@@ -29,7 +28,7 @@ export function createAdminOrderService({
       repos.adminOrders.findCustomerEmail(id),
       repos.orders.unreadMessageCounts([id], 'CUSTOMER'),
     ]);
-    return { order, notes, customerAccountEmail: owner?.customer.email ?? '', unreadMessages: unread.get(id) ?? 0 };
+    return { order, notes, customerAccountEmail: owner?.customer?.email ?? null, unreadMessages: unread.get(id) ?? 0 };
   }
 
   return {
@@ -52,29 +51,17 @@ export function createAdminOrderService({
       if (input.serviceId && input.serviceId !== order.serviceId) {
         if (!(await repos.content.findService(input.serviceId))) throw validationError({ serviceId: 'validation.invalidOption' });
       }
+      // Fields of older orders (budget, deadline, style …) are kept as they were submitted.
       await repos.adminOrders.update(id, {
         serviceId: input.serviceId ?? null,
-        customRequest: input.customRequest ?? null,
-        additionalSpecs: input.additionalSpecs ?? null,
         width: new Prisma.Decimal(input.width),
         height: new Prisma.Decimal(input.height),
         unit: input.unit,
-        wallWidth: dec(input.wallWidth),
-        wallHeight: dec(input.wallHeight),
-        surfaceDetails: input.surfaceDetails ?? null,
-        extraSpecifications: input.extraSpecifications ?? null,
         title: input.title,
         description: input.description,
-        stylePreferences: input.stylePreferences ?? null,
-        colorPreferences: input.colorPreferences ?? null,
-        themePreferences: input.themePreferences ?? null,
-        budgetMin: dec(input.budgetMin),
-        budgetMax: dec(input.budgetMax),
-        deadline: input.deadline ? new Date(`${input.deadline}T00:00:00Z`) : null,
-        extraInstructions: input.extraInstructions ?? null,
         contactName: input.fullName,
         contactEmail: input.email,
-        contactPhone: input.phone,
+        contactPhone: input.phone ?? null,
         communicationLocale: localeToDb(input.communicationLocale),
         projectCountry: input.country,
         projectCity: input.city,

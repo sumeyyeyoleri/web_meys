@@ -13,8 +13,6 @@ export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: bool
     contactPhone: settings.contactPhone,
     contactAddress: settings.contactAddress,
     enabledLocales: settings.enabledLocales.map(localeFromDb),
-    budgetRequired: settings.budgetRequired,
-    deadlineRequired: settings.deadlineRequired,
     emailAvailable,
     welcomeEnabled: settings.welcomeEnabled,
     welcomeImageUrl: settings.welcomeImageUrl,

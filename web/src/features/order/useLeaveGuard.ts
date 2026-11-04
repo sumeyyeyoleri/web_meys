@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useBlocker } from 'react-router-dom';
 
 /**
- * Warns before losing unsaved wizard data: the browser prompt on reload/close
+ * Warns before losing unsaved order form data: the browser prompt on reload/close
  * (beforeunload) and an in-app confirmation for router navigation.
  * `allow()` disables the guard right before an intended navigation (after submitting).
  */

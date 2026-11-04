@@ -113,8 +113,6 @@ export const siteSettingsSchema = z.object({
     .array(localeSchema)
     .refine((locales) => locales.includes(DEFAULT_LOCALE), 'validation.defaultLocaleRequired')
     .transform((locales) => LOCALES.filter((locale) => locales.includes(locale))),
-  budgetRequired: z.boolean(),
-  deadlineRequired: z.boolean(),
   emailNotificationsEnabled: z.boolean(),
   welcomeEnabled: z.boolean(),
   welcomeImageUrl: optionalImageUrlSchema,

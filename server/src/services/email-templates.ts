@@ -8,6 +8,12 @@ interface EmailCopy {
   statusChanged: { subject: (reference: string) => string; body: (reference: string, status: string, link: string) => string };
   newMessage: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
   orderSubmitted: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
+  /** Guests have no account: they follow the order through their private tracking link. */
+  guest: {
+    statusChanged: (reference: string, status: string) => string;
+    newMessage: (reference: string) => string;
+    trackingLink: { subject: (reference: string) => string; body: (reference: string, link: string) => string };
+  };
 }
 
 const COPY: Record<Locale, EmailCopy> = {
@@ -41,6 +47,17 @@ const COPY: Record<Locale, EmailCopy> = {
       subject: (ref) => `Nieuwe aanvraag ${ref}`,
       body: (ref, link) => `Er werd een nieuwe aanvraag ingediend: ${ref}.\n\n${link}`,
     },
+    guest: {
+      statusChanged: (ref, status) =>
+        `De status van uw bestelling ${ref} is nu: ${status}.\n\nOpen de persoonlijke volglink die u bij uw aanvraag hebt bewaard om de details te bekijken.`,
+      newMessage: (ref) =>
+        `Er is een nieuw bericht over bestelling ${ref}.\n\nOpen de persoonlijke volglink die u bij uw aanvraag hebt bewaard om het te lezen en te beantwoorden.`,
+      trackingLink: {
+        subject: (ref) => `Uw persoonlijke link voor bestelling ${ref}`,
+        body: (ref, link) =>
+          `Met deze persoonlijke link volgt u uw bestelling ${ref} en kunt u berichten sturen:\n${link}\n\nBewaar deze link goed en deel hem met niemand: iedereen met de link kan uw bestelling bekijken.`,
+      },
+    },
   },
   en: {
     greeting: 'Hello,',
@@ -72,6 +89,17 @@ const COPY: Record<Locale, EmailCopy> = {
       subject: (ref) => `New request ${ref}`,
       body: (ref, link) => `A new request was submitted: ${ref}.\n\n${link}`,
     },
+    guest: {
+      statusChanged: (ref, status) =>
+        `The status of your order ${ref} is now: ${status}.\n\nOpen the private tracking link you saved with your request to see the details.`,
+      newMessage: (ref) =>
+        `There is a new message about order ${ref}.\n\nOpen the private tracking link you saved with your request to read and reply.`,
+      trackingLink: {
+        subject: (ref) => `Your private link for order ${ref}`,
+        body: (ref, link) =>
+          `With this private link you can follow your order ${ref} and send messages:\n${link}\n\nKeep this link safe and don't share it: anyone with the link can see your order.`,
+      },
+    },
   },
   tr: {
     greeting: 'Merhaba,',
@@ -102,6 +130,17 @@ const COPY: Record<Locale, EmailCopy> = {
     orderSubmitted: {
       subject: (ref) => `Yeni talep: ${ref}`,
       body: (ref, link) => `Yeni bir talep gönderildi: ${ref}.\n\n${link}`,
+    },
+    guest: {
+      statusChanged: (ref, status) =>
+        `${ref} numaralı siparişinizin durumu: ${status}.\n\nAyrıntıları görmek için siparişinizle birlikte sakladığınız özel takip linkini açın.`,
+      newMessage: (ref) =>
+        `${ref} numaralı sipariş hakkında yeni bir mesaj var.\n\nOkumak ve yanıtlamak için siparişinizle birlikte sakladığınız özel takip linkini açın.`,
+      trackingLink: {
+        subject: (ref) => `${ref} numaralı siparişiniz için özel link`,
+        body: (ref, link) =>
+          `Bu özel linkle ${ref} numaralı siparişinizi takip edebilir ve mesaj gönderebilirsiniz:\n${link}\n\nBu linki saklayın ve kimseyle paylaşmayın: linke sahip olan herkes siparişinizi görebilir.`,
+      },
     },
   },
 };

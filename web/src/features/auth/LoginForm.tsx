@@ -15,7 +15,7 @@ import { useLoginMutation } from './hooks';
 
 type LoginValues = z.input<typeof loginSchema>;
 
-/** Login form; also used inside the order wizard so the wizard keeps its state. */
+/** Login form; also used inside the order form so the form keeps its state. */
 export function LoginForm({ defaultEmail, onSuccess }: { defaultEmail?: string; onSuccess: (user: UserDto) => void }) {
   const { t } = useTranslation('account');
   const errorMessage = useErrorMessage();

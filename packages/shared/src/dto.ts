@@ -52,8 +52,6 @@ export interface PublicSettingsDto {
   contactPhone: string | null;
   contactAddress: string | null;
   enabledLocales: Locale[];
-  budgetRequired: boolean;
-  deadlineRequired: boolean;
   /** Whether the site can send emails (SMTP configured); e.g. for password reset links. */
   emailAvailable: boolean;
   /** Home page welcome screen (once per browser session). */
@@ -100,7 +98,7 @@ export interface AttachmentDto {
   originalName: string;
   mimeType: string;
   sizeBytes: number;
-  /** Authorized URL: `/api/attachments/:id`. */
+  /** Authorized URL: `/api/attachments/:id`, or `/api/track/attachments/:id` (with the tracking token) for guests. */
   url: string;
   createdAt: string;
 }
@@ -147,9 +145,10 @@ export interface InspirationDto {
 
 export interface OrderDetailDto extends OrderSummaryDto {
   serviceId: string | null;
+  /** Older orders only (6-step wizard): free-text request. */
   customRequest: string | null;
   inspiration: InspirationDto | null;
-  /** Requested changes compared to the inspiration example. */
+  /** Older orders only: requested changes compared to the inspiration example. */
   additionalSpecs: string | null;
   isWallService: boolean;
   width: number;
@@ -160,6 +159,7 @@ export interface OrderDetailDto extends OrderSummaryDto {
   surfaceDetails: string | null;
   extraSpecifications: string | null;
   description: string;
+  /** Older orders only (the fields from here to `extraInstructions` are no longer asked). */
   stylePreferences: string | null;
   colorPreferences: string | null;
   themePreferences: string | null;
@@ -170,7 +170,7 @@ export interface OrderDetailDto extends OrderSummaryDto {
   contact: {
     fullName: string;
     email: string;
-    phone: string;
+    phone: string | null;
     communicationLocale: Locale;
   };
   projectAddress: {
@@ -188,11 +188,21 @@ export interface OrderDetailDto extends OrderSummaryDto {
   allowedTransitions: OrderStatus[];
 }
 
+/** A freshly issued private tracking link. The token inside is shown only this once. */
+export interface TrackingLinkDto {
+  /** `${webOrigin}/track#<token>` */
+  url: string;
+  expiresAt: string;
+  /** True only when the email with the link was accepted by the SMTP server. */
+  emailSent: boolean;
+}
+
 /** Returned by POST /api/orders. `created` is false for an idempotent repeat. */
 export interface CreateOrderResultDto {
   order: OrderDetailDto;
   created: boolean;
-  user: UserDto;
+  /** Guest orders only: the private link to follow the order. */
+  tracking: TrackingLinkDto | null;
 }
 
 /* ---------- Notifications ---------- */
@@ -217,7 +227,9 @@ export interface UnreadCountDto {
 export interface AdminOrderSummaryDto extends OrderSummaryDto {
   customerName: string;
   customerEmail: string;
-  customerPhone: string;
+  customerPhone: string | null;
+  /** Submitted without an account (followed through a tracking link). */
+  isGuest: boolean;
   archivedAt: string | null;
 }
 
@@ -229,8 +241,10 @@ export interface InternalNoteDto {
 }
 
 export interface AdminOrderDetailDto extends OrderDetailDto {
-  customerId: string;
-  customerAccountEmail: string;
+  /** Null for guest orders. */
+  customerId: string | null;
+  customerAccountEmail: string | null;
+  isGuest: boolean;
   internalNotes: InternalNoteDto[];
   canArchive: boolean;
 }

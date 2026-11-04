@@ -9,6 +9,8 @@ declare global {
   namespace Express {
     interface Request {
       auth?: RequestAuth;
+      /** Set by `requireTrackingToken`: the one guest order the request's tracking token opens. */
+      trackedOrderId?: string;
     }
   }
 }

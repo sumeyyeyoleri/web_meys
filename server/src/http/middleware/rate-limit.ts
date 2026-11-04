@@ -7,7 +7,7 @@ export interface RateLimitRule {
   limit: number;
 }
 
-export const RATE_LIMIT_NAMES = ['login', 'register', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message'] as const;
+export const RATE_LIMIT_NAMES = ['login', 'register', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message', 'tracking'] as const;
 export type RateLimitName = (typeof RATE_LIMIT_NAMES)[number];
 export type RateLimitConfig = Record<RateLimitName, RateLimitRule>;
 
@@ -20,6 +20,8 @@ export const DEFAULT_RATE_LIMITS: RateLimitConfig = {
   resetPassword: { windowMs: 60 * MINUTE, limit: 10 },
   orderSubmit: { windowMs: 60 * MINUTE, limit: 10 },
   message: { windowMs: 10 * MINUTE, limit: 30 },
+  // Generous enough for the tracking page polling, low enough to make guessing tokens pointless.
+  tracking: { windowMs: 15 * MINUTE, limit: 300 },
 };
 
 export function createRateLimiters(config: RateLimitConfig): Record<RateLimitName, RequestHandler> {
@@ -41,5 +43,6 @@ export function createRateLimiters(config: RateLimitConfig): Record<RateLimitNam
     resetPassword: make(config.resetPassword),
     orderSubmit: make(config.orderSubmit),
     message: make(config.message),
+    tracking: make(config.tracking),
   };
 }

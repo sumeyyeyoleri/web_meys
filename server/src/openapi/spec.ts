@@ -7,7 +7,7 @@ import { z } from 'zod';
 import {
   adminOrderUpdateSchema,
   adminStatusChangeSchema,
-  buildCreateOrderSchema,
+  createOrderSchema,
   changePasswordSchema,
   contentUpdateSchema,
   customerStatusActionSchema,
@@ -52,6 +52,8 @@ const pageParams = [
 ];
 const csrf = [{ csrfHeader: [], sessionCookie: [] }];
 const session = [{ sessionCookie: [] }];
+const tracking = [{ orderToken: [] }];
+const trackingCsrf = [{ orderToken: [], csrfHeader: [] }];
 
 const paginated = (item: string) => ({
   type: 'object',
@@ -142,8 +144,6 @@ const schemas: Record<string, Json> = {
       contactPhone: nstr,
       contactAddress: nstr,
       enabledLocales: { type: 'array', items: locale },
-      budgetRequired: bool,
-      deadlineRequired: bool,
       emailAvailable: { type: 'boolean', description: 'SMTP configured — the site can send emails' },
       welcomeEnabled: { type: 'boolean', description: 'Home page welcome screen, once per browser session' },
       welcomeImageUrl: { type: 'string', nullable: true, description: 'Welcome background; null → the first featured artwork' },
@@ -204,14 +204,14 @@ const schemas: Record<string, Json> = {
         description: 'All submitted data, attachments, status history and allowed transitions for the viewer.',
         properties: {
           inspiration: ref('Inspiration'),
-          additionalSpecs: { ...nstr, description: 'Requested changes compared to the inspiration example' },
+          additionalSpecs: { ...nstr, description: 'Older orders only: requested changes compared to the inspiration example' },
           width: num,
           height: num,
           unit: str,
           description: str,
-          budgetMin: nnum,
-          budgetMax: nnum,
-          deadline: { type: ['string', 'null'], format: 'date' },
+          budgetMin: { ...nnum, description: 'Older orders only' },
+          budgetMax: { ...nnum, description: 'Older orders only' },
+          deadline: { type: ['string', 'null'], format: 'date', description: 'Older orders only' },
           contact: { type: 'object' },
           projectAddress: { type: 'object' },
           attachments: { type: 'array', items: ref('Attachment') },
@@ -225,7 +225,10 @@ const schemas: Record<string, Json> = {
   AdminOrderSummary: {
     allOf: [
       ref('OrderSummary'),
-      { type: 'object', properties: { customerName: str, customerEmail: str, customerPhone: str, archivedAt: nDateTime } },
+      {
+        type: 'object',
+        properties: { customerName: str, customerEmail: str, customerPhone: nstr, isGuest: bool, archivedAt: nDateTime },
+      },
     ],
   },
   AdminOrderDetail: {
@@ -234,8 +237,9 @@ const schemas: Record<string, Json> = {
       {
         type: 'object',
         properties: {
-          customerId: str,
-          customerAccountEmail: str,
+          customerId: { ...nstr, description: 'Null for guest orders' },
+          customerAccountEmail: nstr,
+          isGuest: bool,
           internalNotes: { type: 'array', items: ref('InternalNote') },
           canArchive: bool,
         },
@@ -244,7 +248,16 @@ const schemas: Record<string, Json> = {
   },
   CreateOrderResult: {
     type: 'object',
-    properties: { order: ref('OrderDetail'), created: bool, user: ref('User') },
+    properties: { order: ref('OrderDetail'), created: bool, tracking: { oneOf: [ref('TrackingLink'), { type: 'null' }] } },
+  },
+  TrackingLink: {
+    type: 'object',
+    description: 'Private link of a guest order. The token inside is only returned this once (only its hash is stored).',
+    properties: {
+      url: { type: 'string', example: 'https://example.be/track#<token>' },
+      expiresAt: dateTime,
+      emailSent: { type: 'boolean', description: 'True only when the email with the link was accepted by SMTP' },
+    },
   },
   Attachment: {
     type: 'object',
@@ -342,7 +355,7 @@ const schemas: Record<string, Json> = {
 const errorResponse = (description: string) => ({ description, content: json(ref('Error')) });
 
 export function buildOpenApiSpec(): Json {
-  const orderData = jsonSchema(buildCreateOrderSchema({ isGuest: true, budgetRequired: false, deadlineRequired: false }));
+  const orderData = jsonSchema(createOrderSchema);
 
   return {
     openapi: '3.1.0',
@@ -351,7 +364,7 @@ export function buildOpenApiSpec(): Json {
       version: '1.0.0',
       description:
         'All non-GET requests require the `X-CSRF-Token` header matching the `csrf` cookie (get one from `GET /api/auth/csrf`). ' +
-        'Authentication uses the HttpOnly `sid` session cookie. Validation messages are i18n keys.',
+        'Authentication uses the HttpOnly `sid` session cookie; guest orders use the `X-Order-Token` header from their tracking link. Validation messages are i18n keys.',
     },
     servers: [{ url: '/' }],
     tags: [
@@ -359,6 +372,7 @@ export function buildOpenApiSpec(): Json {
       { name: 'Auth' },
       { name: 'Profile' },
       { name: 'Orders' },
+      { name: 'Tracking', description: 'Guest orders through the private tracking link' },
       { name: 'Notifications' },
       { name: 'Admin: orders' },
       { name: 'Admin: content' },
@@ -367,6 +381,7 @@ export function buildOpenApiSpec(): Json {
       securitySchemes: {
         sessionCookie: { type: 'apiKey', in: 'cookie', name: 'sid' },
         csrfHeader: { type: 'apiKey', in: 'header', name: 'X-CSRF-Token' },
+        orderToken: { type: 'apiKey', in: 'header', name: 'X-Order-Token', description: 'Token from the private tracking link (/track#<token>)' },
       },
       schemas,
       responses: {
@@ -453,8 +468,8 @@ export function buildOpenApiSpec(): Json {
       '/api/orders': {
         post: {
           tags: ['Orders'],
-          summary: 'Submit a custom order (guests: an account is created)',
-          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. Password fields are only required for guests. A repeated idempotencyKey returns the existing order with 200. An optional \`inspirationItemId\` must reference a published catalog item that allows similar requests (otherwise 400 \`validation.invalidInspiration\`); it does not count against the file limit.`,
+          summary: 'Submit a custom order (guest or signed-in customer)',
+          description: `multipart/form-data with \`data\` (JSON, see schema) and up to ${UPLOAD_MAX_FILES} JPG/PNG/WebP images in \`files\`. No account is needed: a guest order is stored without an account (never linked to an existing account with the same email) and the response contains a private \`tracking\` link, shown only once and emailed when SMTP is configured. A signed-in customer's order is linked to the account (\`tracking\` is null). A repeated idempotencyKey returns the existing order with 200 (guests get a fresh tracking link); a key used by someone else gives 409. An optional \`inspirationItemId\` must reference a published catalog item that allows similar requests (otherwise 400 \`validation.invalidInspiration\`); it does not count against the file limit.`,
           security: csrf,
           requestBody: {
             required: true,
@@ -491,6 +506,28 @@ export function buildOpenApiSpec(): Json {
       },
       '/api/orders/{id}/messages/read': {
         post: { tags: ['Orders'], summary: 'Mark the thread as read', security: csrf, parameters: [idParam], responses: { 204: ok('Done'), ...errors(401, 404) } },
+      },
+      '/api/track/order': {
+        get: { tags: ['Tracking'], summary: 'Guest order detail', security: tracking, parameters: [localeParam], responses: { 200: ok('Order', ref('OrderDetail')), ...errors(404, 429) } },
+      },
+      '/api/track/status': {
+        post: { tags: ['Tracking'], summary: 'Accept a quote or cancel', security: trackingCsrf, requestBody: body(customerStatusActionSchema), responses: { 200: ok('Order', ref('OrderDetail')), ...errors(400, 403, 404, 409, 429) } },
+      },
+      '/api/track/messages': {
+        get: { tags: ['Tracking'], summary: 'Message thread', security: tracking, responses: { 200: ok('Messages', { type: 'array', items: ref('Message') }), ...errors(404, 429) } },
+        post: { tags: ['Tracking'], summary: 'Send a message', security: trackingCsrf, requestBody: body(messageBodySchema), responses: { 201: ok('Sent', ref('Message')), ...errors(400, 403, 404, 429) } },
+      },
+      '/api/track/messages/read': {
+        post: { tags: ['Tracking'], summary: 'Mark the thread as read', security: trackingCsrf, responses: { 204: ok('Done'), ...errors(403, 404, 429) } },
+      },
+      '/api/track/attachments/{id}': {
+        get: {
+          tags: ['Tracking'],
+          summary: 'Reference image of the tracked order',
+          security: tracking,
+          parameters: [idParam, { name: 'download', in: 'query', schema: { type: 'string', enum: ['1'] } }],
+          responses: { 200: { description: 'Image', content: { 'image/*': { schema: { type: 'string', format: 'binary' } } } }, ...errors(404, 429) },
+        },
       },
       '/api/attachments/{id}': {
         get: {
@@ -551,6 +588,16 @@ export function buildOpenApiSpec(): Json {
       },
       '/api/admin/orders/{id}/messages/read': {
         post: { tags: ['Admin: orders'], summary: 'Mark customer messages as read', security: csrf, parameters: [idParam], responses: { 204: ok('Done'), ...errors(401, 403, 404) } },
+      },
+      '/api/admin/orders/{id}/tracking-link': {
+        post: {
+          tags: ['Admin: orders'],
+          summary: 'Create a new tracking link for a guest order',
+          description: 'Revokes every earlier link of the order and returns a new one (shown only once). Emailed to the order contact when SMTP is configured. 409 for orders that belong to an account.',
+          security: csrf,
+          parameters: [idParam],
+          responses: { 201: ok('New link', ref('TrackingLink')), ...errors(401, 403, 404, 409) },
+        },
       },
       '/api/admin/orders/{id}/notes': {
         get: { tags: ['Admin: orders'], summary: 'Internal notes', security: session, parameters: [idParam], responses: { 200: ok('Notes', { type: 'array', items: ref('InternalNote') }), ...errors(401, 403, 404) } },

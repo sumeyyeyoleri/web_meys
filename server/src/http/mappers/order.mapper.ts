@@ -27,13 +27,14 @@ export function toOrderSummaryDto(order: OrderWithSummary, locale: Locale, unrea
   };
 }
 
-function toAttachmentDto(attachment: OrderWithDetail['attachments'][number]): AttachmentDto {
+/** Guests load images through the tracking routes (with the token header), everyone else with the session. */
+function toAttachmentDto(attachment: OrderWithDetail['attachments'][number], viaTracking: boolean): AttachmentDto {
   return {
     id: attachment.id,
     originalName: attachment.originalName,
     mimeType: attachment.mimeType,
     sizeBytes: attachment.sizeBytes,
-    url: `/api/attachments/${attachment.id}`,
+    url: viaTracking ? `/api/track/attachments/${attachment.id}` : `/api/attachments/${attachment.id}`,
     createdAt: toIso(attachment.createdAt),
   };
 }
@@ -43,7 +44,7 @@ function toStatusHistoryDto(entry: OrderWithDetail['statusHistory'][number]): St
     id: entry.id,
     fromStatus: entry.fromStatus,
     toStatus: entry.toStatus,
-    changedByRole: entry.changedBy.role,
+    changedByRole: entry.changedByRole,
     note: entry.note,
     quoteAmount: toNumberOrNull(entry.quoteAmount),
     createdAt: toIso(entry.createdAt),
@@ -63,6 +64,7 @@ export function toOrderDetailDto(
   locale: Locale,
   viewer: StatusActor,
   unreadMessages: number,
+  options: { viaTracking?: boolean } = {},
 ): OrderDetailDto {
   return {
     ...toOrderSummaryDto(order, locale, unreadMessages),
@@ -102,7 +104,7 @@ export function toOrderDetailDto(
     },
     quoteSentAt: toIsoOrNull(order.quoteSentAt),
     archivedAt: toIsoOrNull(order.archivedAt),
-    attachments: order.attachments.map(toAttachmentDto),
+    attachments: order.attachments.map((a) => toAttachmentDto(a, options.viaTracking ?? false)),
     statusHistory: order.statusHistory.map(toStatusHistoryDto),
     allowedTransitions: order.archivedAt ? [] : [...getAllowedTransitions(order.status, viewer)],
   };

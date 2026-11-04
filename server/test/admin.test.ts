@@ -262,10 +262,12 @@ describe('content management', () => {
     const bad = await admin.put('/api/admin/settings').send({ ...settings, accentColor: 'orange', enabledLocales: ['en'] }).expect(400);
     expect(bad.body.error.fields).toMatchObject({ accentColor: 'validation.color', enabledLocales: 'validation.defaultLocaleRequired' });
 
-    await admin.put('/api/admin/settings').send({ ...settings, enabledLocales: ['nl-BE', 'en'], budgetRequired: true }).expect(200);
+    expect(settings).not.toHaveProperty('budgetRequired');
+    expect(settings).not.toHaveProperty('deadlineRequired');
+    await admin.put('/api/admin/settings').send({ ...settings, enabledLocales: ['nl-BE', 'en'], welcomeEnabled: false }).expect(200);
     const site = (await customer.get('/api/site?locale=tr')).body;
     expect(site.locale).toBe('nl-BE');
-    expect(site.settings).toMatchObject({ budgetRequired: true, enabledLocales: ['nl-BE', 'en'], emailAvailable: true });
+    expect(site.settings).toMatchObject({ welcomeEnabled: false, enabledLocales: ['nl-BE', 'en'], emailAvailable: true });
   });
 
   it('uploads public media after checking the file signature', async () => {

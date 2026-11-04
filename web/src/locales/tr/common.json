@@ -101,7 +101,6 @@
     "RATE_LIMITED": "Çok fazla deneme. Lütfen biraz bekleyip tekrar deneyin.",
     "INVALID_CREDENTIALS": "E-posta adresi veya şifre hatalı.",
     "EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",
-    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "Bu e-postayla bir hesap zaten var. Devam etmek için giriş yapın.",
     "RESET_TOKEN_INVALID": "Bu bağlantı geçersiz veya süresi dolmuş.",
     "ORDER_INVALID_TRANSITION": "Bu durum değişikliği yapılamıyor (artık mümkün değil).",
     "ORDER_QUOTE_REQUIRED": "Teklif tutarını girin.",

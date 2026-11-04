@@ -13,7 +13,7 @@ export function corsForOrigin(allowedOrigin: string): RequestHandler {
     if (req.method === 'OPTIONS' && req.get('access-control-request-method')) {
       if (origin === allowedOrigin) {
         res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, X-Order-Token');
         res.setHeader('Access-Control-Max-Age', '600');
       }
       res.status(204).end();

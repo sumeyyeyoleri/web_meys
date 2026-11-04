@@ -8,6 +8,7 @@ import { createNotificationRepository } from './notification.repository';
 import { createOrderRepository } from './order.repository';
 import { createPasswordResetRepository } from './password-reset.repository';
 import { createSessionRepository } from './session.repository';
+import { createTrackingTokenRepository } from './tracking-token.repository';
 import { createUserRepository } from './user.repository';
 
 export function createRepositories(db: Db) {
@@ -16,6 +17,7 @@ export function createRepositories(db: Db) {
     sessions: createSessionRepository(db),
     passwordResets: createPasswordResetRepository(db),
     orders: createOrderRepository(db),
+    trackingTokens: createTrackingTokenRepository(db),
     messages: createMessageRepository(db),
     notifications: createNotificationRepository(db),
     content: createContentRepository(db),

@@ -101,7 +101,6 @@
     "RATE_LIMITED": "Te veel pogingen. Wacht even en probeer opnieuw.",
     "INVALID_CREDENTIALS": "E-mailadres of wachtwoord is niet juist.",
     "EMAIL_IN_USE": "Er bestaat al een account met dit e-mailadres.",
-    "ACCOUNT_EXISTS_LOGIN_REQUIRED": "Er bestaat al een account met dit e-mailadres. Meld u aan om verder te gaan.",
     "RESET_TOKEN_INVALID": "Deze link is ongeldig of verlopen.",
     "ORDER_INVALID_TRANSITION": "Deze statuswijziging is niet (meer) mogelijk.",
     "ORDER_QUOTE_REQUIRED": "Vul het bedrag van de offerte in.",

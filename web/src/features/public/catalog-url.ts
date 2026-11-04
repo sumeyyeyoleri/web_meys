@@ -29,5 +29,5 @@ const SPACE_BY_SLUG = invert(SPACE_SLUGS);
 export const categoryFromSlug = (slug: string | null) => (slug ? CATEGORY_BY_SLUG.get(slug) : undefined);
 export const spaceFromSlug = (slug: string | null) => (slug ? SPACE_BY_SLUG.get(slug) : undefined);
 
-/** Order wizard entry point for "Request something similar". */
+/** Order form entry point for "Request something similar". */
 export const requestSimilarHref = (itemId: string) => `/order?from=${encodeURIComponent(itemId)}`;

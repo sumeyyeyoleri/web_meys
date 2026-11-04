@@ -14,6 +14,7 @@ import { createMessageService } from './services/message.service';
 import { createNotificationService } from './services/notification.service';
 import { createOrderService } from './services/order.service';
 import { createSessionService } from './services/session.service';
+import { createTrackingService } from './services/tracking.service';
 import { createUserService } from './services/user.service';
 
 export interface ContainerOverrides {
@@ -33,7 +34,8 @@ export function createContainer(config: AppConfig, overrides: ContainerOverrides
   const email = createEmailService({ mailer, repos, config });
   const sessions = createSessionService({ repos, config });
   const content = createContentService({ repos });
-  const orders = createOrderService({ repos, transaction, storage, email, content });
+  const tracking = createTrackingService({ repos, transaction, email, config });
+  const orders = createOrderService({ repos, transaction, storage, email, tracking });
 
   return {
     config,
@@ -46,6 +48,7 @@ export function createContainer(config: AppConfig, overrides: ContainerOverrides
       users: createUserService({ repos }),
       content,
       orders,
+      tracking,
       messages: createMessageService({ repos, transaction, orders, email }),
       notifications: createNotificationService({ repos }),
       attachments: createAttachmentService({ repos, storage }),

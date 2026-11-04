@@ -11,16 +11,26 @@ async function recipientsFor(repos: Repositories, order: OrderRef, actorRole: Ro
   if (actorRole === 'ADMIN') {
     return [
       {
+        // Guests have no account, so no in-app notification — only the email.
         userId: order.customerId,
-        email: { email: order.contactEmail, locale: localeFromDb(order.communicationLocale), isAdmin: false },
+        email: {
+          email: order.contactEmail,
+          locale: localeFromDb(order.communicationLocale),
+          audience: order.customerId ? ('customer' as const) : ('guest' as const),
+        },
       },
     ];
   }
   const admins = await repos.users.findAdmins();
   return admins.map((admin) => ({
     userId: admin.id,
-    email: { email: admin.email, locale: localeFromDb(admin.preferredLocale), isAdmin: true },
+    email: { email: admin.email, locale: localeFromDb(admin.preferredLocale), audience: 'admin' as const },
   }));
+}
+
+/** In-app notification rows for the recipients that have an account. */
+function rowsFor<T>(recipients: Array<{ userId: string | null }>, row: (userId: string) => T): T[] {
+  return recipients.flatMap((r) => (r.userId ? [row(r.userId)] : []));
 }
 
 /**
@@ -31,7 +41,7 @@ export const notificationRecorder = {
   async orderSubmitted(repos: Repositories, order: OrderRef): Promise<EmailRecipient[]> {
     const recipients = await recipientsFor(repos, order, 'CUSTOMER');
     await repos.notifications.createMany(
-      recipients.map((r) => ({ userId: r.userId, type: 'ORDER_SUBMITTED', orderId: order.id })),
+      rowsFor(recipients, (userId) => ({ userId, type: 'ORDER_SUBMITTED' as const, orderId: order.id })),
     );
     return recipients.map((r) => r.email);
   },
@@ -39,7 +49,7 @@ export const notificationRecorder = {
   async statusChanged(repos: Repositories, order: OrderRef, actorRole: Role, status: OrderStatus) {
     const recipients = await recipientsFor(repos, order, actorRole);
     await repos.notifications.createMany(
-      recipients.map((r) => ({ userId: r.userId, type: 'ORDER_STATUS_CHANGED', orderId: order.id, status })),
+      rowsFor(recipients, (userId) => ({ userId, type: 'ORDER_STATUS_CHANGED' as const, orderId: order.id, status })),
     );
     return recipients.map((r) => r.email);
   },
@@ -47,7 +57,7 @@ export const notificationRecorder = {
   async messageSent(repos: Repositories, order: OrderRef, senderRole: Role) {
     const recipients = await recipientsFor(repos, order, senderRole);
     await repos.notifications.createMany(
-      recipients.map((r) => ({ userId: r.userId, type: 'ORDER_MESSAGE', orderId: order.id })),
+      rowsFor(recipients, (userId) => ({ userId, type: 'ORDER_MESSAGE' as const, orderId: order.id })),
     );
     return recipients.map((r) => r.email);
   },

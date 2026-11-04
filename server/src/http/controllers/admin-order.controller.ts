@@ -9,6 +9,7 @@ import {
   localeFromDb,
   messageBodySchema,
   type AdminStatsDto,
+  type TrackingLinkDto,
   type Locale,
 } from '@painter/shared';
 import type { Services } from '../../container';
@@ -26,7 +27,7 @@ function adminLocale(req: Request): Locale {
 
 const listQuery = adminOrderListQuerySchema.extend({ locale: z.string().optional() });
 
-export function createAdminOrderController({ adminOrders, messages, content }: Services) {
+export function createAdminOrderController({ adminOrders, messages, content, tracking }: Services) {
   const actorOf = (req: Request) => ({ id: getAuth(req).user.id, role: 'ADMIN' as const });
 
   async function sendDetail(req: Request, res: Response, id: string) {
@@ -106,23 +107,31 @@ export function createAdminOrderController({ adminOrders, messages, content }: S
 
     async listMessages(req: Request, res: Response) {
       const viewer = actorOf(req);
-      const [items, settings] = await Promise.all([messages.list(parseIdParam(req), viewer), content.requireSettings()]);
-      res.json(items.map((m) => toMessageDto(m, viewer.id, settings.businessName)));
+      const [thread, settings] = await Promise.all([messages.list(parseIdParam(req), viewer), content.requireSettings()]);
+      const names = { businessName: settings.businessName, contactName: thread.order.contactName };
+      res.json(thread.messages.map((m) => toMessageDto(m, viewer.id, names)));
     },
 
     async sendMessage(req: Request, res: Response) {
       const viewer = actorOf(req);
       const { body } = parseBody(messageBodySchema, req);
-      const [message, settings] = await Promise.all([
+      const [{ order, message }, settings] = await Promise.all([
         messages.send(parseIdParam(req), viewer, body),
         content.requireSettings(),
       ]);
-      res.status(201).json(toMessageDto(message, viewer.id, settings.businessName));
+      res.status(201).json(toMessageDto(message, viewer.id, { businessName: settings.businessName, contactName: order.contactName }));
     },
 
     async markMessagesRead(req: Request, res: Response) {
       await messages.markRead(parseIdParam(req), actorOf(req));
       res.status(204).end();
+    },
+
+    /** Guest orders: revokes the earlier links and returns a new one (shown once, emailed when SMTP is configured). */
+    async regenerateTrackingLink(req: Request, res: Response) {
+      const link = await tracking.regenerate(parseIdParam(req));
+      const body: TrackingLinkDto = { url: link.url, expiresAt: toIso(link.expiresAt), emailSent: link.emailSent };
+      res.status(201).json(body);
     },
   };
 }

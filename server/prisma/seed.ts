@@ -2,15 +2,23 @@
  * Idempotent seed: running it again never duplicates rows and never overwrites
  * content that an administrator has edited since (rows are only created when missing).
  *
- * Creates: the admin (from env), one demo customer with two demo orders, 4 services,
+ * Creates: the admin (from env), one demo customer with two demo orders, one guest order, 4 services,
  * 10 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
  * and the default site settings.
  */
 import 'dotenv/config';
 import { Prisma, PrismaClient } from '@prisma/client';
-import { CONTENT_KEYS, DEFAULT_ACCENT_COLOR, LOCALES, localeToDb, PASSWORD_MIN_LENGTH } from '@painter/shared';
+import {
+  CONTENT_KEYS,
+  DEFAULT_ACCENT_COLOR,
+  LOCALES,
+  localeToDb,
+  PASSWORD_MIN_LENGTH,
+  TRACKING_TOKEN_TTL_DAYS,
+} from '@painter/shared';
 import { z } from 'zod';
 import { loadConfig } from '../src/config/env';
+import { generateToken, sha256 } from '../src/infrastructure/crypto';
 import { hashPassword } from '../src/infrastructure/password-hasher';
 import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
@@ -164,8 +172,6 @@ async function seedContentAndSettings() {
       ...SEED_SETTINGS,
       accentColor: DEFAULT_ACCENT_COLOR,
       enabledLocales: ['NL_BE', 'EN', 'TR'],
-      budgetRequired: false,
-      deadlineRequired: false,
       emailNotificationsEnabled: true,
     },
   });
@@ -229,12 +235,20 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
       });
       await tx.orderStatusHistory.createMany({
         data: [
-          { orderId: order.id, fromStatus: null, toStatus: 'SUBMITTED', changedById: customerId, createdAt: daysAgo(12) },
+          {
+            orderId: order.id,
+            fromStatus: null,
+            toStatus: 'SUBMITTED',
+            changedById: customerId,
+            changedByRole: 'CUSTOMER',
+            createdAt: daysAgo(12),
+          },
           {
             orderId: order.id,
             fromStatus: 'SUBMITTED',
             toStatus: 'UNDER_REVIEW',
             changedById: adminId,
+            changedByRole: 'ADMIN',
             createdAt: daysAgo(10),
           },
           {
@@ -242,6 +256,7 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
             fromStatus: 'UNDER_REVIEW',
             toStatus: 'QUOTE_SENT',
             changedById: adminId,
+            changedByRole: 'ADMIN',
             note: 'Inclusief voorbereiding van de muur en twee ontwerpschetsen.',
             quoteAmount: new Prisma.Decimal(2450),
             createdAt: daysAgo(3),
@@ -328,7 +343,14 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
         },
       });
       await tx.orderStatusHistory.create({
-        data: { orderId: order.id, fromStatus: null, toStatus: 'SUBMITTED', changedById: customerId, createdAt: daysAgo(1) },
+        data: {
+          orderId: order.id,
+          fromStatus: null,
+          toStatus: 'SUBMITTED',
+          changedById: customerId,
+          changedByRole: 'CUSTOMER',
+          createdAt: daysAgo(1),
+        },
       });
       await tx.notification.create({
         data: { userId: adminId, type: 'ORDER_SUBMITTED', orderId: order.id, createdAt: daysAgo(1) },
@@ -337,12 +359,62 @@ async function seedDemoOrders(adminId: string, customerId: string, services: Map
   }
 }
 
+/**
+ * A guest order (no account) with a private tracking link. The link is printed once when the
+ * order is created — like the confirmation page, the token itself is never stored.
+ */
+async function seedGuestOrder(adminId: string, services: Map<string, string>) {
+  const reference = 'ORD-2026-GST4KQ';
+  if (await prisma.order.findUnique({ where: { reference } })) return;
+  const token = generateToken(32);
+  await prisma.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        reference,
+        customerId: null,
+        idempotencyKey: '5e7a9c1b-3d5f-4b7d-9f1a-3c5e7a9c1b3d',
+        status: 'SUBMITTED',
+        serviceId: services.get('canvas-painting') ?? null,
+        width: new Prisma.Decimal(30),
+        height: new Prisma.Decimal(40),
+        unit: 'CM',
+        title: 'Schilderij op doek',
+        description: 'Een klein schilderij van de duinen bij zonsondergang, in zachte pasteltinten, voor boven de kast.',
+        contactName: 'Gast Voorbeeld',
+        contactEmail: 'gast@example.com',
+        contactPhone: null,
+        communicationLocale: 'NL_BE',
+        projectCountry: 'België',
+        projectCity: 'Oostende',
+        projectPostalCode: '8400',
+        projectStreet: 'Zeedijk',
+        projectHouseNumber: '7',
+        privacyAcceptedAt: daysAgo(2),
+        createdAt: daysAgo(2),
+      },
+    });
+    await tx.orderStatusHistory.create({
+      data: { orderId: order.id, fromStatus: null, toStatus: 'SUBMITTED', changedByRole: 'CUSTOMER', createdAt: daysAgo(2) },
+    });
+    await tx.orderTrackingToken.create({
+      data: {
+        orderId: order.id,
+        tokenHash: sha256(token),
+        expiresAt: new Date(Date.now() + TRACKING_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000),
+      },
+    });
+    await tx.notification.create({ data: { userId: adminId, type: 'ORDER_SUBMITTED', orderId: order.id, createdAt: daysAgo(2) } });
+  });
+  console.log(`Demo guest order ${reference} — tracking link (shown only now): ${loadConfig().webOrigin}/track#${token}`);
+}
+
 async function main() {
   const { admin, customer } = await seedUsers();
   const services = await seedServices();
   await seedPortfolio();
   await seedContentAndSettings();
   await seedDemoOrders(admin.id, customer.id, services);
+  await seedGuestOrder(admin.id, services);
 
   const counts = await Promise.all([
     prisma.user.count(),

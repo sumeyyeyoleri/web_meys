@@ -23,6 +23,7 @@ export function createAdminRouter(services: Services): Router {
   router.get('/orders/:id/messages', orders.listMessages);
   router.post('/orders/:id/messages', orders.sendMessage);
   router.post('/orders/:id/messages/read', orders.markMessagesRead);
+  router.post('/orders/:id/tracking-link', orders.regenerateTrackingLink);
   router.get('/orders/:id/notes', orders.listNotes);
   router.post('/orders/:id/notes', orders.addNote);
 

@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ErrorCode } from '@painter/shared';
+import { ORDER_TOKEN_HEADER, type ApiErrorBody, type ErrorCode } from '@painter/shared';
 
 /**
  * The single API client. Sends cookies, adds the CSRF header to every non-GET request
@@ -31,6 +31,7 @@ interface RequestOptions {
   query?: Query;
   body?: unknown;
   signal?: AbortSignal;
+  headers?: Record<string, string>;
 }
 
 let csrfToken: string | null = null;
@@ -75,7 +76,7 @@ async function toApiError(res: Response): Promise<ApiError> {
 }
 
 async function request<T>(method: string, path: string, options: RequestOptions = {}, retried = false): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: 'application/json', ...options.headers };
   let body: BodyInit | undefined;
   if (options.body instanceof FormData) {
     body = options.body;
@@ -118,6 +119,18 @@ export const api = {
   patch: <T = void>(path: string, body?: unknown) => request<T>('PATCH', path, { body }),
   delete: <T = void>(path: string) => request<T>('DELETE', path),
 };
+
+/**
+ * Client for the guest tracking routes (`/api/track/*`): every request carries the token from
+ * the private link in the `X-Order-Token` header (never in the URL).
+ */
+export function trackingApi(token: string) {
+  const headers = { [ORDER_TOKEN_HEADER]: token };
+  return {
+    get: <T>(path: string, query?: Query, signal?: AbortSignal) => request<T>('GET', path, { query, signal, headers }),
+    post: <T = void>(path: string, body?: unknown) => request<T>('POST', path, { body, headers }),
+  };
+}
 
 /** Absolute URL for API-served media (`/media/...`, `/api/attachments/...`). */
 export function mediaUrl(path: string): string {

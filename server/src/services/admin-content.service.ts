@@ -233,8 +233,6 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
         contactPhone: input.contactPhone ?? null,
         contactAddress: input.contactAddress ?? null,
         enabledLocales: input.enabledLocales.map(localeToDb),
-        budgetRequired: input.budgetRequired,
-        deadlineRequired: input.deadlineRequired,
         emailNotificationsEnabled: input.emailNotificationsEnabled,
         welcomeEnabled: input.welcomeEnabled,
         welcomeImageUrl: input.welcomeImageUrl ?? null,

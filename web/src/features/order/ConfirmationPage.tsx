@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocation, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { OrderDetailDto } from '@painter/shared';
 import { ButtonLink } from '../../components/ui/Button';
-import { FormAlert } from '../../components/ui/FormAlert';
 import { LoadingBlock } from '../../components/ui/Spinner';
 import { ErrorState } from '../../components/ui/States';
 import { api } from '../../lib/api';
@@ -11,19 +10,14 @@ import { useLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
 import { usePageTitle } from '../../lib/use-page-title';
 import { ArtworkImage } from '../public/ArtworkImage';
+import { NextSteps } from './NextSteps';
 
-interface ConfirmationState {
-  accountCreated?: boolean;
-  email?: string;
-}
-
-/** Shown after submitting: reference, what happens next, link to the order in the account. */
+/** Shown after a signed-in customer submitted: reference, what happens next, link to the order in the account. */
 export function ConfirmationPage() {
   const { t } = useTranslation('order');
   usePageTitle(t('meta.confirmationTitle'));
   const { orderId = '' } = useParams();
   const locale = useLocale();
-  const state = (useLocation().state ?? {}) as ConfirmationState;
   const order = useQuery({
     queryKey: queryKeys.orders.detail(orderId),
     queryFn: ({ signal }) => api.get<OrderDetailDto>(`/api/orders/${encodeURIComponent(orderId)}`, { locale }, signal),
@@ -51,10 +45,6 @@ export function ConfirmationPage() {
           </div>
         </header>
 
-        {state.accountCreated && state.email ? (
-          <FormAlert tone="success">{t('confirmation.accountCreated', { email: state.email })}</FormAlert>
-        ) : null}
-
         {inspiration ? (
           <div className="flex items-center gap-4 rounded-[var(--radius-card)] border border-border bg-surface p-4">
             <ArtworkImage src={inspiration.imageUrl} alt="" className="size-16 shrink-0" />
@@ -62,21 +52,7 @@ export function ConfirmationPage() {
           </div>
         ) : null}
 
-        <section aria-labelledby="next-title" className="rounded-[var(--radius-panel)] border border-border bg-surface p-6 sm:p-8">
-          <h2 id="next-title" className="mb-5 text-3xl">
-            {t('confirmation.nextTitle')}
-          </h2>
-          <ol className="flex flex-col gap-4">
-            {(['next1', 'next2', 'next3'] as const).map((key, i) => (
-              <li key={key} className="flex gap-4">
-                <span className="font-display text-3xl leading-none text-accent" aria-hidden="true">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span className="text-text-muted">{t(`confirmation.${key}`)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <NextSteps where="account" />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <ButtonLink to={`/account/orders/${orderId}`}>{t('confirmation.viewOrder')}</ButtonLink>

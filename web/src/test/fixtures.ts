@@ -16,8 +16,6 @@ export const site: SiteDto = {
     contactPhone: '+32 470 00 00 00',
     contactAddress: 'Straat 1, Gent',
     enabledLocales: ['nl-BE', 'en', 'tr'],
-    budgetRequired: false,
-    deadlineRequired: false,
     emailAvailable: true,
     welcomeEnabled: false,
     welcomeImageUrl: null,

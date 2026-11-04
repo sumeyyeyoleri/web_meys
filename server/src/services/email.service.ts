@@ -9,8 +9,8 @@ import { emailCopy, wrapEmail } from './email-templates';
 export interface EmailRecipient {
   email: string;
   locale: Locale;
-  /** Admins get links to the admin dashboard, customers to their account. */
-  isAdmin: boolean;
+  /** Admins get links to the admin dashboard, customers to their account, guests a hint to their tracking link. */
+  audience: 'admin' | 'customer' | 'guest';
 }
 
 interface Deps {
@@ -34,7 +34,7 @@ export function createEmailService({ mailer, repos, config }: Deps) {
   }
 
   const orderLink = (recipient: EmailRecipient, orderId: string) =>
-    recipient.isAdmin ? `${config.webOrigin}/admin/orders/${orderId}` : `${config.webOrigin}/account/orders/${orderId}`;
+    recipient.audience === 'admin' ? `${config.webOrigin}/admin/orders/${orderId}` : `${config.webOrigin}/account/orders/${orderId}`;
 
   return {
     get isConfigured() {
@@ -61,6 +61,21 @@ export function createEmailService({ mailer, repos, config }: Deps) {
       });
     },
 
+    /**
+     * The private tracking link of a guest order. Sent whenever SMTP is configured — like the
+     * password reset it is part of the order itself, not an optional notification.
+     * Returns true only if the email was actually accepted by the SMTP server.
+     */
+    async sendTrackingLink(recipient: { email: string; locale: Locale }, reference: string, link: string): Promise<boolean> {
+      if (!mailer.configured) return false;
+      const copy = emailCopy(recipient.locale);
+      return mailer.send({
+        to: recipient.email,
+        subject: copy.guest.trackingLink.subject(reference),
+        text: wrapEmail(recipient.locale, await businessName(), copy.guest.trackingLink.body(reference, link)),
+      });
+    },
+
     async sendStatusChanged(recipients: EmailRecipient[], order: { id: string; reference: string }, status: OrderStatus) {
       if (!(await orderEmailsEnabled())) return;
       const name = await businessName();
@@ -73,7 +88,9 @@ export function createEmailService({ mailer, repos, config }: Deps) {
             text: wrapEmail(
               recipient.locale,
               name,
-              copy.statusChanged.body(order.reference, copy.statusLabels[status], orderLink(recipient, order.id)),
+              recipient.audience === 'guest'
+                ? copy.guest.statusChanged(order.reference, copy.statusLabels[status])
+                : copy.statusChanged.body(order.reference, copy.statusLabels[status], orderLink(recipient, order.id)),
             ),
           });
         }),
@@ -89,7 +106,13 @@ export function createEmailService({ mailer, repos, config }: Deps) {
           return mailer.send({
             to: recipient.email,
             subject: copy.newMessage.subject(order.reference),
-            text: wrapEmail(recipient.locale, name, copy.newMessage.body(order.reference, orderLink(recipient, order.id))),
+            text: wrapEmail(
+              recipient.locale,
+              name,
+              recipient.audience === 'guest'
+                ? copy.guest.newMessage(order.reference)
+                : copy.newMessage.body(order.reference, orderLink(recipient, order.id)),
+            ),
           });
         }),
       );

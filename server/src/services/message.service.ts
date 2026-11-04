@@ -18,7 +18,7 @@ export function createMessageService({ repos, transaction, orders, email }: Deps
   return {
     async list(orderId: string, viewer: Actor) {
       const order = await orders.loadOrder(orderId, viewer);
-      return repos.messages.listForOrder(order.id);
+      return { order, messages: await repos.messages.listForOrder(order.id) };
     },
 
     async send(orderId: string, viewer: Actor, body: string) {
@@ -29,7 +29,7 @@ export function createMessageService({ repos, transaction, orders, email }: Deps
         return { message, recipients };
       });
       void email.sendNewMessage(recipients, order);
-      return message;
+      return { order, message };
     },
 
     /** Called when the viewer opens the thread: marks the other party's messages as read. */
@@ -38,7 +38,8 @@ export function createMessageService({ repos, transaction, orders, email }: Deps
       const now = new Date();
       await transaction(async (tx) => {
         await tx.messages.markReadFromSender(order.id, otherRole(viewer.role), now);
-        await tx.notifications.markReadForOrder(viewer.id, order.id, 'ORDER_MESSAGE', now);
+        // Guests have no in-app notifications.
+        if (viewer.id) await tx.notifications.markReadForOrder(viewer.id, order.id, 'ORDER_MESSAGE', now);
       });
     },
   };

@@ -29,14 +29,18 @@ export const routes: RouteObject[] = [
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       {
-        // Loaded on demand: the wizard is not needed for browsing.
+        // Loaded on demand: the order form is not needed for browsing.
         path: 'order',
-        lazy: async () => ({ Component: (await import('../features/order-wizard/OrderWizardPage')).OrderWizardPage }),
+        lazy: async () => ({ Component: (await import('../features/order/OrderPage')).OrderPage }),
+      },
+      {
+        path: 'order/sent',
+        lazy: async () => ({ Component: (await import('../features/order/GuestConfirmationPage')).GuestConfirmationPage }),
       },
       {
         path: 'order/confirmation/:orderId',
         lazy: async () => {
-          const { ConfirmationPage } = await import('../features/order-wizard/ConfirmationPage');
+          const { ConfirmationPage } = await import('../features/order/ConfirmationPage');
           return {
             Component: () => (
               <RequireAuth role="CUSTOMER">
@@ -45,6 +49,11 @@ export const routes: RouteObject[] = [
             ),
           };
         },
+      },
+      {
+        // Guest orders: private link `/track#<token>`.
+        path: 'track',
+        lazy: async () => ({ Component: (await import('../features/order/TrackPage')).TrackPage }),
       },
       { path: '*', element: <NotFoundPage /> },
     ],

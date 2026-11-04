@@ -5,7 +5,7 @@ export const orderDetailInclude = {
   service: { include: { translations: true } },
   inspirationItem: { include: { translations: true } },
   attachments: { orderBy: { createdAt: 'asc' } },
-  statusHistory: { orderBy: { createdAt: 'asc' }, include: { changedBy: { select: { role: true } } } },
+  statusHistory: { orderBy: { createdAt: 'asc' } },
 } as const satisfies Prisma.OrderInclude;
 
 export const orderSummaryInclude = {
@@ -26,11 +26,8 @@ export function createOrderRepository(db: Db) {
       return db.order.findFirst({ where: { id, customerId }, include: orderDetailInclude });
     },
 
-    findByIdempotencyKey(customerId: string, idempotencyKey: string) {
-      return db.order.findUnique({
-        where: { customerId_idempotencyKey: { customerId, idempotencyKey } },
-        include: orderDetailInclude,
-      });
+    findByIdempotencyKey(idempotencyKey: string) {
+      return db.order.findUnique({ where: { idempotencyKey }, include: orderDetailInclude });
     },
 
     async referenceExists(reference: string): Promise<boolean> {

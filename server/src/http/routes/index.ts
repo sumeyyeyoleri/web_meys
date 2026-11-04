@@ -5,9 +5,11 @@ import { createAuthController } from '../controllers/auth.controller';
 import { createNotificationController } from '../controllers/notification.controller';
 import { createOrderController } from '../controllers/order.controller';
 import { createPublicController } from '../controllers/public.controller';
+import { createTrackingController } from '../controllers/tracking.controller';
 import { createUserController } from '../controllers/user.controller';
 import { requireAuth, requireRole } from '../middleware/auth';
 import type { RateLimitName } from '../middleware/rate-limit';
+import { requireTrackingToken } from '../middleware/tracking';
 import { orderUpload } from '../middleware/upload';
 import { createAdminRouter } from './admin';
 
@@ -19,6 +21,8 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   const orders = createOrderController(container);
   const attachments = createAttachmentController(container.services);
   const notifications = createNotificationController(container.services);
+  const tracking = createTrackingController(container.services);
+  const tracked = [limiters.tracking, requireTrackingToken(container.services.tracking)];
   const customerOnly = requireRole('CUSTOMER');
 
   // Public content
@@ -40,7 +44,7 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   // Profile
   router.patch('/users/me', requireAuth, users.updateMe);
 
-  // Customer orders (guests may submit; an account is created with the order)
+  // Orders: guests and signed-in customers submit; customers follow their orders in the account
   router.post('/orders', limiters.orderSubmit, orderUpload, orders.create);
   router.get('/orders', customerOnly, orders.list);
   router.get('/orders/:id', customerOnly, orders.detail);
@@ -48,6 +52,14 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.get('/orders/:id/messages', customerOnly, orders.listMessages);
   router.post('/orders/:id/messages', customerOnly, limiters.message, orders.sendMessage);
   router.post('/orders/:id/messages/read', customerOnly, orders.markMessagesRead);
+
+  // Guest orders through the private tracking link (token in the X-Order-Token header)
+  router.get('/track/order', tracked, tracking.order);
+  router.post('/track/status', tracked, tracking.changeStatus);
+  router.get('/track/messages', tracked, tracking.listMessages);
+  router.post('/track/messages', tracked, limiters.message, tracking.sendMessage);
+  router.post('/track/messages/read', tracked, tracking.markMessagesRead);
+  router.get('/track/attachments/:id', tracked, tracking.attachment);
 
   // Reference images (owner or admin)
   router.get('/attachments/:id', requireAuth, attachments.download);

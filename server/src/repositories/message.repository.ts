@@ -9,7 +9,7 @@ export function createMessageRepository(db: Db) {
       return db.orderMessage.findMany({ where: { orderId }, include: messageInclude, orderBy: { createdAt: 'asc' } });
     },
 
-    create(data: { orderId: string; senderId: string; senderRole: Role; body: string }) {
+    create(data: { orderId: string; senderId: string | null; senderRole: Role; body: string }) {
       return db.orderMessage.create({ data, include: messageInclude });
     },
 

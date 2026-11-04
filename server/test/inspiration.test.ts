@@ -48,19 +48,14 @@ describe('orders inspired by a catalog item', () => {
     const client = await signedIn(ctx.app, CUSTOMER_A);
     const res = await submitOrder(
       client,
-      orderPayload({
-        inspirationItemId: item.id,
-        additionalSpecs: ' Graag met een vos in plaats van de maan. ',
-        serviceId: ctx.ids.wallServiceId,
-        customRequest: '',
-        communicationLocale: 'tr',
-      }),
+      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.wallServiceId, communicationLocale: 'tr' }),
       [pngFile()],
     ).expect(201);
 
     const expected = { id: item.id, title: 'Ay ışığında tepeler', imageUrl: '/media/portfolio/moon.svg' };
     expect(res.body.order.inspiration).toEqual(expected);
-    expect(res.body.order.additionalSpecs).toBe('Graag met een vos in plaats van de maan.');
+    // The title is derived from the example, in the order's communication language.
+    expect(res.body.order.title).toBe('Ay ışığında tepeler');
     // The catalog item is a reference, not an upload: it does not use an attachment slot.
     expect(res.body.order.attachments).toHaveLength(1);
 
@@ -71,10 +66,11 @@ describe('orders inspired by a catalog item', () => {
     expect(adminView.body.inspiration).toEqual(expected);
   });
 
-  it('accepts a catalog example as the only choice in the service step', async () => {
+  it('accepts a catalog example without a service', async () => {
     const item = await createItem();
     const client = await signedIn(ctx.app, CUSTOMER_A);
-    await submitOrder(client, orderPayload({ inspirationItemId: item.id, customRequest: '' })).expect(201);
+    const res = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
+    expect(res.body.order).toMatchObject({ serviceId: null, title: 'Maanlichtheuvels' });
   });
 
   it('works for guests too', async () => {
@@ -82,14 +78,11 @@ describe('orders inspired by a catalog item', () => {
     const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
-      orderPayload({
-        inspirationItemId: item.id,
-        email: 'inspired@test.local',
-        password: 'guest-password-1',
-        passwordConfirm: 'guest-password-1',
-      }),
+      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.serviceId, email: 'inspired@test.local' }),
     ).expect(201);
     expect(res.body.order.inspiration.id).toBe(item.id);
+    expect(res.body.order.serviceId).toBe(ctx.ids.serviceId);
+    expect(res.body.tracking.url).toMatch(/\/track#/);
   });
 
   it('rejects unpublished, disabled and unknown catalog items', async () => {
@@ -109,17 +102,19 @@ describe('orders inspired by a catalog item', () => {
   it('returns null when there is no inspiration, and after the item is deleted', async () => {
     const item = await createItem();
     const client = await signedIn(ctx.app, CUSTOMER_A);
-    // additionalSpecs only belongs with an example, so it is dropped without one.
-    const plain = await submitOrder(client, orderPayload({ additionalSpecs: 'ignored' })).expect(201);
+    // Fields of the former wizard are no longer accepted for new orders.
+    const plain = await submitOrder(client, orderPayload({ additionalSpecs: 'ignored', budgetMin: 100 })).expect(201);
     expect(plain.body.order.inspiration).toBeNull();
     expect(plain.body.order.additionalSpecs).toBeNull();
+    expect(plain.body.order.budgetMin).toBeNull();
 
     const inspired = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
     const admin = await signedIn(ctx.app, ADMIN);
     await admin.delete(`/api/admin/portfolio/${item.id}`).expect(204);
     const after = await client.get(`/api/orders/${inspired.body.order.id}`).expect(200);
     expect(after.body.inspiration).toBeNull();
-    expect(after.body.title).toBe('Hallway painting');
+    // The derived title was stored with the order, so it stays.
+    expect(after.body.title).toBe('Maanlichtheuvels');
   });
 });
 

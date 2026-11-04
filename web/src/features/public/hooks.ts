@@ -40,7 +40,7 @@ export function usePortfolio(filter: PortfolioFilter = {}) {
   });
 }
 
-/** One published catalog item (order wizard `?from=<id>`). */
+/** One published catalog item (order form `?from=<id>`). */
 export function usePortfolioItem(id: string | null) {
   const locale = useLocale();
   return useQuery({

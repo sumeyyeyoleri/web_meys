@@ -2,8 +2,8 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   closeTestPrisma,
   CUSTOMER_A,
+  CUSTOMER_B,
   eventually,
-  guest,
   IMAGES,
   orderPayload,
   pngFile,
@@ -87,17 +87,44 @@ describe('order creation', () => {
     expect(res.body.error.fields).toEqual({ serviceId: 'validation.invalidOption' });
   });
 
-  it('enforces budget and deadline when the admin requires them', async () => {
-    const strict = await setupTest({ settings: { budgetRequired: true, deadlineRequired: true } });
-    const client = await signedIn(strict.app, CUSTOMER_A);
-    const res = await submitOrder(client, orderPayload()).expect(400);
-    expect(res.body.error.fields).toMatchObject({
-      budgetMin: 'validation.required',
-      budgetMax: 'validation.required',
-      deadline: 'validation.required',
+  it('validates the size and the project address', async () => {
+    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const res = await submitOrder(
+      client,
+      orderPayload({ width: 0, height: 'abc', unit: 'INCH', country: '', city: ' ', postalCode: '', street: '', houseNumber: '' }),
+    ).expect(400);
+    expect(res.body.error.fields).toEqual({
+      width: 'validation.positive',
+      height: 'validation.number',
+      unit: 'validation.invalidOption',
+      country: 'validation.required',
+      city: 'validation.required',
+      postalCode: 'validation.required',
+      street: 'validation.required',
+      houseNumber: 'validation.required',
     });
-    const future = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
-    await submitOrder(client, orderPayload({ budgetMin: 300, budgetMax: 900, deadline: future })).expect(201);
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it('keeps the phone and the service optional and derives a title', async () => {
+    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const plain = await submitOrder(client, orderPayload({ phone: '', addressExtra: '' })).expect(201);
+    expect(plain.body.order).toMatchObject({ serviceId: null, contact: { phone: null }, projectAddress: { addressExtra: null } });
+    expect(plain.body.order.title).toBe('Warm earth tones, loose brushwork, something calm and quiet.');
+
+    const long = 'Een groot doek voor de inkomhal met zachte, warme kleuren en veel ruimte voor licht, zoals een ochtend aan zee.';
+    const cut = await submitOrder(client, orderPayload({ description: long })).expect(201);
+    expect(cut.body.order.title).toMatch(/^Een groot doek voor de inkomhal .*…$/);
+    expect(cut.body.order.title.length).toBeLessThanOrEqual(81);
+
+    const withService = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId, communicationLocale: 'en' })).expect(201);
+    expect(withService.body.order.title).toBe('Canvas EN');
+  });
+
+  it('saves the site language as the communication language', async () => {
+    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const res = await submitOrder(client, orderPayload({ communicationLocale: 'tr' })).expect(201);
+    expect(res.body.order.contact.communicationLocale).toBe('tr');
   });
 
   it('is idempotent for a repeated submission with the same key', async () => {
@@ -117,53 +144,44 @@ describe('order creation', () => {
   });
 });
 
-describe('guest orders', () => {
-  const guestData = (overrides: Record<string, unknown> = {}) =>
-    orderPayload({
-      email: 'new.customer@test.local',
-      fullName: 'Nieuwe Klant',
-      communicationLocale: 'tr',
-      password: 'guest-password-1',
-      passwordConfirm: 'guest-password-1',
-      ...overrides,
-    });
-
-  it('creates an account together with the order and signs the guest in', async () => {
-    const client = await guest(ctx.app);
-    const res = await submitOrder(client, guestData(), [pngFile()]).expect(201);
-    expect(res.body.user).toMatchObject({ email: 'new.customer@test.local', role: 'CUSTOMER', preferredLocale: 'tr' });
-    expect(res.body.user.profile.fullName).toBe('Nieuwe Klant');
-    expect(String(res.headers['set-cookie'])).toMatch(/sid=/);
-
-    const mine = await client.get('/api/orders').expect(200);
-    expect(mine.body.total).toBe(1);
+describe('signed-in customer orders', () => {
+  it('links the order to the account without a tracking link', async () => {
+    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const res = await submitOrder(client, orderPayload(), [pngFile()]).expect(201);
+    expect(res.body.tracking).toBeNull();
+    expect(res.body.order.attachments[0].url).toBe(`/api/attachments/${res.body.order.attachments[0].id}`);
+    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: res.body.order.id } });
+    expect(stored.customerId).toBe(ctx.ids.customerAId);
+    expect(await ctx.prisma.orderTrackingToken.count()).toBe(0);
+    expect((await client.get('/api/orders').expect(200)).body.total).toBe(1);
   });
 
-  it('requires a matching password for guests', async () => {
-    const client = await guest(ctx.app);
-    const res = await submitOrder(client, guestData({ passwordConfirm: 'something-else' })).expect(400);
-    expect(res.body.error.fields).toEqual({ passwordConfirm: 'validation.passwordsDontMatch' });
+  it('keeps the contact details typed for this order, even when they differ from the profile', async () => {
+    const client = await signedIn(ctx.app, CUSTOMER_A);
+    const res = await submitOrder(client, orderPayload({ fullName: 'Anna P.', email: 'anna.work@test.local' })).expect(201);
+    expect(res.body.order.contact).toMatchObject({ fullName: 'Anna P.', email: 'anna.work@test.local' });
+    const stored = await ctx.prisma.order.findUniqueOrThrow({ where: { id: res.body.order.id } });
+    expect(stored.customerId).toBe(ctx.ids.customerAId);
   });
 
-  it('asks the guest to log in when the email already has an account', async () => {
-    const client = await guest(ctx.app);
-    const res = await submitOrder(client, guestData({ email: CUSTOMER_A.email }), [pngFile()]).expect(409);
-    expect(res.body.error).toMatchObject({
-      code: 'ACCOUNT_EXISTS_LOGIN_REQUIRED',
-      fields: { email: 'validation.accountExistsLogin' },
-    });
-    expect(await ctx.prisma.order.count()).toBe(0);
-    expect(await ctx.prisma.user.count({ where: { email: CUSTOMER_A.email } })).toBe(1);
+  it('refuses an idempotency key that belongs to someone else', async () => {
+    const a = await signedIn(ctx.app, CUSTOMER_A);
+    const b = await signedIn(ctx.app, CUSTOMER_B);
+    const payload = orderPayload();
+    await submitOrder(a, payload).expect(201);
+    const res = await submitOrder(b, { ...payload, email: CUSTOMER_B.email }).expect(409);
+    expect(res.body.error.code).toBe('CONFLICT');
+    expect(await ctx.prisma.order.count()).toBe(1);
   });
 });
 
 describe('customer order access', () => {
   it('lists only the customer’s own orders, newest first, paginated', async () => {
     const a = await signedIn(ctx.app, CUSTOMER_A);
-    for (let i = 0; i < 3; i++) await submitOrder(a, orderPayload({ title: `Order ${i}` })).expect(201);
+    for (let i = 0; i < 3; i++) await submitOrder(a, orderPayload({ description: `Order ${i}: a calm painting in warm tones.` })).expect(201);
     const page = await a.get('/api/orders?page=1&pageSize=2').expect(200);
     expect(page.body).toMatchObject({ page: 1, pageSize: 2, total: 3, totalPages: 2 });
-    expect(page.body.items.map((o: { title: string }) => o.title)).toEqual(['Order 2', 'Order 1']);
+    expect(page.body.items.map((o: { title: string }) => o.title.slice(0, 7))).toEqual(['Order 2', 'Order 1']);
   });
 
   it('lets the customer cancel before acceptance but not afterwards', async () => {
