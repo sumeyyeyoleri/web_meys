@@ -91,7 +91,10 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 - Guest confirmation: order number, the private tracking link in a read-only field with "Copy link" / "Open order", and a clear "Save this link" notice; "We also emailed it" only when the email was really sent.
 
 ### Tracking page & admin
-- Same dark tokens. The customer's tracking page (`/track#<token>`) is a single order page; the admin orders list uses cards on mobile, a table on desktop. Status badges: small pill with dot + translated label.
+- Same dark tokens. The customer's tracking page (`/track#<token>`) is a single order page.
+- The dashboard has its own layout: a 264px side menu on the left (surface colour, brand on top, sections, then View site / Change password / Log out) and the content on the right under a slim sticky top bar (language switcher, notification bell). On phones the menu is a full-screen sheet opened from the top bar. Orders: cards on mobile, a table on desktop. Internal notes sit in a dashed amber panel labelled "Only visible to administrators". Status badges: small pill with dot + translated label.
+- Orders list: the reference is plain text; each row/card ends with a small secondary **"Details"** button, and the whole row/card is clickable. Customer panel: secondary **"Message on WhatsApp"** (chat icon) and **"Call"** (phone icon) buttons under the phone number.
+- Messages: a tiny outlined language pill (NL/EN/TR) before the sender line; under the other party's messages a muted underlined **"Translate"** link button (translate icon, spinner while working) that becomes **"Show original"**, with a small "Translation (DeepL)" caption under translated text and the error in red under the message. Same component on the tracking page.
 - Admin order detail shows an **"Inspired by"** card (thumbnail + title + link to the portfolio item) when the order has one.
 - Admin portfolio editor gets the new **Spaces** multi-select and an **"Show 'Request similar' button"** toggle (default on).
 
