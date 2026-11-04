@@ -8,8 +8,10 @@ import { loadConfig } from '../src/config/env';
 import { createContainer, type Container } from '../src/container';
 import { createApp } from '../src/http/app';
 import { DEFAULT_RATE_LIMITS, type RateLimitConfig } from '../src/http/middleware/rate-limit';
+import type { Locale } from '@painter/shared';
 import type { MailMessage, Mailer } from '../src/infrastructure/mailer';
 import { hashPassword } from '../src/infrastructure/password-hasher';
+import { TranslatorError, type Translator } from '../src/infrastructure/translator';
 
 export const ADMIN = { email: 'admin@test.local', password: 'admin-password-123' };
 /** Contact details of the default test order (customers have no account). */
@@ -26,10 +28,23 @@ export class FakeMailer implements Mailer {
   }
 }
 
+/** Stands in for DeepL (tests never call the real service): `[tr] text`, or a DeepL error status. */
+export class FakeTranslator implements Translator {
+  readonly calls: Array<{ text: string; target: Locale }> = [];
+  failWith: number | null = null;
+  constructor(readonly configured = true) {}
+  async translate(text: string, target: Locale): Promise<string> {
+    this.calls.push({ text, target });
+    if (this.failWith !== null) throw new TranslatorError('DeepL failed', this.failWith);
+    return `[${target}] ${text}`;
+  }
+}
+
 const TABLES = [
   'Notification',
   'OrderStatusHistory',
   'InternalAdminNote',
+  'MessageTranslation',
   'OrderMessage',
   'OrderAttachment',
   'OrderTrackingToken',
@@ -54,6 +69,7 @@ export interface TestContext {
   container: Container;
   prisma: PrismaClient;
   mailer: FakeMailer;
+  translator: FakeTranslator;
   ids: { adminId: string; serviceId: string; wallServiceId: string };
 }
 
@@ -84,7 +100,12 @@ async function createAdmin(prisma: PrismaClient) {
 
 /** Fresh database + app for one test. */
 export async function setupTest(
-  options: { rateLimits?: Partial<RateLimitConfig>; mailer?: FakeMailer; settings?: { emailNotificationsEnabled?: boolean } } = {},
+  options: {
+    rateLimits?: Partial<RateLimitConfig>;
+    mailer?: FakeMailer;
+    translator?: FakeTranslator;
+    settings?: { emailNotificationsEnabled?: boolean };
+  } = {},
 ): Promise<TestContext> {
   const prisma = testPrisma();
   await resetDatabase(prisma);
@@ -113,7 +134,8 @@ export async function setupTest(
   });
 
   const mailer = options.mailer ?? new FakeMailer(true);
-  const container = createContainer(loadConfig(), { prisma, mailer });
+  const translator = options.translator ?? new FakeTranslator(true);
+  const container = createContainer(loadConfig(), { prisma, mailer, translator });
   const app = createApp(container, { rateLimits: { ...NO_LIMITS, ...options.rateLimits } });
 
   return {
@@ -121,6 +143,7 @@ export async function setupTest(
     container,
     prisma,
     mailer,
+    translator,
     ids: {
       adminId: admin.id,
       serviceId: service.id,

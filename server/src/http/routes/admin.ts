@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { Services } from '../../container';
 import { createAdminContentController } from '../controllers/admin-content.controller';
 import { createAdminOrderController } from '../controllers/admin-order.controller';
@@ -6,7 +6,7 @@ import { requireAdmin } from '../middleware/auth';
 import { logoUpload, mediaUpload } from '../middleware/media-upload';
 
 /** Everything under /api/admin requires an administrator session. */
-export function createAdminRouter(services: Services): Router {
+export function createAdminRouter(services: Services, translationLimiter: RequestHandler): Router {
   const router = Router();
   const orders = createAdminOrderController(services);
   const content = createAdminContentController(services);
@@ -23,6 +23,7 @@ export function createAdminRouter(services: Services): Router {
   router.get('/orders/:id/messages', orders.listMessages);
   router.post('/orders/:id/messages', orders.sendMessage);
   router.post('/orders/:id/messages/read', orders.markMessagesRead);
+  router.post('/orders/:id/messages/:messageId/translate', translationLimiter, orders.translateMessage);
   router.post('/orders/:id/tracking-link', orders.regenerateTrackingLink);
   router.get('/orders/:id/notes', orders.listNotes);
   router.post('/orders/:id/notes', orders.addNote);

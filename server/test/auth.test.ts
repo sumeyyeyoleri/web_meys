@@ -173,3 +173,18 @@ describe('passwords', () => {
     expect(unconfigured.mailer.sent).toHaveLength(0);
   });
 });
+
+describe('dashboard preferences', () => {
+  it('stores the artist\'s language, Turkish by default', async () => {
+    const admin = await signedIn(ctx.app, ADMIN);
+    const fresh = await ctx.prisma.user.create({ data: { email: 'second@test.local', passwordHash: 'x' } });
+    expect(fresh.preferredLocale).toBe('TR');
+
+    const res = await admin.patch('/api/admin/me').send({ preferredLocale: 'en' }).expect(200);
+    expect(res.body.preferredLocale).toBe('en');
+    expect((await admin.get('/api/auth/me')).body.user.preferredLocale).toBe('en');
+    const bad = await admin.patch('/api/admin/me').send({ preferredLocale: 'de' }).expect(400);
+    expect(bad.body.error.fields).toEqual({ preferredLocale: 'validation.invalidOption' });
+    await (await guest(ctx.app)).patch('/api/admin/me').send({ preferredLocale: 'tr' }).expect(401);
+  });
+});

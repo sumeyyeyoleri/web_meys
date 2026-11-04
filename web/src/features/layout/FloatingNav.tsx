@@ -5,7 +5,7 @@ import { buttonClasses, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { cx } from '../../components/ui/cx';
 import { useSite } from '../public/hooks';
-import { AdminLogout } from './AdminLogout';
+import { DashboardLink } from './DashboardLink';
 import { BrandMark } from './BrandMark';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { MobileMenu } from './MobileMenu';
@@ -62,7 +62,7 @@ export function FloatingNav() {
 
         <div className="hidden items-center lg:flex">
           <LanguageSwitcher />
-          <AdminLogout />
+          <DashboardLink />
           <Link to="/order" className={buttonClasses('secondary', 'sm', 'ml-1 min-h-11 gap-1.5 px-4')}>
             <Icon name="plane" size={16} />
             {t('nav.order')}

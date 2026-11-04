@@ -2,9 +2,11 @@ import type { Request, Response } from 'express';
 import {
   changePasswordSchema,
   forgotPasswordSchema,
+  adminPreferencesSchema,
   loginSchema,
   resetPasswordSchema,
   type CsrfDto,
+  localeToDb,
 } from '@painter/shared';
 import type { Container } from '../../container';
 import { clearSessionCookie, setSessionCookie } from '../cookies';
@@ -54,6 +56,13 @@ export function createAuthController({ services, config }: Container) {
       await auth.resetPassword(parseBody(resetPasswordSchema, req));
       clearSessionCookie(res, config);
       res.status(204).end();
+    },
+
+    /** The artist's dashboard language (also used for the artist's emails). */
+    async updatePreferences(req: Request, res: Response) {
+      const { user } = getAuth(req);
+      const { preferredLocale } = parseBody(adminPreferencesSchema, req);
+      res.json(toUserDto(await services.users.updatePreferredLocale(user.id, localeToDb(preferredLocale))));
     },
 
     async changePassword(req: Request, res: Response) {

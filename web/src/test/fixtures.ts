@@ -17,6 +17,7 @@ export const site: SiteDto = {
     contactAddress: 'Straat 1, Gent',
     enabledLocales: ['nl-BE', 'en', 'tr'],
     emailAvailable: true,
+    translationAvailable: true,
     welcomeEnabled: false,
     welcomeImageUrl: null,
   },

@@ -42,6 +42,8 @@ export interface PublicSettingsDto {
   enabledLocales: Locale[];
   /** Whether the site can send emails (SMTP configured); e.g. for password reset links. */
   emailAvailable: boolean;
+  /** Whether messages can be machine-translated (DEEPL_API_KEY set); otherwise no "Translate" button. */
+  translationAvailable: boolean;
   /** Home page welcome screen (once per browser session). */
   welcomeEnabled: boolean;
   /** Welcome background; null → the first featured artwork. */
@@ -105,11 +107,20 @@ export interface MessageDto {
   id: string;
   senderRole: Role;
   senderName: string;
+  /** The sender's language when it was written (shown as NL/EN/TR). */
+  locale: Locale;
   body: string;
   readAt: string | null;
   createdAt: string;
   /** True when the current viewer wrote this message. */
   isOwn: boolean;
+}
+
+/** A machine translation of a message (cached on the server per target language). */
+export interface MessageTranslationDto {
+  messageId: string;
+  locale: Locale;
+  body: string;
 }
 
 export interface OrderSummaryDto {

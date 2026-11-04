@@ -15,8 +15,7 @@ export function AdminLoginPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const { data: user } = useMe();
-  // Until the dashboard exists (phase 9) the artist returns to the site.
-  const next = safeNextPath(params.get('next'));
+  const next = safeNextPath(params.get('next'), '/admin');
 
   if (user) return <Navigate to={next} replace />;
 

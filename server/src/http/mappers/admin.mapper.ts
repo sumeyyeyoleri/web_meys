@@ -16,7 +16,7 @@ import type { AdminServiceWithCount, PortfolioWithTranslations } from '../../rep
 import type { AdminOrderWithSummary, InternalNoteWithAuthor } from '../../repositories/admin-order.repository';
 import type { OrderWithDetail } from '../../repositories/order.repository';
 import { toIso, toIsoOrNull, toNumberOrNull } from './common';
-import { toPublicSettingsDto } from './content.mapper';
+import { toPublicSettingsDto, type SiteFeatures } from './content.mapper';
 import { toOrderDetailDto, toOrderSummaryDto } from './order.mapper';
 
 export function toAdminOrderSummaryDto(order: AdminOrderWithSummary, locale: Locale, unread: number): AdminOrderSummaryDto {
@@ -81,10 +81,10 @@ export function toAdminServiceDto(service: AdminServiceWithCount): AdminServiceD
   };
 }
 
-export function toAdminSettingsDto(settings: SiteSettings, smtpConfigured: boolean): AdminSettingsDto {
+export function toAdminSettingsDto(settings: SiteSettings, features: SiteFeatures): AdminSettingsDto {
   return {
-    ...toPublicSettingsDto(settings, smtpConfigured),
+    ...toPublicSettingsDto(settings, features),
     emailNotificationsEnabled: settings.emailNotificationsEnabled,
-    smtpConfigured,
+    smtpConfigured: features.emailAvailable,
   };
 }

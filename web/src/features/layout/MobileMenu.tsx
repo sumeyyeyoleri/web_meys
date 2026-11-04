@@ -4,7 +4,7 @@ import { buttonClasses } from '../../components/ui/Button';
 import { Dialog } from '../../components/ui/Dialog';
 import { Icon } from '../../components/ui/Icon';
 import { cx } from '../../components/ui/cx';
-import { AdminLogout } from './AdminLogout';
+import { DashboardLink } from './DashboardLink';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { NAV_LINKS } from './nav-links';
 
@@ -40,7 +40,7 @@ export function MobileMenu({ open, onClose, businessName }: { open: boolean; onC
         </Link>
 
         <div className="mt-auto flex flex-col gap-2 border-t border-border pt-6">
-          <AdminLogout onDone={onClose} className="self-start px-0 text-lg font-normal" />
+          <DashboardLink onClick={onClose} className="self-start px-0 text-lg font-normal" />
           <div className="mt-2 flex items-center gap-3">
             <Icon name="globe" className="text-text-subtle" />
             <LanguageSwitcher size="lg" />

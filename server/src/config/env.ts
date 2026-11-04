@@ -41,6 +41,9 @@ const envSchema = z
     SMTP_USER: optionalNonEmpty,
     SMTP_PASSWORD: optionalNonEmpty,
     SMTP_FROM: optionalNonEmpty,
+
+    /** Optional: message translation via DeepL. Without it there is no "Translate" button. */
+    DEEPL_API_KEY: optionalNonEmpty,
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_DRIVER === 's3') {
@@ -83,6 +86,7 @@ export interface AppConfig {
   smtp:
     | { host: string; port: number; secure: boolean; user: string | undefined; password: string | undefined; from: string }
     | null;
+  deeplApiKey: string | undefined;
 }
 
 /** Parses and validates the environment. Throws (fail fast) on bad configuration. */
@@ -126,5 +130,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
           from: env.SMTP_FROM!,
         }
       : null,
+    deeplApiKey: env.DEEPL_API_KEY,
   };
 }

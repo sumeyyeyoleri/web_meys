@@ -17,7 +17,7 @@ describe('app shell', () => {
     // No customer accounts: no login icon, account menu or notification bell for visitors.
     expect(screen.queryByRole('link', { name: 'Aanmelden' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Meldingen/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Afmelden' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Dashboard' })).toBeNull();
     expect(screen.getByRole('link', { name: /Naar de inhoud/ }).getAttribute('href')).toBe('#main');
     expect(await screen.findByText('Alle afbeeldingen op deze site zijn voorbeelden.')).toBeTruthy();
     // Dark accent → white text for contrast.
@@ -32,10 +32,10 @@ describe('app shell', () => {
     expect(screen.getByRole('link', { name: 'Naar de catalogus' })).toBeTruthy();
   });
 
-  it('only shows a log-out button while the artist is signed in', async () => {
+  it('only shows a link to the dashboard while the artist is signed in', async () => {
     mockApi({ user: adminUser });
     renderApp('/');
-    expect((await screen.findAllByRole('button', { name: 'Afmelden' })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('link', { name: 'Dashboard' }))[0]!.getAttribute('href')).toBe('/admin');
     expect(screen.queryByRole('button', { name: /Meldingen/ })).toBeNull();
   });
 

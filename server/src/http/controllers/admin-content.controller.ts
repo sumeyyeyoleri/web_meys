@@ -14,7 +14,7 @@ import { toAdminPortfolioItemDto, toAdminServiceDto, toAdminSettingsDto } from '
 import { incomingFile } from '../middleware/media-upload';
 import { parseBody, parseIdParam } from '../middleware/validation';
 
-export function createAdminContentController({ adminContent }: Services) {
+export function createAdminContentController({ adminContent, translation }: Services) {
   return {
     /* Portfolio */
     async listPortfolio(_req: Request, res: Response) {
@@ -80,19 +80,19 @@ export function createAdminContentController({ adminContent }: Services) {
     /* Settings */
     async getSettings(_req: Request, res: Response) {
       const { settings, smtpConfigured } = await adminContent.getSettings();
-      res.json(toAdminSettingsDto(settings, smtpConfigured));
+      res.json(toAdminSettingsDto(settings, { emailAvailable: smtpConfigured, translationAvailable: translation.available }));
     },
     async updateSettings(req: Request, res: Response) {
       const { settings, smtpConfigured } = await adminContent.updateSettings(parseBody(siteSettingsSchema, req));
-      res.json(toAdminSettingsDto(settings, smtpConfigured));
+      res.json(toAdminSettingsDto(settings, { emailAvailable: smtpConfigured, translationAvailable: translation.available }));
     },
     async uploadLogo(req: Request, res: Response) {
       const { settings, smtpConfigured } = await adminContent.uploadLogo(incomingFile(req));
-      res.json(toAdminSettingsDto(settings, smtpConfigured));
+      res.json(toAdminSettingsDto(settings, { emailAvailable: smtpConfigured, translationAvailable: translation.available }));
     },
     async removeLogo(_req: Request, res: Response) {
       const { settings, smtpConfigured } = await adminContent.removeLogo();
-      res.json(toAdminSettingsDto(settings, smtpConfigured));
+      res.json(toAdminSettingsDto(settings, { emailAvailable: smtpConfigured, translationAvailable: translation.available }));
     },
 
     /* Media */

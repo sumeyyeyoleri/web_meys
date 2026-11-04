@@ -8,7 +8,9 @@ import {
   isLocale,
   localeFromDb,
   messageBodySchema,
+  translateMessageSchema,
   type AdminStatsDto,
+  type MessageTranslationDto,
   type TrackingLinkDto,
   type Locale,
 } from '@painter/shared';
@@ -28,7 +30,7 @@ function adminLocale(req: Request): Locale {
 
 const listQuery = adminOrderListQuerySchema.extend({ locale: z.string().optional() });
 
-export function createAdminOrderController({ adminOrders, messages, content, tracking }: Services) {
+export function createAdminOrderController({ adminOrders, messages, content, tracking, translation }: Services) {
   const actorOf = (req: Request) => adminActor(getAuth(req).user.id);
 
   async function sendDetail(req: Request, res: Response, id: string) {
@@ -126,6 +128,18 @@ export function createAdminOrderController({ adminOrders, messages, content, tra
     async markMessagesRead(req: Request, res: Response) {
       await messages.markRead(parseIdParam(req), actorOf(req));
       res.status(204).end();
+    },
+
+    /** Translates a message (typically the customer's) into the dashboard language. */
+    async translateMessage(req: Request, res: Response) {
+      const { targetLocale } = parseBody(translateMessageSchema, req);
+      const body: MessageTranslationDto = await translation.translateMessage(
+        parseIdParam(req),
+        actorOf(req),
+        parseIdParam(req, 'messageId'),
+        targetLocale,
+      );
+      res.json(body);
     },
 
     /** Revokes the earlier links of the order and returns a new one (shown once, emailed when possible). */

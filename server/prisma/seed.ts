@@ -22,7 +22,7 @@ import { generateToken, sha256 } from '../src/infrastructure/crypto';
 import { hashPassword, verifyPassword } from '../src/infrastructure/password-hasher';
 import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
-import { SEED_CONTENT, SEED_PORTFOLIO, SEED_SERVICES, SEED_SETTINGS } from './seed-data/content';
+import { SEED_CONTENT, SEED_PORTFOLIO, SEED_SERVICES, SEED_SETTINGS, SUPERSEDED_CONTENT } from './seed-data/content';
 
 const env = z
   .object({
@@ -48,7 +48,7 @@ async function seedAdmin() {
   const existing = await prisma.user.findUnique({ where: { email: env.ADMIN_EMAIL } });
   if (!existing) {
     return prisma.user.create({
-      data: { email: env.ADMIN_EMAIL, passwordHash: await hashPassword(env.ADMIN_PASSWORD), preferredLocale: 'NL_BE' },
+      data: { email: env.ADMIN_EMAIL, passwordHash: await hashPassword(env.ADMIN_PASSWORD), preferredLocale: 'TR' },
     });
   }
   if (!(await verifyPassword(existing.passwordHash, env.ADMIN_PASSWORD))) {
@@ -137,11 +137,20 @@ async function seedPortfolio() {
 async function seedContentAndSettings() {
   for (const key of CONTENT_KEYS) {
     for (const locale of LOCALES) {
+      const where = { key_locale: { key, locale: localeToDb(locale) } };
       await prisma.localizedContent.upsert({
-        where: { key_locale: { key, locale: localeToDb(locale) } },
+        where,
         update: {},
         create: { key, locale: localeToDb(locale), value: SEED_CONTENT[key][locale] },
       });
+      // An unchanged earlier default gets the current one (e.g. the DeepL note in the privacy text).
+      const superseded = SUPERSEDED_CONTENT[key]?.[locale];
+      if (superseded) {
+        await prisma.localizedContent.updateMany({
+          where: { key, locale: localeToDb(locale), value: { in: superseded } },
+          data: { value: SEED_CONTENT[key][locale] },
+        });
+      }
     }
   }
 
@@ -249,6 +258,7 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
             orderId: order.id,
             senderId: null,
             senderRole: 'CUSTOMER',
+            locale: 'NL_BE',
             body: 'Goeiedag, is het mogelijk om ook het plafond gedeeltelijk mee te nemen in het ontwerp?',
             readAt: daysAgo(9),
             createdAt: daysAgo(10, 9),
@@ -257,6 +267,7 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
             orderId: order.id,
             senderId: adminId,
             senderRole: 'ADMIN',
+            locale: 'NL_BE',
             body: 'Dag! Dat kan zeker. Ik werk een voorstel uit en bezorg u binnenkort een offerte.',
             readAt: daysAgo(8),
             createdAt: daysAgo(9, 14),
@@ -265,6 +276,7 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
             orderId: order.id,
             senderId: adminId,
             senderRole: 'ADMIN',
+            locale: 'NL_BE',
             body: 'Uw offerte staat klaar via uw persoonlijke link. Laat gerust weten als u vragen hebt.',
             readAt: null,
             createdAt: daysAgo(3, 11),

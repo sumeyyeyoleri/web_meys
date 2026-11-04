@@ -7,7 +7,7 @@ export interface RateLimitRule {
   limit: number;
 }
 
-export const RATE_LIMIT_NAMES = ['login', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message', 'tracking'] as const;
+export const RATE_LIMIT_NAMES = ['login', 'forgotPassword', 'resetPassword', 'orderSubmit', 'message', 'tracking', 'translation'] as const;
 export type RateLimitName = (typeof RATE_LIMIT_NAMES)[number];
 export type RateLimitConfig = Record<RateLimitName, RateLimitRule>;
 
@@ -21,6 +21,8 @@ export const DEFAULT_RATE_LIMITS: RateLimitConfig = {
   message: { windowMs: 10 * MINUTE, limit: 30 },
   // Generous enough for the tracking page polling, low enough to make guessing tokens pointless.
   tracking: { windowMs: 15 * MINUTE, limit: 300 },
+  // Each DeepL call costs quota; translations are cached, so real use stays far below this.
+  translation: { windowMs: 15 * MINUTE, limit: 60 },
 };
 
 export function createRateLimiters(config: RateLimitConfig): Record<RateLimitName, RequestHandler> {
@@ -42,5 +44,6 @@ export function createRateLimiters(config: RateLimitConfig): Record<RateLimitNam
     orderSubmit: make(config.orderSubmit),
     message: make(config.message),
     tracking: make(config.tracking),
+    translation: make(config.translation),
   };
 }

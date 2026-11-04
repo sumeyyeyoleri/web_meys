@@ -1,4 +1,4 @@
-import type { MessageDto } from '@painter/shared';
+import { localeFromDb, type MessageDto } from '@painter/shared';
 import type { MessageWithSender } from '../../repositories/message.repository';
 import { toIso, toIsoOrNull } from './common';
 
@@ -17,6 +17,7 @@ export function toMessageDto(message: MessageWithSender, viewerId: string | null
     id: message.id,
     senderRole: message.senderRole,
     senderName: message.senderRole === 'ADMIN' ? names.businessName : names.contactName,
+    locale: localeFromDb(message.locale),
     body: message.body,
     readAt: toIsoOrNull(message.readAt),
     createdAt: toIso(message.createdAt),

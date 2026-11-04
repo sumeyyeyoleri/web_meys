@@ -23,6 +23,14 @@ const PATHS = {
   image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9a1 1 0 1 0 0-.01',
   external: 'M14 4h6v6m0-6-9 9M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5',
   globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-9-9h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9s1.3-6.4 3.8-9Z',
+  dashboard: 'M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z',
+  inbox: 'M3 13l3-8h12l3 8v6H3zM3 13h5l1.5 2.5h5L16 13h5',
+  chat: 'M4 5h16v11H9l-5 4V5Zm4 5h8M8 13h5',
+  translate: 'M3 5h9M7.5 3v2M5 5c.8 3.5 3.5 6 6 7M10 5c-.8 3.5-3.5 6-6 7M13 21l4-10 4 10M14.5 17.5h5',
+  lock: 'M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+  logout: 'M14 4h5v16h-5M10 8l-4 4 4 4M6 12h10',
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+  download: 'M12 4v11m-5-5 5 5 5-5M4 19h16',
 } as const;
 
 export type IconName = keyof typeof PATHS;

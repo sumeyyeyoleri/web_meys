@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import {
   adminOrderUpdateSchema,
+  adminPreferencesSchema,
   adminStatusChangeSchema,
   createOrderSchema,
   changePasswordSchema,
@@ -15,6 +16,7 @@ import {
   internalNoteSchema,
   loginSchema,
   messageBodySchema,
+  translateMessageSchema,
   portfolioItemSchema,
   reorderSchema,
   resetPasswordSchema,
@@ -43,6 +45,7 @@ const errors = (...statuses: number[]) =>
   Object.fromEntries(statuses.map((status) => [String(status), { $ref: `#/components/responses/E${status}` }]));
 
 const idParam = { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } };
+const messageIdParam = { ...idParam, name: 'messageId' };
 const localeParam = { name: 'locale', in: 'query', schema: { type: 'string', enum: [...LOCALES] } };
 const pageParams = [
   { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
@@ -130,6 +133,7 @@ const schemas: Record<string, Json> = {
       contactAddress: nstr,
       enabledLocales: { type: 'array', items: locale },
       emailAvailable: { type: 'boolean', description: 'SMTP configured — the site can send emails' },
+      translationAvailable: { type: 'boolean', description: 'DEEPL_API_KEY configured — messages can be translated' },
       welcomeEnabled: { type: 'boolean', description: 'Home page welcome screen, once per browser session' },
       welcomeImageUrl: { type: 'string', nullable: true, description: 'Welcome background; null → the first featured artwork' },
     },
@@ -263,11 +267,17 @@ const schemas: Record<string, Json> = {
       id: str,
       senderRole: str,
       senderName: str,
+      locale: { type: 'string', enum: [...LOCALES], description: "The sender's language when it was written" },
       body: str,
       readAt: nDateTime,
       createdAt: dateTime,
       isOwn: bool,
     },
+  },
+  MessageTranslation: {
+    type: 'object',
+    description: 'Machine translation (DeepL), stored per message and language.',
+    properties: { messageId: str, locale: { type: 'string', enum: [...LOCALES] }, body: str },
   },
   InternalNote: {
     type: 'object',
@@ -372,6 +382,8 @@ export function buildOpenApiSpec(): Json {
         E404: errorResponse('Not found — also returned for unknown, expired or revoked tracking tokens'),
         E409: errorResponse('Conflict (ORDER_INVALID_TRANSITION, SERVICE_IN_USE, …)'),
         E429: errorResponse('Rate limited (RATE_LIMITED)'),
+        E502: errorResponse('Translation service error (TRANSLATION_FAILED)'),
+        E503: errorResponse('Translation not configured or quota used up (TRANSLATION_UNAVAILABLE, TRANSLATION_LIMIT_REACHED)'),
       },
     },
     paths: {
@@ -481,6 +493,16 @@ export function buildOpenApiSpec(): Json {
       '/api/track/messages/read': {
         post: { tags: ['Tracking'], summary: 'Mark the thread as read', security: trackingCsrf, responses: { 204: ok('Done'), ...errors(403, 404, 429) } },
       },
+      '/api/track/messages/{messageId}/translate': {
+        post: {
+          tags: ['Tracking'],
+          summary: 'Translate a message (on request, cached)',
+          security: trackingCsrf,
+          parameters: [messageIdParam],
+          requestBody: body(translateMessageSchema),
+          responses: { 200: ok('Translation', ref('MessageTranslation')), ...errors(400, 403, 404, 429, 502, 503) },
+        },
+      },
       '/api/track/attachments/{id}': {
         get: {
           tags: ['Tracking'],
@@ -513,6 +535,9 @@ export function buildOpenApiSpec(): Json {
         post: { tags: ['Notifications'], summary: 'Mark all as read', security: csrf, responses: { 204: ok('Done'), ...errors(401) } },
       },
 
+      '/api/admin/me': {
+        patch: { tags: ['Admin: orders'], summary: "The artist's dashboard language (also used for the artist's emails)", security: csrf, requestBody: body(adminPreferencesSchema), responses: { 200: ok('Updated', ref('User')), ...errors(400, 401, 403) } },
+      },
       '/api/admin/stats': {
         get: { tags: ['Admin: orders'], summary: 'Dashboard overview', security: session, responses: { 200: ok('Stats', ref('AdminStats')), ...errors(401, 403) } },
       },
@@ -549,6 +574,16 @@ export function buildOpenApiSpec(): Json {
       },
       '/api/admin/orders/{id}/messages/read': {
         post: { tags: ['Admin: orders'], summary: 'Mark customer messages as read', security: csrf, parameters: [idParam], responses: { 204: ok('Done'), ...errors(401, 403, 404) } },
+      },
+      '/api/admin/orders/{id}/messages/{messageId}/translate': {
+        post: {
+          tags: ['Admin: orders'],
+          summary: 'Translate a message (on request, cached)',
+          security: csrf,
+          parameters: [idParam, messageIdParam],
+          requestBody: body(translateMessageSchema),
+          responses: { 200: ok('Translation', ref('MessageTranslation')), ...errors(400, 401, 403, 404, 429, 502, 503) },
+        },
       },
       '/api/admin/orders/{id}/tracking-link': {
         post: {

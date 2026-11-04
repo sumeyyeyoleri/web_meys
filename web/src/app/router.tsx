@@ -13,15 +13,24 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 export const routes: RouteObject[] = [
   {
-    // The artist's sign-in pages: own dark screen without the public navigation (§18.3).
+    // The artist's area: sign-in pages, then the dashboard with its own layout (PROMPT.md §10, §18.3).
     path: 'admin',
     errorElement: <ErrorPage />,
     children: [
-      // The dashboard itself follows in phase 9; until then /admin leads to the login.
-      { index: true, element: <Navigate to="/admin/login" replace /> },
       { path: 'login', element: <AdminLoginPage /> },
       { path: 'forgot-password', element: <AdminForgotPasswordPage /> },
       { path: 'reset-password', element: <AdminResetPasswordPage /> },
+      {
+        // Loaded on demand: visitors never download the dashboard.
+        lazy: async () => ({ Component: (await import('../features/admin/layout/AdminLayout')).AdminLayout }),
+        children: [
+          { index: true, lazy: async () => ({ Component: (await import('../features/admin/DashboardPage')).DashboardPage }) },
+          { path: 'orders', lazy: async () => ({ Component: (await import('../features/admin/orders/OrdersPage')).OrdersPage }) },
+          { path: 'orders/:id', lazy: async () => ({ Component: (await import('../features/admin/orders/OrderDetailPage')).OrderDetailPage }) },
+          { path: 'password', lazy: async () => ({ Component: (await import('../features/admin/ChangePasswordPage')).ChangePasswordPage }) },
+          { path: '*', lazy: async () => ({ Component: (await import('../features/admin/AdminNotFound')).AdminNotFound }) },
+        ],
+      },
     ],
   },
   {

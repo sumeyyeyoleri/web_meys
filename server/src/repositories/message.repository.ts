@@ -1,4 +1,4 @@
-import type { Role } from '@prisma/client';
+import type { Locale as DbLocale, Role } from '@prisma/client';
 import type { Db } from './db';
 
 
@@ -8,7 +8,11 @@ export function createMessageRepository(db: Db) {
       return db.orderMessage.findMany({ where: { orderId }, orderBy: { createdAt: 'asc' } });
     },
 
-    create(data: { orderId: string; senderId: string | null; senderRole: Role; body: string }) {
+    findInOrder(orderId: string, id: string) {
+      return db.orderMessage.findFirst({ where: { id, orderId } });
+    },
+
+    create(data: { orderId: string; senderId: string | null; senderRole: Role; locale: DbLocale; body: string }) {
       return db.orderMessage.create({ data });
     },
 

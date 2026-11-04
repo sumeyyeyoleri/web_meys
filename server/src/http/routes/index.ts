@@ -46,6 +46,7 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.get('/track/messages', tracked, tracking.listMessages);
   router.post('/track/messages', tracked, limiters.message, tracking.sendMessage);
   router.post('/track/messages/read', tracked, tracking.markMessagesRead);
+  router.post('/track/messages/:messageId/translate', tracked, limiters.translation, tracking.translateMessage);
   router.get('/track/attachments/:id', tracked, tracking.attachment);
 
   // Reference images for the artist (customers use /track/attachments/:id)
@@ -58,7 +59,8 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
   router.post('/notifications/:id/read', requireAdmin, notifications.markRead);
 
   // Administration
-  router.use('/admin', createAdminRouter(container.services));
+  router.patch('/admin/me', requireAdmin, auth.updatePreferences);
+  router.use('/admin', createAdminRouter(container.services, limiters.translation));
 
   return router;
 }

@@ -23,8 +23,11 @@ export function createMessageService({ repos, transaction, orders, email }: Deps
 
     async send(orderId: string, viewer: Actor, body: string) {
       const order = await orders.loadOrder(orderId, viewer);
+      // The artist writes in the dashboard language; the customer in the order's communication language.
+      const artist = viewer.id ? await repos.users.findById(viewer.id) : null;
+      const locale = artist?.preferredLocale ?? order.communicationLocale;
       const { message, recipients } = await transaction(async (tx) => {
-        const message = await tx.messages.create({ orderId: order.id, senderId: viewer.id, senderRole: viewer.role, body });
+        const message = await tx.messages.create({ orderId: order.id, senderId: viewer.id, senderRole: viewer.role, locale, body });
         const recipients = await notificationRecorder.messageSent(tx, order, viewer.role);
         return { message, recipients };
       });

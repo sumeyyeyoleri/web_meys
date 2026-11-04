@@ -3,7 +3,13 @@ import { localeFromDb, type Locale, type PortfolioItemDto, type PublicSettingsDt
 import { pickTranslation } from '../../domain/localization';
 import { toNumberOrNull } from './common';
 
-export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: boolean): PublicSettingsDto {
+/** What the server can do with its configuration (SMTP, DeepL). */
+export interface SiteFeatures {
+  emailAvailable: boolean;
+  translationAvailable: boolean;
+}
+
+export function toPublicSettingsDto(settings: SiteSettings, { emailAvailable, translationAvailable }: SiteFeatures): PublicSettingsDto {
   return {
     businessName: settings.businessName,
     logoUrl: settings.logoUrl,
@@ -14,6 +20,7 @@ export function toPublicSettingsDto(settings: SiteSettings, emailAvailable: bool
     contactAddress: settings.contactAddress,
     enabledLocales: settings.enabledLocales.map(localeFromDb),
     emailAvailable,
+    translationAvailable,
     welcomeEnabled: settings.welcomeEnabled,
     welcomeImageUrl: settings.welcomeImageUrl,
   };

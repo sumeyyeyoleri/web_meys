@@ -1,3 +1,4 @@
+import type { Locale } from '@prisma/client';
 import type { Db } from './db';
 
 /** Accounts are the artist's only (customers order without one). */
@@ -13,6 +14,10 @@ export function createUserRepository(db: Db) {
 
     updatePassword(id: string, passwordHash: string) {
       return db.user.update({ where: { id }, data: { passwordHash } });
+    },
+
+    updatePreferredLocale(id: string, preferredLocale: Locale) {
+      return db.user.update({ where: { id }, data: { preferredLocale } });
     },
 
     async findAdmins() {

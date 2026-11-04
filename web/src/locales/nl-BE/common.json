@@ -10,7 +10,8 @@
     "openMenu": "Menu openen",
     "closeMenu": "Menu sluiten",
     "logout": "Afmelden",
-    "signedInAs": "Aangemeld als {{email}}"
+    "signedInAs": "Aangemeld als {{email}}",
+    "dashboard": "Dashboard"
   },
   "language": {
     "label": "Taal",
@@ -34,7 +35,9 @@
     "send": "Versturen",
     "goHome": "Naar de startpagina",
     "reload": "Pagina vernieuwen",
-    "viewAll": "Alles bekijken"
+    "viewAll": "Alles bekijken",
+    "download": "Downloaden",
+    "copy": "Kopiëren"
   },
   "labels": {
     "example": "Voorbeeld",
@@ -103,7 +106,10 @@
     "UPLOAD_INVALID_TYPE": "Enkel JPG-, PNG- en WebP-afbeeldingen zijn toegestaan.",
     "PAYLOAD_TOO_LARGE": "De aanvraag is te groot.",
     "INTERNAL_ERROR": "Er ging iets mis aan onze kant. Probeer het later opnieuw.",
-    "UPLOAD_UNSAFE_SVG": "Dit SVG-bestand bevat actieve inhoud en werd geweigerd."
+    "UPLOAD_UNSAFE_SVG": "Dit SVG-bestand bevat actieve inhoud en werd geweigerd.",
+    "TRANSLATION_UNAVAILABLE": "Vertalen is momenteel niet beschikbaar.",
+    "TRANSLATION_FAILED": "Het bericht kon niet worden vertaald. Probeer het zo meteen opnieuw.",
+    "TRANSLATION_LIMIT_REACHED": "Het vertaalquotum voor deze maand is op. U kunt het originele bericht nog lezen."
   },
   "pages": {
     "notFound": {
@@ -136,5 +142,12 @@
     "region": "Meldingen op het scherm",
     "dismiss": "Melding sluiten",
     "loggedOut": "U bent afgemeld."
+  },
+  "messages": {
+    "translate": "Vertalen",
+    "translating": "Bezig met vertalen…",
+    "showOriginal": "Origineel tonen",
+    "translated": "Vertaling (DeepL)",
+    "languageTag": "Taal van het bericht: {{language}}"
   }
 }

@@ -10,7 +10,8 @@
     "openMenu": "Menüyü aç",
     "closeMenu": "Menüyü kapat",
     "logout": "Çıkış yap",
-    "signedInAs": "{{email}} olarak giriş yapıldı"
+    "signedInAs": "{{email}} olarak giriş yapıldı",
+    "dashboard": "Panel"
   },
   "language": {
     "label": "Dil",
@@ -34,7 +35,9 @@
     "send": "Gönder",
     "goHome": "Ana sayfaya dön",
     "reload": "Sayfayı yenile",
-    "viewAll": "Tümünü gör"
+    "viewAll": "Tümünü gör",
+    "download": "İndir",
+    "copy": "Kopyala"
   },
   "labels": {
     "example": "Örnek",
@@ -103,7 +106,10 @@
     "UPLOAD_INVALID_TYPE": "Yalnızca JPG, PNG ve WebP görselleri kabul edilir.",
     "PAYLOAD_TOO_LARGE": "İstek çok büyük.",
     "INTERNAL_ERROR": "Bizim tarafımızda bir sorun oluştu. Lütfen daha sonra tekrar deneyin.",
-    "UPLOAD_UNSAFE_SVG": "Bu SVG dosyası etkin içerik barındırdığı için reddedildi."
+    "UPLOAD_UNSAFE_SVG": "Bu SVG dosyası etkin içerik barındırdığı için reddedildi.",
+    "TRANSLATION_UNAVAILABLE": "Çeviri şu anda kullanılamıyor.",
+    "TRANSLATION_FAILED": "Mesaj çevrilemedi. Biraz sonra tekrar deneyin.",
+    "TRANSLATION_LIMIT_REACHED": "Bu ayki çeviri kotası doldu. Orijinal mesajı okuyabilirsiniz."
   },
   "pages": {
     "notFound": {
@@ -136,5 +142,12 @@
     "region": "Ekran bildirimleri",
     "dismiss": "Mesajı kapat",
     "loggedOut": "Çıkış yaptınız."
+  },
+  "messages": {
+    "translate": "Çevir",
+    "translating": "Çevriliyor…",
+    "showOriginal": "Orijinali göster",
+    "translated": "Çeviri (DeepL)",
+    "languageTag": "Mesajın dili: {{language}}"
   }
 }

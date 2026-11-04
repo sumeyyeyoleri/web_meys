@@ -108,6 +108,12 @@ export const messageBodySchema = z.object({
 });
 export type MessageBodyInput = z.infer<typeof messageBodySchema>;
 
+/** "Translate" on a message: into the viewer's current language. */
+export const translateMessageSchema = z.object({
+  targetLocale: localeSchema,
+});
+export type TranslateMessageInput = z.infer<typeof translateMessageSchema>;
+
 /* ---------- Queries ---------- */
 
 export const adminOrderListQuerySchema = paginationQuerySchema.extend({

@@ -84,8 +84,8 @@ model User {
   /// Always stored lower-cased.
   email           String   @unique
   passwordHash    String
-  /// UI language and preferred communication language.
-  preferredLocale Locale   @default(NL_BE)
+  /// Language of the dashboard and of the artist's emails (chosen in the dashboard; Turkish by default).
+  preferredLocale Locale   @default(TR)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -255,15 +255,33 @@ model OrderMessage {
   /// The artist who wrote it; null for customer messages (written through the tracking link).
   senderId   String?   @db.Uuid
   senderRole Role
+  /// The sender's language when it was written: the artist's dashboard language or the order's
+  /// communication language for customer messages. Shown as a small tag (NL/EN/TR).
+  locale     Locale
   body       String
   readAt     DateTime?
   createdAt  DateTime  @default(now())
 
-  order  Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  sender User? @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  order        Order                @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  sender       User?                @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  translations MessageTranslation[]
 
   @@index([orderId, createdAt])
   @@index([senderRole, readAt])
+}
+
+/// Cached machine translation (DeepL) of a message, made only on request ("Translate" button).
+/// One row per message and target language, so the same translation is never paid for twice.
+model MessageTranslation {
+  id           String   @id @default(uuid()) @db.Uuid
+  messageId    String   @db.Uuid
+  targetLocale Locale
+  body         String
+  createdAt    DateTime @default(now())
+
+  message OrderMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, targetLocale])
 }
 
 /// Notes only administrators can see. Deliberately a separate table from OrderMessage.

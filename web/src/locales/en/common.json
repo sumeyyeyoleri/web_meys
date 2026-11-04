@@ -10,7 +10,8 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "logout": "Log out",
-    "signedInAs": "Signed in as {{email}}"
+    "signedInAs": "Signed in as {{email}}",
+    "dashboard": "Dashboard"
   },
   "language": {
     "label": "Language",
@@ -34,7 +35,9 @@
     "send": "Send",
     "goHome": "Go to the home page",
     "reload": "Reload page",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "download": "Download",
+    "copy": "Copy"
   },
   "labels": {
     "example": "Example",
@@ -103,7 +106,10 @@
     "UPLOAD_INVALID_TYPE": "Only JPG, PNG and WebP images are allowed.",
     "PAYLOAD_TOO_LARGE": "The request is too large.",
     "INTERNAL_ERROR": "Something went wrong on our side. Please try again later.",
-    "UPLOAD_UNSAFE_SVG": "This SVG file contains active content and was rejected."
+    "UPLOAD_UNSAFE_SVG": "This SVG file contains active content and was rejected.",
+    "TRANSLATION_UNAVAILABLE": "Translation is not available right now.",
+    "TRANSLATION_FAILED": "The message could not be translated. Please try again in a moment.",
+    "TRANSLATION_LIMIT_REACHED": "This month’s translation quota is used up. You can still read the original message."
   },
   "pages": {
     "notFound": {
@@ -136,5 +142,12 @@
     "region": "On-screen messages",
     "dismiss": "Dismiss message",
     "loggedOut": "You have been logged out."
+  },
+  "messages": {
+    "translate": "Translate",
+    "translating": "Translating…",
+    "showOriginal": "Show original",
+    "translated": "Translation (DeepL)",
+    "languageTag": "Message language: {{language}}"
   }
 }

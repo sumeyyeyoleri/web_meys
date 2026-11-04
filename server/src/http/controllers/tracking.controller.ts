@@ -1,12 +1,20 @@
 import type { Request, Response } from 'express';
-import { customerStatusActionSchema, isLocale, localeFromDb, messageBodySchema, type Locale } from '@painter/shared';
+import {
+  customerStatusActionSchema,
+  isLocale,
+  localeFromDb,
+  messageBodySchema,
+  translateMessageSchema,
+  type Locale,
+  type MessageTranslationDto,
+} from '@painter/shared';
 import type { Services } from '../../container';
 import type { OrderWithDetail } from '../../repositories/order.repository';
 import { customerActor } from '../../services/order.service';
 import { toMessageDto } from '../mappers/message.mapper';
 import { toOrderDetailDto } from '../mappers/order.mapper';
 import { getTrackedOrderId } from '../middleware/tracking';
-import { parseBody } from '../middleware/validation';
+import { parseBody, parseIdParam } from '../middleware/validation';
 import { sendAttachment } from './attachment.controller';
 
 /** `?locale=` (the site language) or the order's communication language. */
@@ -19,7 +27,7 @@ function trackingLocale(req: Request, order: OrderWithDetail): Locale {
  * The customer's view of an order through the private tracking link: order detail, status
  * actions and the message thread, authorised by the token (customers have no account).
  */
-export function createTrackingController({ orders, messages, attachments, content }: Services) {
+export function createTrackingController({ orders, messages, attachments, content, translation }: Services) {
   const actorOf = (req: Request) => customerActor(getTrackedOrderId(req));
 
   return {
@@ -56,6 +64,18 @@ export function createTrackingController({ orders, messages, attachments, conten
     async markMessagesRead(req: Request, res: Response) {
       await messages.markRead(getTrackedOrderId(req), actorOf(req));
       res.status(204).end();
+    },
+
+    /** The customer translates a message (typically the artist's) into the site language. */
+    async translateMessage(req: Request, res: Response) {
+      const { targetLocale } = parseBody(translateMessageSchema, req);
+      const body: MessageTranslationDto = await translation.translateMessage(
+        getTrackedOrderId(req),
+        actorOf(req),
+        parseIdParam(req, 'messageId'),
+        targetLocale,
+      );
+      res.json(body);
     },
 
     async attachment(req: Request, res: Response) {

@@ -6,13 +6,22 @@ import { useSite } from '../public/hooks';
 
 const SHORT: Record<Locale, string> = { 'nl-BE': 'NL', en: 'EN', tr: 'TR' };
 
+interface LanguageSwitcherProps {
+  size?: 'sm' | 'lg';
+  className?: string;
+  /** Instead of only switching the UI (e.g. the dashboard also saves the artist's choice). */
+  onSelect?: (locale: Locale) => void;
+  /** The dashboard offers every language, also those disabled for the public site. */
+  allLocales?: boolean;
+}
+
 /** NL / EN / TR — only the languages the admin enabled; the active one is full white. */
-export function LanguageSwitcher({ size = 'sm', className }: { size?: 'sm' | 'lg'; className?: string }) {
+export function LanguageSwitcher({ size = 'sm', className, onSelect, allLocales }: LanguageSwitcherProps) {
   const { t } = useTranslation();
   const active = useLocale();
   const { data: site } = useSite();
   const enabled = site?.settings.enabledLocales ?? [...LOCALES];
-  const locales = LOCALES.filter((locale) => enabled.includes(locale) || locale === DEFAULT_LOCALE);
+  const locales = allLocales ? [...LOCALES] : LOCALES.filter((locale) => enabled.includes(locale) || locale === DEFAULT_LOCALE);
 
   return (
     <div role="group" aria-label={t('language.choose')} className={cx('flex items-center', className)}>
@@ -25,7 +34,7 @@ export function LanguageSwitcher({ size = 'sm', className }: { size?: 'sm' | 'lg
             lang={locale}
             aria-pressed={isActive}
             aria-label={t(`language.${locale}`)}
-            onClick={() => void setLocale(locale)}
+            onClick={() => (onSelect ? onSelect(locale) : void setLocale(locale))}
             className={cx(
               'inline-flex min-h-11 items-center justify-center font-semibold tracking-[0.08em] transition-colors duration-300',
               size === 'sm' ? 'min-w-9 px-1.5 text-xs' : 'min-w-14 px-3 text-base',
