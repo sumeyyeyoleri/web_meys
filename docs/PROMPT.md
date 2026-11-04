@@ -91,28 +91,47 @@ It must feel like a real artist's portfolio combined with a professional order s
 
 **Other:** contact page (from settings + editable text), privacy policy page (editable placeholder text, with a visible notice that the business owner must review it before launch — never claim legal compliance), 404 page, error boundary page.
 
-## 6. Custom order wizard (`/order`)
+## 6. Custom order form (`/order`) — single page (decision, replaces the 6-step wizard)
 
-Six steps with a progress indicator; each step validated with the shared Zod step schema before continuing; customer can go back and edit any step; state is kept while moving between steps; warn on leaving with unsaved data (`beforeunload` + router blocker).
+One simple page in the existing dark gallery design (colours and design tokens unchanged — only the order part changes). No steps, no progress indicator. Top to bottom:
 
-1. **Service** — choose an active service (cards) or describe a custom request.
-2. **Dimensions** — width, height, unit (cm / m); if the chosen service is a wall service: optional wall width/height and surface details; optional extra specifications.
-3. **Reference images** — drag & drop or picker, multiple files; JPG/PNG/WebP only; max 8 files, max 10 MB each (constants in `shared`); show limits; previews (object URLs, revoked on cleanup); remove/replace; clear per-file error messages.
-4. **Details** — title, description (min 20 chars), style/colour/theme preferences, optional budget min/max (EUR, max ≥ min), optional deadline (not in the past), extra instructions. Budget and deadline are optional unless the admin turns on "required" in settings — enforced on server too.
-5. **Your details** — full name, email, phone with country code (`+32 …`), country, city, postal code, street, house number, extra address line, preferred communication language. Prefilled from the profile when logged in. **If not logged in:** the customer also chooses a password (+ confirmation) and an account is created with the order; if the email already has an account, ask them to log in (inline login link, keeping wizard state).
-6. **Review & submit** — full summary with "Edit" links per step, image thumbnails, privacy-notice checkbox (required), submit.
+1. **Service** (optional) — small option cards for the active services (e.g. painting / wall painting / custom); a "Clear choice" button removes the selection. `?service=<id>` preselects one.
+2. **Size** — width × height + unit (cm / m), with the hint "Example: 30 × 40 cm".
+3. **Your request / description** — one large textarea (colour, style, idea …), min 20 characters.
+4. **Photos** (optional) — "Choose files or drag and drop"; multiple images, JPG/PNG/WebP only, max 8 files, max 10 MB each (constants in `shared`); limits shown; previews (object URLs, revoked on cleanup); remove per file; clear per-file error messages.
+5. **Full name** and **email** — side by side on desktop, stacked on phones.
+6. **Phone** (optional) — with country code (`+32 …`).
+7. **Address** — country (default **Belgium**), city, postal code, street and house number, extra address line (optional).
+8. **Privacy checkbox** (required) and the **"Send order"** button.
 
-Submission: one `multipart/form-data` request (`data` = JSON, `files[]` = images) to `POST /api/orders`. The client generates an `idempotencyKey` (UUID) when the wizard starts; the server has a unique constraint on `(customerId, idempotencyKey)` and returns the existing order on a repeat — plus the submit button is disabled while sending. The order is saved in one DB transaction (order + attachments + initial status history + admin notification); files that were stored before a failed transaction are deleted.
+Removed from the form: budget, deadline, title, separate style/colour/theme fields, wall dimensions/surface, extra instructions and the "what would you like to change" question (the description covers all of these). The admin settings "budget required" / "deadline required" are removed. Existing columns for old orders stay in the database (nullable) and are still shown in the admin order detail when present. The order **title** shown in admin lists is derived on the server (inspiration item title, else service name, else the first words of the description). The **communication language** is not asked: it is saved automatically from the site language at the moment of submission.
+
+**Starting from the catalog (`/order?from=<itemId>`):** above the form a small thumbnail of the work and "You're starting from '…'" with a **Remove** button. The work is stored as the order's inspiration reference (`inspirationItemId`) and the matching service is preselected (`service-match`). Remove clears the reference (the service choice stays editable).
+
+**Accounts:** no password is asked and no account is required.
+- **Logged-in customer:** name, email, phone and address are prefilled from the profile (editable for this order); the order is linked to the account and appears under "My orders".
+- **Guest:** the order is stored without an account (`customerId = null`) and is marked as a guest order. A guest order is **never** linked automatically to an existing account with the same email (privacy). A small "Already have an account? Log in" link keeps the form state.
+
+**Guest tracking link:** after submitting, the confirmation page shows the reference (`ORD-2026-…`) and a private tracking link (`/track#<token>`) with a clear "Save this link" warning and a copy button. Through this link the guest can see the order (status, images) and message the artist. Phase 7 ships a basic tracking page (reference, status, history); phase 8 completes it.
+- The token is 32 random bytes (base64url); only `sha256(token)` is stored (`OrderTrackingToken`, with expiry of 12 months and `revokedAt`). The token sits in the URL fragment so it never reaches server logs or `Referer`; the web app sends it in an `X-Order-Token` header.
+- The reference alone never grants access. Wrong, expired or revoked tokens → `404` (same response for all cases). Tracking endpoints are rate-limited.
+- If SMTP is configured, the link is also emailed (in the communication language — like the password reset this is part of the order, so it does not depend on the admin's "email notifications" switch) and the confirmation page says so; otherwise the page says nothing about email — **never claim an email was sent when it wasn't**. Follow-up emails to guests (status changes, new messages) mention the reference and ask them to open their saved tracking link; they don't contain a new token.
+
+**Submission:** one `multipart/form-data` request (`data` = JSON, `files[]` = images) to `POST /api/orders` (works for guests and logged-in customers). The client generates an `idempotencyKey` (UUID) when the form is opened; `idempotencyKey` is globally unique; a repeated submission returns the existing order (for a guest repeat a fresh tracking token is issued for that same order — knowing the random key is proof of being the submitter); the submit button is disabled while sending. The order is saved in one DB transaction (order + attachments + tracking token + initial status history + admin notification); files stored before a failed transaction are deleted.
+
+**Kept:** validation with one shared Zod schema on client and server (field errors shown inline, focus moves to the first invalid field), full translation in nl-BE / en / tr, phone support (§17), warning when leaving with unsaved data (`beforeunload` + router blocker; not after a successful submit), accessibility (labels, `aria-describedby` errors, keyboard-usable drop zone, live region for submit result) and the security rules of §9.
+
+**Admin:** orders look as before; guest orders get a **"Guest"** badge in the list and detail (contact data comes from the order itself).
 
 Generate a unique, human-readable, **non-sequential** reference like `ORD-2026-7K3QXM` (unambiguous alphabet, retry on collision).
 
-Confirmation page: reference, what happens next, link to the order in the account.
+Confirmation page: reference, what happens next, and — logged in → link to the order in the account; guest → the tracking link (see above).
 
 Business rules: never charge anything, never show fixed prices or promise instant quotes; the artist reviews and sends a personal quote.
 
 ## 7. Customer account
 
-Register, login, logout, forgot/reset password, change password, profile (name, phone, address, preferred language). "My orders" list with status badges and unread indicators; order detail with all submitted data, reference images (thumbnails + lightbox), status timeline, quote amount when sent, and the message thread (send replies). Customer actions on an order: accept a quote (`QUOTE_SENT → ACCEPTED`) and cancel while not yet accepted (with confirmation dialog). In-app notifications: bell in the header with unread count, dropdown/list, mark as read / mark all read; created when the status changes or the admin sends a message. Poll unread counts every ~30 s with React Query (no websockets needed).
+Register, login, logout, forgot/reset password, change password, profile (name, phone, address, preferred language). Guests without an account use the **tracking page** (`/track#<token>`, see §6): order data, reference images (thumbnails + lightbox), status timeline, quote when sent, message thread, accept quote / cancel — the same order detail component as the account, authorised by the tracking token instead of a session. "My orders" list with status badges and unread indicators; order detail with all submitted data, reference images (thumbnails + lightbox), status timeline, quote amount when sent, and the message thread (send replies). Customer actions on an order: accept a quote (`QUOTE_SENT → ACCEPTED`) and cancel while not yet accepted (with confirmation dialog). In-app notifications: bell in the header with unread count, dropdown/list, mark as read / mark all read; created when the status changes or the admin sends a message. Poll unread counts every ~30 s with React Query (no websockets needed).
 
 ## 8. Order statuses — explicit transition rules (in `packages/shared`)
 
@@ -144,18 +163,18 @@ Moving to `QUOTE_SENT` requires a quote amount. Every change writes `OrderStatus
 Not reachable for guests or customers (route guard in the web app **and** API enforcement).
 
 - **Overview:** total orders, new/awaiting review, in progress, completed, unread customer messages, recent orders, recent customer messages.
-- **Orders:** table on desktop / cards on mobile; filter by status and date range, search by reference, customer name, email or phone; include/exclude archived; server-side pagination. **Order detail:** all order data, customer contact + project address, reference images (secure thumbnails + lightbox + download), status timeline, status change control (only allowed transitions, quote amount field when needed, optional note, confirmation), edit order details form, archive button (terminal orders only), customer message thread, and a clearly separated **internal notes** panel (visually distinct, labelled "Only visible to administrators").
+- **Orders:** table on desktop / cards on mobile; filter by status and date range, search by reference, customer name, email or phone; include/exclude archived; server-side pagination. **Order detail:** all order data, customer contact + project address, reference images (secure thumbnails + lightbox + download), status timeline, status change control (only allowed transitions, quote amount field when needed, optional note, confirmation), edit order details form, archive button (terminal orders only), for guest orders a **"Create new tracking link"** button (confirmation dialog; revokes all previous links of that order, shows the new link once with a copy button, and emails it to the order's contact email when SMTP is configured — the UI says whether it was emailed; backend route `POST /api/admin/orders/:id/tracking-link`), customer message thread, and a clearly separated **internal notes** panel (visually distinct, labelled "Only visible to administrators").
 - **Messaging:** per-order thread, sender + timestamp, read/unread state (messages are marked read when the recipient opens the thread), unread badges in the order list and navigation.
 - **Content management** (all with validation, toasts, and confirmation dialogs for destructive actions):
   - Portfolio: create/edit (image upload or URL, category, dimensions, year, featured, published, sample flag, translations), delete, reorder (move up/down buttons — accessible), toggle featured.
   - Services: create/edit/delete (delete blocked if orders reference it — offer "deactivate" instead), active toggle, wall-service flag, image, translations, reorder.
   - Text blocks per language: hero, about, Instagram text, contact intro, business hours, footer tagline, privacy policy.
-  - Settings: business name, accent color, Instagram URL, contact email/phone/address, enabled languages (nl-BE always on), budget required, deadline required, email notifications on/off (shows whether SMTP is configured).
+  - Settings: business name, accent color, Instagram URL, contact email/phone/address, enabled languages (nl-BE always on), email notifications on/off (shows whether SMTP is configured).
 - **Email:** if SMTP is configured and enabled, send emails (in the recipient's language) for new messages and status changes, and for password reset. If not configured, show that clearly in the admin settings, and in development log the password-reset link to the server console. **Never claim an email was sent when it wasn't.**
 
 ## 11. Database (Prisma)
 
-Models: `User` (role enum ADMIN/CUSTOMER, preferredLocale enum), `CustomerProfile`, `Session`, `PasswordResetToken`, `Order`, `OrderAttachment`, `OrderMessage`, `InternalAdminNote`, `OrderStatusHistory`, `Notification`, `Service` + `ServiceTranslation`, `PortfolioItem` + `PortfolioItemTranslation`, `LocalizedContent` (key + locale unique), `SiteSettings` (single row).
+Models: `User` (role enum ADMIN/CUSTOMER, preferredLocale enum), `CustomerProfile`, `Session`, `PasswordResetToken`, `Order` (customerId nullable for guest orders), `OrderTrackingToken`, `OrderAttachment`, `OrderMessage`, `InternalAdminNote`, `OrderStatusHistory`, `Notification`, `Service` + `ServiceTranslation`, `PortfolioItem` + `PortfolioItemTranslation`, `LocalizedContent` (key + locale unique), `SiteSettings` (single row).
 
 - Enums for roles, locales (`NL_BE`, `EN`, `TR` — map to `nl-BE`/`en`/`tr` in one place), statuses, units, categories, notification types.
 - Money and sizes as `Decimal`; deadline as `@db.Date`.
@@ -175,6 +194,7 @@ Suggested routes (refine as needed and document all of them in OpenAPI):
 - `PATCH /api/users/me` (profile)
 - `/api/orders`: `POST` (multipart), `GET` (own, paginated), `GET /:id`, `POST /:id/status` (customer accept/cancel), `GET|POST /:id/messages`, `POST /:id/messages/read`
 - `GET /api/attachments/:id` (authorized file stream)
+- `/api/track` (guest tracking via `X-Order-Token`): `GET /order`, `GET|POST /messages`, `POST /messages/read`, `POST /status`, `GET /attachments/:id`
 - `/api/notifications`: list, unread count, mark read, mark all read
 - `/api/admin/stats`, `/api/admin/orders` (list/detail/update/status/archive/messages/notes), `/api/admin/portfolio` (+ `reorder`), `/api/admin/services` (+ `reorder`), `/api/admin/content`, `/api/admin/settings`, `/api/admin/media` (public image upload)
 
@@ -188,16 +208,16 @@ Initialize git at the start (`main` branch). After each phase: run typecheck + t
 4. **Backend tests** — see §14. All green.
 5. **Frontend foundation** — Vite/Tailwind setup, design tokens, UI component library, i18n (3 complete locales + key-parity check), API client with CSRF handling, layouts, header with language selector + auth menu + notifications bell, footer, 404/error pages.
 6. **Public pages** — home, portfolio + lightbox, services, contact, privacy.
-7. **Order wizard + auth pages** — wizard, login, register, forgot/reset password, confirmation page.
-8. **Customer area** — my orders, order detail with thread/images/timeline/actions, profile, notifications.
-9. **Admin area** — everything in §10.
-10. **Polish & verification** — run the full app, click through every flow in all three languages (guest order → account created, customer reply, admin status changes through to COMPLETED, archive, content edits reflected on the public site, language switching, mobile widths). Fix every broken control, missing translation, console error and accessibility issue you find. Production build (`npm run build`) must succeed. Write the README.
+7. **Order form + auth pages** — single-page order form (§6), login, register, forgot/reset password, confirmation page.
+8. **Customer area** — my orders, order detail with thread/images/timeline/actions, profile, notifications; the guest tracking page (`/track#<token>`) reusing the same order detail (status, images, messages, accept/cancel) with token-based API routes under `/api/track` (order, messages, messages/read, status, attachments/:id).
+9. **Admin area** — everything in §10, incl. the "Guest" badge and the "Create new tracking link" button for guest orders (backend ready since phase 7).
+10. **Polish & verification** — run the full app, click through every flow in all three languages (guest order → tracking link, logged-in order, customer reply, admin status changes through to COMPLETED, archive, content edits reflected on the public site, language switching, mobile widths). Fix every broken control, missing translation, console error and accessibility issue you find. Production build (`npm run build`) must succeed. Write the README.
 
 ## 14. Tests (minimum)
 
-- Shared: status transition rules; order schemas (required fields, budget range, deadline in past, budget/deadline required toggles).
-- API integration (supertest, real `painter_test` DB, reset between tests): register/login/logout, wrong password, session required, CSRF rejection without header, rate limiting on login; order creation (valid, invalid fields, guest creates account, existing email → asks to log in, idempotent resubmit); upload validation (too many files, too large, wrong MIME, spoofed extension with wrong magic bytes); customer A cannot read customer B's order, attachment, messages (404); customer cannot reach `/api/admin/*` (403); admin list/filter/search/paginate; valid and invalid status transitions incl. quote required; internal notes never appear in customer responses; archive only for terminal orders.
-- Web: a few component/unit tests where valuable (e.g. wizard step validation, locale key parity).
+- Shared: status transition rules; order schema (required fields, size, address, optional phone).
+- API integration (supertest, real `painter_test` DB, reset between tests): register/login/logout, wrong password, session required, CSRF rejection without header, rate limiting on login; order creation (guest order + tracking link, wrong/expired token rejected, reference alone gives no access, logged-in order linked to the account, guest using the email of an existing account is not linked, address validation, order started from the catalog, idempotent resubmit); upload validation (too many files, too large, wrong MIME, spoofed extension with wrong magic bytes); customer A cannot read customer B's order, attachment, messages (404); customer cannot reach `/api/admin/*` (403); admin list/filter/search/paginate; valid and invalid status transitions incl. quote required; internal notes never appear in customer responses; archive only for terminal orders.
+- Web: a few component/unit tests where valuable (e.g. order form validation, catalog start banner, locale key parity).
 
 ## 15. README (in English) must include
 

@@ -80,17 +80,15 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 - Empty state for a filter with no results; skeleton loaders while fetching.
 - Keep the URL in sync with filters (`?category=mural&space=kids`) so links are shareable.
 
-### Order wizard (dark)
-- Page header: "Back to catalog" link, business name, "Step X / 6".
-- Step indicator: 6 equal segments with a 2px top line, active = accent.
-- Two-column layout on desktop: form (left, wide) + sticky **summary panel** (right) showing service, references, dimensions, budget, and "Price: personal quote". On mobile the summary becomes a collapsible bar at the bottom.
+### Order form (dark) — single page (PROMPT.md §6)
+- Same dark gallery tokens as the rest of the site; one centred column (max ~768px), no steps, no summary panel.
+- Header: "Back to catalog" link, eyebrow, title, one-line intro ("No account needed").
+- Sections top to bottom: service (small option cards, optional, "Clear choice"), size (width × height + unit, hint "Example: 30 × 40 cm"), request/description (large textarea), photos (drop zone + "Choose files", thumbnails with remove), name + email side by side (stacked on phones), phone (optional), address (country defaults to Belgium), privacy checkbox, "No charge now" note, "Send order".
 - **When opened from a catalog item** (`/order?from=<portfolioItemId>`):
-  - Show a banner at the top of step 1 with the thumbnail: *"You're starting from 'Starry Terrace'. The example is attached as a reference and the matching service is selected. You can change anything."* + a "Remove" button.
+  - A banner above the form with the thumbnail: *"You're starting from the work 'Starry Terrace'. It's attached as a reference and the matching service is selected."* + a "Remove" button.
   - Preselect the service mapped from the item's category (mural / wall painting → the wall service; painting / portrait → the matching service; otherwise none).
-  - Show an optional textarea "What would you like to change compared to the example?" whose value is stored in `additionalSpecs`.
-  - In step 3 (reference images) the catalog item appears as a fixed first reference tile labelled "From the catalog" (removable), alongside the customer's own uploads. It does **not** count against the 8-file upload limit.
-  - The review step shows it, and the confirmation page and order detail show "Inspired by: <title>" with the thumbnail.
-- All other wizard rules from PROMPT.md §6 stay unchanged.
+  - The confirmation page and the order detail show "Inspired by: <title>".
+- Guest confirmation: order number, the private tracking link in a read-only field with "Copy link" / "Open order", and a clear "Save this link" notice; "We also emailed it" only when the email was really sent.
 
 ### Customer account & admin
 - Same dark tokens. Orders list as cards on mobile, table on desktop. Status badges: small pill with dot + translated label.
