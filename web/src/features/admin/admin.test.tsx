@@ -162,14 +162,25 @@ describe('orders list', () => {
 });
 
 describe('orders list rows', () => {
-  it('shows the reference as plain text with a "Detay" button, and the whole row opens the order', async () => {
+  it('has no "Detay" button; the reference is plain text and clicking the row opens the order', async () => {
     adminApi();
     const { router } = renderApp('/admin/orders');
     await screen.findAllByText('ORD-2026-7K3QXM');
-    const details = await screen.findAllByRole('link', { name: 'Detay ORD-2026-7K3QXM' });
-    expect(details[0]!.getAttribute('href')).toBe('/admin/orders/o1');
-    expect(screen.queryByRole('link', { name: /^ORD-2026-7K3QXM/ })).toBeNull();
+    expect(screen.queryByText('Detay')).toBeNull();
+    for (const reference of screen.getAllByText('ORD-2026-7K3QXM')) expect(reference.closest('a')).toBeNull();
     await user.click(screen.getAllByText('Lotte Peeters')[0]!);
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/orders/o1'));
+  });
+
+  it('reaches a row with Tab and opens it with Enter', async () => {
+    adminApi();
+    const { router } = renderApp('/admin/orders');
+    const rows = await screen.findAllByLabelText('ORD-2026-7K3QXM siparişini aç');
+    // The table row (desktop) and the card (phones) are both focusable.
+    expect(rows).toHaveLength(2);
+    for (const row of rows) expect(row.getAttribute('tabindex')).toBe('0');
+    rows[0]!.focus();
+    await user.keyboard('{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/orders/o1'));
   });
 });

@@ -1,9 +1,9 @@
-import { useState, type FormEvent, type MouseEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ORDER_STATUSES, type AdminOrderSummaryDto } from '@painter/shared';
 import { StatusBadge } from '../../../components/ui/Badge';
-import { Button, ButtonLink } from '../../../components/ui/Button';
+import { Button } from '../../../components/ui/Button';
 import { Field } from '../../../components/ui/Field';
 import { Checkbox, Input, Select } from '../../../components/ui/Inputs';
 import { Pagination } from '../../../components/ui/Pagination';
@@ -39,16 +39,26 @@ function useFilterParams() {
 }
 
 /**
- * Clicking anywhere on a row or card opens the order (a mouse shortcut); the "Details" button is
- * the real link for keyboard and screen reader users. Clicks on links and buttons are left alone.
+ * The whole row or card opens the order: by click, or by Tab + Enter (it is focusable and
+ * shows the focus ring). Its accessible name says which order it opens.
  */
-function useOpenOnClick() {
+function useOpenOrder() {
+  const { t } = useTranslation('admin');
   const navigate = useNavigate();
-  return (id: string) => (event: MouseEvent) => {
-    if ((event.target as HTMLElement).closest('a, button')) return;
-    // Selecting text (e.g. copying a phone number) is not a click.
-    if (window.getSelection()?.toString()) return;
-    void navigate(`/admin/orders/${id}`);
+  return (order: AdminOrderSummaryDto) => {
+    const open = () => void navigate(`/admin/orders/${order.id}`);
+    return {
+      tabIndex: 0,
+      'aria-label': t('orders.open', { reference: order.reference }),
+      onClick: () => {
+        // Selecting text (e.g. copying a phone number) is not a click.
+        if (window.getSelection()?.toString()) return;
+        open();
+      },
+      onKeyDown: (event: KeyboardEvent) => {
+        if (event.key === 'Enter' && event.target === event.currentTarget) open();
+      },
+    };
   };
 }
 
@@ -60,7 +70,7 @@ export function OrdersPage() {
   const { filter, update } = useFilterParams();
   const [search, setSearch] = useState(filter.q ?? '');
   const orders = useAdminOrders(filter);
-  const openOnClick = useOpenOnClick();
+  const openOrder = useOpenOrder();
   const filtered = !!(filter.status || filter.from || filter.to || filter.q);
 
   function onSearch(event: FormEvent) {
@@ -144,14 +154,11 @@ export function OrdersPage() {
                   <th scope="col" className="px-4 py-3 font-semibold">{t('orders.colRequest')}</th>
                   <th scope="col" className="px-4 py-3 font-semibold">{t('orders.colStatus')}</th>
                   <th scope="col" className="px-4 py-3 font-semibold">{t('orders.colDate')}</th>
-                  <th scope="col" className="px-4 py-3">
-                    <span className="sr-only">{t('orders.details')}</span>
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {orders.data.items.map((order) => (
-                  <tr key={order.id} onClick={openOnClick(order.id)} className="cursor-pointer transition-colors hover:bg-surface">
+                  <tr key={order.id} {...openOrder(order)} className="cursor-pointer transition-colors hover:bg-surface-2 focus-visible:-outline-offset-2">
                     <td className="px-4 py-3">
                       <span className="inline-flex min-h-11 items-center gap-2 font-semibold tracking-[0.04em]">
                         {order.reference}
@@ -171,9 +178,6 @@ export function OrdersPage() {
                       {order.archivedAt ? <div className="mt-1 text-xs text-text-subtle">{t('orders.archived')}</div> : null}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-text-muted">{formatDate(order.createdAt, locale)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <DetailsLink order={order} />
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -183,8 +187,9 @@ export function OrdersPage() {
             {orders.data.items.map((order) => (
               <li key={order.id}>
                 <div
-                  onClick={openOnClick(order.id)}
-                  className="flex cursor-pointer flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-surface p-4 transition-colors hover:border-border-strong"
+                  role="link"
+                  {...openOrder(order)}
+                  className="flex cursor-pointer flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-surface p-4 transition-colors hover:border-border-strong hover:bg-surface-2"
                 >
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-2 font-semibold tracking-[0.04em]">
@@ -195,12 +200,9 @@ export function OrdersPage() {
                   </span>
                   <span>{order.customerName}</span>
                   <span className="truncate text-sm text-text-muted">{order.title}</span>
-                  <span className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm text-text-subtle">
-                      {formatDate(order.createdAt, locale)}
-                      {order.archivedAt ? ` · ${t('orders.archived')}` : ''}
-                    </span>
-                    <DetailsLink order={order} />
+                  <span className="text-sm text-text-subtle">
+                    {formatDate(order.createdAt, locale)}
+                    {order.archivedAt ? ` · ${t('orders.archived')}` : ''}
                   </span>
                 </div>
               </li>
@@ -212,16 +214,6 @@ export function OrdersPage() {
         </>
       )}
     </>
-  );
-}
-
-function DetailsLink({ order }: { order: AdminOrderSummaryDto }) {
-  const { t } = useTranslation('admin');
-  return (
-    // The name starts with the visible text and adds which order it opens.
-    <ButtonLink to={`/admin/orders/${order.id}`} variant="secondary" size="sm" aria-label={`${t('orders.details')} ${order.reference}`}>
-      {t('orders.details')}
-    </ButtonLink>
   );
 }
 

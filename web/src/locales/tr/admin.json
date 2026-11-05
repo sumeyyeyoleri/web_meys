@@ -50,7 +50,7 @@
     "colStatus": "Durum",
     "colDate": "Tarih",
     "archived": "Arşivlendi",
-    "details": "Detay"
+    "open": "{{reference}} siparişini aç"
   },
   "detail": {
     "back": "Siparişlere dön",

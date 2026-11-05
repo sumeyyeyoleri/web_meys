@@ -50,7 +50,7 @@
     "colStatus": "Status",
     "colDate": "Datum",
     "archived": "Gearchiveerd",
-    "details": "Details"
+    "open": "Bestelling {{reference}} openen"
   },
   "detail": {
     "back": "Terug naar bestellingen",
