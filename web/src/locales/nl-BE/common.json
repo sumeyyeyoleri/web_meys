@@ -69,22 +69,6 @@
     "COMPLETED": "Afgerond",
     "CANCELLED": "Geannuleerd"
   },
-  "category": {
-    "PAINTING": "Schilderij",
-    "MURAL": "Muurschildering",
-    "WALL_PAINTING": "Wandafwerking",
-    "PORTRAIT": "Portret",
-    "OTHER": "Andere"
-  },
-  "space": {
-    "LIVING_ROOM": "Woonkamer",
-    "BEDROOM": "Slaapkamer",
-    "KIDS_ROOM": "Kinderkamer",
-    "KITCHEN": "Keuken",
-    "CAFE_SHOP": "Café / winkel",
-    "OFFICE": "Kantoor",
-    "OUTDOOR": "Buiten"
-  },
   "errors": {
     "generic": "Er ging iets mis. Probeer het later opnieuw.",
     "NETWORK_ERROR": "Geen verbinding met de server. Controleer uw internetverbinding.",

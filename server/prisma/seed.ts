@@ -3,7 +3,7 @@
  * content that an administrator has edited since (rows are only created when missing).
  *
  * Creates: the admin (from env), three demo orders (customers have no account), 4 services,
- * 10 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
+ * 6 catalog categories, 12 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
  * and the default site settings.
  */
 import 'dotenv/config';
@@ -22,7 +22,16 @@ import { generateToken, sha256 } from '../src/infrastructure/crypto';
 import { hashPassword, verifyPassword } from '../src/infrastructure/password-hasher';
 import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
-import { SEED_CONTENT, SEED_PORTFOLIO, SEED_SERVICES, SEED_SETTINGS, SUPERSEDED_CONTENT } from './seed-data/content';
+import {
+  SEED_CATEGORIES,
+  SEED_CONTENT,
+  SEED_PORTFOLIO,
+  SEED_SERVICES,
+  SEED_SETTINGS,
+  SUPERSEDED_CONTENT,
+  SUPERSEDED_SERVICES,
+  SUPERSEDED_SETTINGS,
+} from './seed-data/content';
 
 const env = z
   .object({
@@ -71,19 +80,43 @@ async function seedServices() {
     const service = await prisma.service.upsert({
       where: { slug: item.slug },
       update: {},
-      create: { slug: item.slug, isWallService: item.isWallService, imageUrl, sortOrder: index },
+      create: { slug: item.slug, isWallService: item.isWallService, defaultUnit: item.defaultUnit, imageUrl, sortOrder: index },
     });
     for (const locale of LOCALES) {
       const t = item.translations[locale];
+      const where = { serviceId_locale: { serviceId: service.id, locale: localeToDb(locale) } };
       await prisma.serviceTranslation.upsert({
-        where: { serviceId_locale: { serviceId: service.id, locale: localeToDb(locale) } },
+        where,
         update: {},
         create: { serviceId: service.id, locale: localeToDb(locale), name: t.name, description: t.description },
       });
+      // An unchanged earlier default gets the current text (e.g. "Mural" → "Mural (indoor & outdoor)").
+      const old = SUPERSEDED_SERVICES[item.slug]?.[locale];
+      if (old) {
+        await prisma.serviceTranslation.updateMany({
+          where: { serviceId: service.id, locale: localeToDb(locale), name: old.name, description: old.description },
+          data: { name: t.name, description: t.description },
+        });
+      }
     }
-    services.set(item.slug, service.id);
   }
-  return services;
+  // Every service by slug, including ones no longer in the seed list (used by the demo orders).
+  const rows = await prisma.service.findMany({ select: { id: true, slug: true } });
+  return new Map(rows.map((row) => [row.slug, row.id]));
+}
+
+/** Creates the starting categories only on an empty table, so categories the artist deleted stay deleted. */
+async function seedCategories() {
+  if ((await prisma.category.count()) > 0) return;
+  for (const [sortOrder, category] of SEED_CATEGORIES.entries()) {
+    await prisma.category.create({
+      data: {
+        slug: category.slug,
+        sortOrder,
+        translations: { create: LOCALES.map((locale) => ({ locale: localeToDb(locale), name: category.translations[locale] })) },
+      },
+    });
+  }
 }
 
 async function seedPortfolio() {
@@ -104,7 +137,7 @@ async function seedPortfolio() {
       update: {},
       create: {
         slug: item.slug,
-        category: item.category,
+        category: (await prisma.category.findUnique({ where: { slug: item.category } })) ? { connect: { slug: item.category } } : undefined,
         imageUrl,
         width: item.width,
         height: item.height,
@@ -113,7 +146,6 @@ async function seedPortfolio() {
         isFeatured: item.isFeatured,
         isPublished: true,
         isSample: true,
-        spaces: item.spaces,
         allowSimilarRequest: true,
         sortOrder: index,
       },
@@ -154,6 +186,11 @@ async function seedContentAndSettings() {
     }
   }
 
+  // The placeholder Instagram link becomes the real one, unless the artist already changed it.
+  await prisma.siteSettings.updateMany({
+    where: { id: 1, instagramUrl: { in: SUPERSEDED_SETTINGS.instagramUrl } },
+    data: { instagramUrl: SEED_SETTINGS.instagramUrl },
+  });
   await prisma.siteSettings.upsert({
     where: { id: 1 },
     update: {},
@@ -176,7 +213,8 @@ const daysAgo = (days: number, hour = 10) => {
 
 async function seedDemoOrders(adminId: string, services: Map<string, string>) {
   const muralId = services.get('mural');
-  const portraitId = services.get('portrait');
+  // The former portrait service on databases that still have it (switched off), else canvas & portrait.
+  const portraitId = services.get('portrait') ?? services.get('canvas-painting');
   if (!muralId || !portraitId) throw new Error('Demo services are missing.');
 
   const contact = {
@@ -398,6 +436,7 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
 async function main() {
   const admin = await seedAdmin();
   const services = await seedServices();
+  await seedCategories();
   await seedPortfolio();
   await seedContentAndSettings();
   await seedDemoOrders(admin.id, services);

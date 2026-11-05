@@ -69,22 +69,6 @@
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled"
   },
-  "category": {
-    "PAINTING": "Painting",
-    "MURAL": "Mural",
-    "WALL_PAINTING": "Wall painting",
-    "PORTRAIT": "Portrait",
-    "OTHER": "Other"
-  },
-  "space": {
-    "LIVING_ROOM": "Living room",
-    "BEDROOM": "Bedroom",
-    "KIDS_ROOM": "Kids' room",
-    "KITCHEN": "Kitchen",
-    "CAFE_SHOP": "Café / shop",
-    "OFFICE": "Office",
-    "OUTDOOR": "Outdoor"
-  },
   "errors": {
     "generic": "Something went wrong. Please try again later.",
     "NETWORK_ERROR": "Could not reach the server. Please check your connection.",

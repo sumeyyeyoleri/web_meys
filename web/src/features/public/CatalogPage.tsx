@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { PortfolioCategory, Space } from '@painter/shared';
 import { Button } from '../../components/ui/Button';
 import { Skeleton } from '../../components/ui/Spinner';
 import { EmptyState, ErrorState } from '../../components/ui/States';
 import { usePageTitle } from '../../lib/use-page-title';
 import { CatalogCard } from './CatalogCard';
 import { CatalogFilters } from './CatalogFilters';
-import { CATEGORY_SLUGS, categoryFromSlug, SPACE_SLUGS, spaceFromSlug } from './catalog-url';
-import { usePortfolio } from './hooks';
+import { useCategories, usePortfolio } from './hooks';
 import { Lightbox } from './Lightbox';
 
 const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6 gap-y-12';
@@ -18,17 +16,16 @@ export function CatalogPage() {
   const { t } = useTranslation('public');
   usePageTitle(t('meta.catalogTitle'));
   const [params, setParams] = useSearchParams();
-  const category = categoryFromSlug(params.get('category'));
-  const space = spaceFromSlug(params.get('space'));
-  const portfolio = usePortfolio({ category, space });
+  const categories = useCategories();
+  // An old or unknown link (e.g. `?category=mural`, a hidden or empty category) shows everything.
+  const requested = params.get('category') || undefined;
+  const category = requested && (!categories.data || categories.data.some((c) => c.slug === requested)) ? requested : undefined;
+  const portfolio = usePortfolio({ category });
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  /** Filters live in the URL so a filtered catalog can be shared. */
-  const update = (next: { category?: PortfolioCategory; space?: Space }) => {
-    const search = new URLSearchParams();
-    if (next.category) search.set('category', CATEGORY_SLUGS[next.category]);
-    if (next.space) search.set('space', SPACE_SLUGS[next.space]);
-    setParams(search, { replace: true, preventScrollReset: true });
+  /** The filter lives in the URL so a filtered catalog can be shared. */
+  const update = (slug: string | undefined) => {
+    setParams(slug ? { category: slug } : {}, { replace: true, preventScrollReset: true });
     setOpenIndex(null);
   };
 
@@ -41,12 +38,7 @@ export function CatalogPage() {
         <p className="max-w-2xl text-lg text-text-muted">{t('catalog.intro')}</p>
       </header>
 
-      <CatalogFilters
-        category={category}
-        space={space}
-        onCategory={(value) => update({ category: value, space })}
-        onSpace={(value) => update({ category, space: value })}
-      />
+      <CatalogFilters categories={categories.data ?? []} category={category} onCategory={update} />
 
       <p className="text-sm text-text-subtle" aria-live="polite">
         {portfolio.isPending ? '' : t('catalog.results', { count: items.length })}
@@ -69,7 +61,7 @@ export function CatalogPage() {
           title={t('catalog.emptyTitle')}
           description={t('catalog.emptyBody')}
           action={
-            <Button variant="secondary" onClick={() => update({})}>
+            <Button variant="secondary" onClick={() => update(undefined)}>
               {t('catalog.clearFilters')}
             </Button>
           }

@@ -49,25 +49,6 @@ enum DimensionUnit {
   M
 }
 
-enum PortfolioCategory {
-  PAINTING
-  MURAL
-  WALL_PAINTING
-  PORTRAIT
-  OTHER
-}
-
-/// Room or place a catalog item suits (Inspiration Catalog filter).
-enum Space {
-  LIVING_ROOM
-  BEDROOM
-  KIDS_ROOM
-  KITCHEN
-  CAFE_SHOP
-  OFFICE
-  OUTDOOR
-}
-
 enum NotificationType {
   ORDER_SUBMITTED
   ORDER_STATUS_CHANGED
@@ -340,15 +321,17 @@ model Notification {
 // ---------------------------------------------------------------------------
 
 model Service {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String         @id @default(uuid()) @db.Uuid
   /// Stable technical identifier (used by the seed).
-  slug          String   @unique
-  isActive      Boolean  @default(true)
-  isWallService Boolean  @default(false)
+  slug          String         @unique
+  isActive      Boolean        @default(true)
+  isWallService Boolean        @default(false)
+  /// Unit the order form switches to when this service is chosen.
+  defaultUnit   DimensionUnit?
   imageUrl      String?
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   translations ServiceTranslation[]
   orders       Order[]
@@ -368,34 +351,61 @@ model ServiceTranslation {
   @@unique([serviceId, locale])
 }
 
+/// Catalog category, managed by the artist. A hidden category hides its works on the site.
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Readable URL value (`/catalog?category=horeca`).
+  slug      String   @unique
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  translations CategoryTranslation[]
+  items        PortfolioItem[]
+
+  @@index([sortOrder])
+}
+
+model CategoryTranslation {
+  id         String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  locale     Locale
+  name       String
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+}
+
 model PortfolioItem {
-  id                  String            @id @default(uuid()) @db.Uuid
+  id                  String         @id @default(uuid()) @db.Uuid
   /// Stable technical identifier (used by the seed).
-  slug                String            @unique
-  category            PortfolioCategory
+  slug                String         @unique
+  /// NULL = uncategorised (e.g. after its category was deleted); the work itself stays.
+  categoryId          String?        @db.Uuid
   /// Absolute URL or a path in the public media storage (e.g. /media/portfolio/x.svg).
   imageUrl            String
-  width               Decimal?          @db.Decimal(10, 2)
-  height              Decimal?          @db.Decimal(10, 2)
+  width               Decimal?       @db.Decimal(10, 2)
+  height              Decimal?       @db.Decimal(10, 2)
   unit                DimensionUnit?
   year                Int?
-  isFeatured          Boolean           @default(false)
-  isPublished         Boolean           @default(true)
+  isFeatured          Boolean        @default(false)
+  isPublished         Boolean        @default(true)
   /// Placeholder/example work — shown with a translated "Example" label.
-  isSample            Boolean           @default(false)
-  /// Rooms/places this work suits (catalog filter).
-  spaces              Space[]           @default([])
+  isSample            Boolean        @default(false)
   /// Shows the "Request something similar" button and allows orders to reference it.
-  allowSimilarRequest Boolean           @default(true)
-  sortOrder           Int               @default(0)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  allowSimilarRequest Boolean        @default(true)
+  sortOrder           Int            @default(0)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
+  category       Category?                  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   translations   PortfolioItemTranslation[]
   inspiredOrders Order[]
 
   @@index([isPublished, sortOrder])
-  @@index([category])
+  @@index([categoryId])
 }
 
 model PortfolioItemTranslation {

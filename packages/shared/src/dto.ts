@@ -2,7 +2,7 @@
  * Data transfer objects returned by the API. Dates are ISO 8601 strings,
  * calendar dates (deadline) are `YYYY-MM-DD`, money and sizes are numbers.
  */
-import type { ContentKey, DimensionUnit, NotificationType, PortfolioCategory, Role, Space } from './constants';
+import type { ContentKey, DimensionUnit, NotificationType, Role } from './constants';
 import type { Locale } from './locales';
 import type { OrderStatus } from './order-status';
 
@@ -58,17 +58,30 @@ export interface SiteDto {
 
 export interface ServiceDto {
   id: string;
+  /** Stable technical identifier (lets a catalog category preselect its service). */
+  slug: string;
   name: string;
   description: string | null;
   imageUrl: string | null;
   isWallService: boolean;
+  /** Unit the order form switches to when this service is chosen. */
+  defaultUnit: DimensionUnit | null;
+}
+
+/** A catalog category on the site (only visible categories with published works are listed). */
+export interface CategoryDto {
+  id: string;
+  /** URL value: `/catalog?category=<slug>`. */
+  slug: string;
+  name: string;
 }
 
 export interface PortfolioItemDto {
   id: string;
   title: string;
   description: string | null;
-  category: PortfolioCategory;
+  /** null = uncategorised. */
+  category: CategoryDto | null;
   imageUrl: string;
   width: number | null;
   height: number | null;
@@ -76,7 +89,6 @@ export interface PortfolioItemDto {
   year: number | null;
   isFeatured: boolean;
   isSample: boolean;
-  spaces: Space[];
   /** Whether "Request something similar" is offered for this item. */
   allowSimilarRequest: boolean;
 }
@@ -271,7 +283,10 @@ export type Translations<T> = Record<Locale, T>;
 export interface AdminPortfolioItemDto {
   id: string;
   imageUrl: string;
-  category: PortfolioCategory;
+  /** null = uncategorised. */
+  categoryId: string | null;
+  /** The work's category is hidden, so the work is not shown on the site ("category hidden"). */
+  categoryHidden: boolean;
   width: number | null;
   height: number | null;
   unit: DimensionUnit | null;
@@ -279,7 +294,6 @@ export interface AdminPortfolioItemDto {
   isFeatured: boolean;
   isPublished: boolean;
   isSample: boolean;
-  spaces: Space[];
   allowSimilarRequest: boolean;
   sortOrder: number;
   translations: Translations<{ title: string; description: string | null }>;
@@ -290,6 +304,7 @@ export interface AdminServiceDto {
   imageUrl: string | null;
   isActive: boolean;
   isWallService: boolean;
+  defaultUnit: DimensionUnit | null;
   sortOrder: number;
   orderCount: number;
   translations: Translations<{ name: string; description: string | null }>;

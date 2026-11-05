@@ -72,13 +72,11 @@ export function OrderPage() {
     if (preselected.current || !services.data || (inspirationId && inspirationQuery.isPending)) return;
     preselected.current = true;
     const requested = services.data.find((s) => s.id === params.get('service'))?.id;
-    const matched = inspiration
-      ? matchServiceForCategory(services.data, inspiration.category, tc(`category.${inspiration.category}`))?.id
-      : undefined;
+    const matched = inspiration ? matchServiceForCategory(services.data, inspiration.category)?.id : undefined;
     const serviceId = requested ?? matched;
     if (serviceId) form.setValue('serviceId', serviceId);
     if (!requested && matched) setMatchedServiceId(matched);
-  }, [services.data, inspiration, inspirationId, inspirationQuery.isPending, params, form, tc]);
+  }, [services.data, inspiration, inspirationId, inspirationQuery.isPending, params, form]);
 
   // Object URLs are released when files are removed (below) and when the page closes.
   const filesRef = useRef(files);
@@ -86,6 +84,14 @@ export function OrderPage() {
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.previewUrl)), []);
 
   const selectedServiceId = form.watch('serviceId');
+
+  // The unit follows the chosen service (m for walls, shutters and windows, cm for canvas)
+  // until the customer picks a unit themselves.
+  const unitChosen = useRef(false);
+  useEffect(() => {
+    const unit = services.data?.find((s) => s.id === selectedServiceId)?.defaultUnit;
+    if (unit && !unitChosen.current) form.setValue('unit', unit);
+  }, [selectedServiceId, services.data, form]);
 
   function removeInspiration() {
     setInspirationId(null);
@@ -220,7 +226,7 @@ export function OrderPage() {
               </Field>
               <Field label={t('form.unit')} error={errors.unit?.message} required className="col-span-2 sm:col-span-1">
                 {(p) => (
-                  <Select {...p} {...r('unit')}>
+                  <Select {...p} {...r('unit', { onChange: () => (unitChosen.current = true) })}>
                     {DIMENSION_UNITS.map((unit) => (
                       <option key={unit} value={unit}>
                         {t(`form.unit${unit}`)}

@@ -26,8 +26,6 @@ import {
   ERROR_CODES,
   LOCALES,
   ORDER_STATUSES,
-  PORTFOLIO_CATEGORIES,
-  SPACES,
   UPLOAD_MAX_FILES,
 } from '@painter/shared';
 
@@ -77,7 +75,7 @@ const dateTime = { type: 'string', format: 'date-time' };
 const nDateTime = { type: ['string', 'null'], format: 'date-time' };
 const status = { type: 'string', enum: [...ORDER_STATUSES] };
 const locale = { type: 'string', enum: [...LOCALES] };
-const spaces = { type: 'array', items: { type: 'string', enum: [...SPACES] } };
+const unit = { type: ['string', 'null'], enum: ['CM', 'M', null] };
 const translations = (props: Json) => ({
   type: 'object',
   properties: Object.fromEntries(LOCALES.map((l) => [l, { type: 'object', properties: props }])),
@@ -146,7 +144,11 @@ const schemas: Record<string, Json> = {
   },
   Service: {
     type: 'object',
-    properties: { id: str, name: str, description: nstr, imageUrl: nstr, isWallService: bool },
+    properties: { id: str, slug: str, name: str, description: nstr, imageUrl: nstr, isWallService: bool, defaultUnit: unit },
+  },
+  Category: {
+    type: 'object',
+    properties: { id: str, slug: { type: 'string', description: 'URL value for the catalog filter' }, name: str },
   },
   PortfolioItem: {
     type: 'object',
@@ -154,15 +156,14 @@ const schemas: Record<string, Json> = {
       id: str,
       title: str,
       description: nstr,
-      category: { type: 'string', enum: [...PORTFOLIO_CATEGORIES] },
+      category: { oneOf: [ref('Category'), { type: 'null' }], description: 'null = uncategorised' },
       imageUrl: str,
       width: nnum,
       height: nnum,
-      unit: { type: ['string', 'null'], enum: ['CM', 'M', null] },
+      unit,
       year: { type: ['integer', 'null'] },
       isFeatured: bool,
       isSample: bool,
-      spaces,
       allowSimilarRequest: { type: 'boolean', description: 'Whether "Request something similar" is offered' },
     },
   },
@@ -314,11 +315,11 @@ const schemas: Record<string, Json> = {
     properties: {
       id: str,
       imageUrl: str,
-      category: str,
+      categoryId: { type: ['string', 'null'], description: 'null = uncategorised' },
+      categoryHidden: { type: 'boolean', description: 'The category is hidden, so the work is not on the site' },
       isFeatured: bool,
       isPublished: bool,
       isSample: bool,
-      spaces,
       allowSimilarRequest: bool,
       sortOrder: { type: 'integer' },
       translations: translations({ title: str, description: nstr }),
@@ -331,6 +332,7 @@ const schemas: Record<string, Json> = {
       imageUrl: nstr,
       isActive: bool,
       isWallService: bool,
+      defaultUnit: unit,
       sortOrder: { type: 'integer' },
       orderCount: { type: 'integer' },
       translations: translations({ name: str, description: nstr }),
@@ -398,14 +400,21 @@ export function buildOpenApiSpec(): Json {
           responses: { 200: ok('Services', { type: 'array', items: ref('Service') }) },
         },
       },
+      '/api/categories': {
+        get: {
+          tags: ['Public'],
+          summary: 'Catalog filter categories: visible and with at least one published work',
+          parameters: [localeParam],
+          responses: { 200: ok('Categories', { type: 'array', items: ref('Category') }) },
+        },
+      },
       '/api/portfolio': {
         get: {
           tags: ['Public'],
-          summary: 'Published portfolio items',
+          summary: 'Portfolio items on the site (published, category not hidden)',
           parameters: [
             localeParam,
-            { name: 'category', in: 'query', schema: { type: 'string', enum: [...PORTFOLIO_CATEGORIES] } },
-            { name: 'space', in: 'query', schema: { type: 'string', enum: [...SPACES] } },
+            { name: 'category', in: 'query', description: 'Category slug; unknown or hidden slugs match nothing', schema: { type: 'string' } },
             { name: 'featured', in: 'query', schema: { type: 'boolean' } },
           ],
           responses: { 200: ok('Items', { type: 'array', items: ref('PortfolioItem') }), ...errors(400) },

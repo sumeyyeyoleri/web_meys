@@ -85,7 +85,7 @@ It must feel like a real artist's portfolio combined with a professional order s
 
 **Home:** hero (editable eyebrow/title/subtitle) with primary CTA "Request a custom order"; featured works; short artist/services introduction; portfolio preview; "How ordering works" (4 steps: send request → artist reviews → personal quote → creation); Instagram section linking to the configured profile URL; contact section; footer.
 
-**Portfolio:** responsive grid, category filter (painting, mural, wall painting, portrait, other), featured items, accessible lightbox (keyboard: arrows/Esc, focus trap) with title, description, category, dimensions, year. Instagram button. No Instagram scraping/API — only the configurable profile URL.
+**Portfolio:** responsive grid, category filter (the artist's own categories, see §10 — only visible categories with at least one published work appear as filter chips; no space/room filter), featured items, accessible lightbox (keyboard: arrows/Esc, focus trap) with title, description, category, dimensions, year. Instagram button. No Instagram scraping/API — only the configurable profile URL.
 
 **Services:** active services with image, name, description; each links to the order form with that service preselected. All admin-editable.
 
@@ -96,7 +96,7 @@ It must feel like a real artist's portfolio combined with a professional order s
 One simple page in the existing dark gallery design (colours and design tokens unchanged — only the order part changes). No steps, no progress indicator. Top to bottom:
 
 1. **Service** (optional) — small option cards for the active services (e.g. painting / wall painting / custom); a "Clear choice" button removes the selection. `?service=<id>` preselects one.
-2. **Size** — width × height + unit (cm / m), with the hint "Example: 30 × 40 cm".
+2. **Size** — width × height + unit (cm / m), with the hint "Example: 30 × 40 cm". The unit follows the chosen service's **default unit** (m for murals, shutters and shop windows; cm for canvas, portraits and custom pieces) until the customer picks a unit themselves.
 3. **Your request / description** — one large textarea (colour, style, idea …), min 20 characters.
 4. **Photos** (optional) — "Choose files or drag and drop"; multiple images, JPG/PNG/WebP only, max 8 files, max 10 MB each (constants in `shared`); limits shown; previews (object URLs, revoked on cleanup); remove per file; clear per-file error messages.
 5. **Full name** and **phone** (both required; phone with country code `+32 …`) — side by side on desktop, stacked on phones.
@@ -168,8 +168,9 @@ Only for the signed-in artist (route guard in the web app **and** API enforcemen
 - **Messaging:** per-order thread, sender + timestamp, a small tag with the **sender's language** (NL/EN/TR — stored on each message: the artist's dashboard language when sending, the order's communication language for the customer), read/unread state (messages are marked read when the recipient opens the thread), unread badges in the order list and navigation.
 - **Message translation (decision, DeepL):** under each message of the other party a **"Translate"** button translates it into the viewer's current language (dashboard language for the artist, page language on the tracking page); **"Show original"** switches back. Only on click, never automatically. Each translation is stored (`MessageTranslation`, unique per message + target language), so the same message is never sent to DeepL twice for one language; a message already in the target language is not sent at all. The key lives in `DEEPL_API_KEY` (`.env`, documented in `.env.example` and the README); without it the button is hidden (`translationAvailable` in the site settings) and everything else works. Translation requests have their own rate limit. DeepL errors are shown in plain words under the message (quota used up → `TRANSLATION_LIMIT_REACHED`, other errors → `TRANSLATION_FAILED`, no key → `TRANSLATION_UNAVAILABLE`) and the original stays visible. Tests use a fake translator and a mocked `fetch` — never the real DeepL.
 - **Content management** (all with validation, toasts, and confirmation dialogs for destructive actions):
-  - Portfolio: create/edit (image upload or URL, category, dimensions, year, featured, published, sample flag, translations), delete, reorder (move up/down buttons — accessible), toggle featured.
-  - Services: create/edit/delete (delete blocked if orders reference it — offer "deactivate" instead), active toggle, wall-service flag, image, translations, reorder.
+  - Portfolio: create/edit (image upload or URL, category chosen from the list or none, dimensions, year, featured, published, sample flag, translations), delete, reorder (move up/down buttons — accessible), toggle featured. Works in a hidden category carry a **"category hidden"** label.
+  - **Catalog categories (decision; management UI in phase 9b with the Catalog section):** categories are a table (`Category` + `CategoryTranslation`), not a fixed list. The artist adds them, edits the name in NL/EN/TR (all three required), reorders, hides/shows and deletes them. The hide button says **"Hide category and its works on the site"**: a hidden category's works disappear from the site everywhere ("All", featured, detail page, "Request similar") and come back unchanged when it is shown again. Deleting a category with works asks for confirmation and moves the works to another category or leaves them **uncategorised** (`categoryId` NULL, `onDelete: SetNull`) — works are never deleted. Several images/works can be uploaded into a category at once (9b). Starting categories (seed + migration, editable): Horeca, Gyms, Shops & businesses, Home & kids' rooms, Street art & shop windows, Canvas & portrait (slugs `horeca`, `gym`, `shops`, `home`, `street-art`, `canvas-portrait`). The former space/room data was removed.
+  - Services: create/edit/delete (delete blocked if orders reference it — offer "deactivate" instead), active toggle, wall-service flag, default unit (cm / m / none) for the order form, image, translations, reorder. Starting services: Mural (indoor & outdoor), Shutter & shop window painting, Canvas & portrait, Custom piece; the former Portrait and Decorative wall painting services were switched off (kept for their orders).
   - Text blocks per language: hero, about, Instagram text, contact intro, business hours, footer tagline, privacy policy.
   - Settings: business name, logo, accent color, Instagram URL, contact email/phone/address, enabled languages (nl-BE always on), email notifications on/off (shows whether SMTP is configured).
   - **My account (phase 9b, decision):** the artist changes the sign-in email, the display name and the password (current password required for email and password changes; changing the email or password signs out the other sessions). Needs a `name` field on `User`.
@@ -178,22 +179,22 @@ Only for the signed-in artist (route guard in the web app **and** API enforcemen
 
 ## 11. Database (Prisma)
 
-Models: `User` (the artist's login only; preferredLocale enum), `Session`, `PasswordResetToken`, `Order` (no account link; contact email optional), `OrderTrackingToken`, `OrderAttachment`, `OrderMessage` (with the sender's `locale`), `MessageTranslation` (cached DeepL translation, unique per message + target locale, cascades with the message), `InternalAdminNote`, `OrderStatusHistory`, `Notification`, `Service` + `ServiceTranslation`, `PortfolioItem` + `PortfolioItemTranslation`, `LocalizedContent` (key + locale unique), `SiteSettings` (single row).
+Models: `User` (the artist's login only; preferredLocale enum), `Session`, `PasswordResetToken`, `Order` (no account link; contact email optional), `OrderTrackingToken`, `OrderAttachment`, `OrderMessage` (with the sender's `locale`), `MessageTranslation` (cached DeepL translation, unique per message + target locale, cascades with the message), `InternalAdminNote`, `OrderStatusHistory`, `Notification`, `Service` (with `defaultUnit`) + `ServiceTranslation`, `Category` + `CategoryTranslation`, `PortfolioItem` (optional `categoryId`) + `PortfolioItemTranslation`, `LocalizedContent` (key + locale unique), `SiteSettings` (single row).
 
-- Enums for the order side (`Role` ADMIN/CUSTOMER on messages and status history), locales (`NL_BE`, `EN`, `TR` — map to `nl-BE`/`en`/`tr` in one place), statuses, units, categories, notification types.
+- Enums for the order side (`Role` ADMIN/CUSTOMER on messages and status history), locales (`NL_BE`, `EN`, `TR` — map to `nl-BE`/`en`/`tr` in one place), statuses, units, notification types. Catalog categories are a table, not an enum.
 - Money and sizes as `Decimal`; deadline as `@db.Date`.
 - Orders store the contact + project address submitted for that order (it must remain as submitted) — document this choice in a schema comment.
 - Indexes on status, createdAt, customerId, archivedAt, message (orderId, createdAt), notification (userId, readAt).
 - Deletion policies: orders, messages, notes, attachments and history use `onDelete: Restrict` (never silently erased); translations cascade from their parent.
 - Customer messages and internal notes are separate tables — never one table with a flag.
-- Migrations committed; `prisma/seed.ts` (idempotent) creates: the admin from env vars (a changed `ADMIN_PASSWORD` updates the password on the next seed), demo orders in different statuses (each with a sample Belgian phone number; with a message thread and an internal note; one prints its tracking link), 4 services, ~10 sample portfolio items with generated SVG art, all text blocks in 3 languages, default settings.
+- Migrations committed; `prisma/seed.ts` (idempotent) creates: the admin from env vars (a changed `ADMIN_PASSWORD` updates the password on the next seed), demo orders in different statuses (each with a sample Belgian phone number; with a message thread and an internal note; one prints its tracking link), 4 services (with default units), the 6 starting catalog categories (only on an empty table, so deleted ones stay deleted), 12 sample portfolio items with generated SVG art (each in a starting category), the Instagram link `https://www.instagram.com/meysart__` (replacing the old placeholder unless changed), all text blocks in 3 languages, default settings.
 
 ## 12. API
 
 REST under `/api`, consistent envelopes: success → resource or `{ items, page, pageSize, total, totalPages }`; error → `{ error: { code, message, fields? } }`. Central error handler maps Zod errors → 400 with field keys, unknown errors → 500 without leaking details. Validate body, params and query on every route.
 
 Suggested routes (refine as needed and document all of them in OpenAPI):
-- `GET /api/site?locale=` (settings + text blocks), `GET /api/services?locale=`, `GET /api/portfolio?locale=&category=`
+- `GET /api/site?locale=` (settings + text blocks), `GET /api/services?locale=`, `GET /api/categories?locale=` (filter categories: visible, with published works), `GET /api/portfolio?locale=&category=<slug>` (unknown/hidden slug → no works)
 - `/api/auth` (the artist only): `csrf`, `login`, `logout`, `me`, `forgot-password`, `reset-password`, `change-password`
 - `POST /api/orders` (multipart, no account)
 - `GET /api/attachments/:id` (authorized file stream)

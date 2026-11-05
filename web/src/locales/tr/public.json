@@ -17,9 +17,8 @@
   },
   "work": {
     "selectedHeading": "Seçili eser",
-    "space": "Mekân",
     "size": "Örnek boyut",
-    "category": "Eser türü",
+    "category": "Kategori",
     "year": "Yıl",
     "price": "Fiyat",
     "requestSimilar": "Buna benzer bir şey iste",
@@ -73,10 +72,8 @@
   "catalog": {
     "title": "İlham kataloğu",
     "intro": "Önceki çalışmalardan ilham alın, tek tıkla benzerini isteyin.",
-    "filterCategory": "İş türüne göre filtrele",
-    "filterSpace": "Mekâna göre filtrele",
+    "filterCategory": "Kategoriye göre filtrele",
     "all": "Tümü",
-    "allSpaces": "Tüm mekânlar",
     "results_zero": "Eser yok",
     "results_one": "{{count}} eser",
     "results_other": "{{count}} eser",

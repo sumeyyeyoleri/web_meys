@@ -69,22 +69,6 @@
     "COMPLETED": "Tamamlandı",
     "CANCELLED": "İptal edildi"
   },
-  "category": {
-    "PAINTING": "Tablo",
-    "MURAL": "Duvar resmi",
-    "WALL_PAINTING": "Duvar boyama",
-    "PORTRAIT": "Portre",
-    "OTHER": "Diğer"
-  },
-  "space": {
-    "LIVING_ROOM": "Oturma odası",
-    "BEDROOM": "Yatak odası",
-    "KIDS_ROOM": "Çocuk odası",
-    "KITCHEN": "Mutfak",
-    "CAFE_SHOP": "Kafe / dükkân",
-    "OFFICE": "Ofis",
-    "OUTDOOR": "Dış mekân"
-  },
   "errors": {
     "generic": "Bir şeyler ters gitti. Lütfen daha sonra tekrar deneyin.",
     "NETWORK_ERROR": "Sunucuya ulaşılamadı. Lütfen bağlantınızı kontrol edin.",

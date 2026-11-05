@@ -24,7 +24,7 @@ export function SelectedWorkPanel({ item }: { item: PortfolioItemDto }) {
       <div className="flex flex-col gap-5 lg:py-2">
         <div className="flex flex-wrap items-center gap-3">
           {item.isSample ? <SampleBadge /> : null}
-          <span className="eyebrow">{tc(`category.${item.category}`)}</span>
+          {item.category ? <span className="eyebrow">{item.category.name}</span> : null}
         </div>
         <div>
           <p className="eyebrow mb-2 text-text-subtle">{t('work.selectedHeading')}</p>

@@ -227,10 +227,31 @@ describe('content management', () => {
     await admin.delete(`/api/admin/services/${created.body.id}`).expect(204);
   });
 
+  it("stores a service's default unit and offers it on the site", async () => {
+    const created = await admin
+      .post('/api/admin/services')
+      .send({ isActive: true, isWallService: true, defaultUnit: 'M', translations: translations('Rolluik') })
+      .expect(201);
+    expect(created.body).toMatchObject({ defaultUnit: 'M' });
+    const listed = (await customer.get('/api/services').expect(200)).body.find((s: { id: string }) => s.id === created.body.id);
+    expect(listed).toMatchObject({ defaultUnit: 'M', isWallService: true });
+    expect(typeof listed.slug).toBe('string');
+
+    const cleared = await admin
+      .put(`/api/admin/services/${created.body.id}`)
+      .send({ isActive: true, isWallService: true, defaultUnit: '', translations: translations('Rolluik') })
+      .expect(200);
+    expect(cleared.body.defaultUnit).toBeNull();
+    const bad = await admin
+      .post('/api/admin/services')
+      .send({ isActive: true, isWallService: false, defaultUnit: 'KM', translations: translations('X') })
+      .expect(400);
+    expect(bad.body.error.fields).toEqual({ defaultUnit: 'validation.invalidOption' });
+  });
+
   it('manages portfolio items and reflects them on the public site', async () => {
     const item = {
       imageUrl: '/media/portfolio/test.svg',
-      category: 'MURAL',
       width: 3,
       height: 2,
       unit: 'M',

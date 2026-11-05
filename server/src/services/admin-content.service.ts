@@ -79,6 +79,13 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     return item;
   }
 
+  /** A work's category must exist (empty = uncategorised). */
+  async function checkCategory(input: PortfolioItemInput) {
+    if (input.categoryId && !(await repos.adminContent.categoryExists(input.categoryId))) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Unknown category', { categoryId: 'validation.invalidOption' });
+    }
+  }
+
   async function requireService(id: string) {
     const service = await repos.adminContent.findService(id);
     if (!service) throw notFound('Service not found');
@@ -87,7 +94,6 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
 
   const portfolioData = (input: PortfolioItemInput) => ({
     imageUrl: input.imageUrl,
-    category: input.category,
     width: dec(input.width),
     height: dec(input.height),
     unit: input.unit ?? null,
@@ -95,7 +101,6 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     isFeatured: input.isFeatured,
     isPublished: input.isPublished,
     isSample: input.isSample,
-    spaces: input.spaces,
     allowSimilarRequest: input.allowSimilarRequest,
   });
 
@@ -113,10 +118,12 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     },
 
     async createPortfolio(input: PortfolioItemInput) {
+      await checkCategory(input);
       return transaction(async (tx) =>
         tx.adminContent.createPortfolio(
           {
             ...portfolioData(input),
+            ...(input.categoryId ? { category: { connect: { id: input.categoryId } } } : {}),
             slug: slugify(input.translations.en.title),
             sortOrder: await tx.adminContent.nextPortfolioSortOrder(),
           },
@@ -127,8 +134,13 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
 
     async updatePortfolio(id: string, input: PortfolioItemInput) {
       const existing = await requirePortfolio(id);
+      await checkCategory(input);
       const updated = await transaction((tx) =>
-        tx.adminContent.updatePortfolio(id, portfolioData(input), portfolioTranslations(input)),
+        tx.adminContent.updatePortfolio(
+          id,
+          { ...portfolioData(input), category: input.categoryId ? { connect: { id: input.categoryId } } : { disconnect: true } },
+          portfolioTranslations(input),
+        ),
       );
       if (existing.imageUrl !== updated.imageUrl) await releaseImage(existing.imageUrl);
       return updated;
@@ -165,6 +177,7 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
             imageUrl: input.imageUrl ?? null,
             isActive: input.isActive,
             isWallService: input.isWallService,
+            defaultUnit: input.defaultUnit,
             sortOrder: await tx.adminContent.nextServiceSortOrder(),
           },
           serviceTranslations(input),
@@ -177,7 +190,7 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
       const updated = await transaction((tx) =>
         tx.adminContent.updateService(
           id,
-          { imageUrl: input.imageUrl ?? null, isActive: input.isActive, isWallService: input.isWallService },
+          { imageUrl: input.imageUrl ?? null, isActive: input.isActive, isWallService: input.isWallService, defaultUnit: input.defaultUnit },
           serviceTranslations(input),
         ),
       );

@@ -1,4 +1,4 @@
-import type { PortfolioCategory, Space } from '@prisma/client';
+import { isOnSite } from '../domain/catalog';
 import { notFound } from '../domain/errors';
 import { CONTENT_KEYS, DEFAULT_LOCALE, localeFromDb, localeToDb, type ContentKey, type Locale } from '@painter/shared';
 import type { Repositories } from '../repositories';
@@ -37,13 +37,17 @@ export function createContentService({ repos }: { repos: Repositories }) {
       return repos.content.listActiveServices();
     },
 
-    listPortfolio(filter: { category?: PortfolioCategory; space?: Space; featured?: boolean }) {
+    listPortfolio(filter: { category?: string; featured?: boolean }) {
       return repos.content.listPublishedPortfolio(filter);
+    },
+
+    listCategories() {
+      return repos.content.listCategoriesWithWorks();
     },
 
     async getPublishedPortfolioItem(id: string) {
       const item = await repos.content.findPortfolioItem(id);
-      if (!item?.isPublished) throw notFound('Portfolio item not found');
+      if (!item || !isOnSite(item)) throw notFound('Portfolio item not found');
       return item;
     },
   };

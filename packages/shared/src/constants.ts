@@ -32,13 +32,6 @@ export type Role = (typeof ROLES)[number];
 export const DIMENSION_UNITS = ['CM', 'M'] as const;
 export type DimensionUnit = (typeof DIMENSION_UNITS)[number];
 
-export const PORTFOLIO_CATEGORIES = ['PAINTING', 'MURAL', 'WALL_PAINTING', 'PORTRAIT', 'OTHER'] as const;
-export type PortfolioCategory = (typeof PORTFOLIO_CATEGORIES)[number];
-
-/** Rooms/places used to filter the Inspiration Catalog. */
-export const SPACES = ['LIVING_ROOM', 'BEDROOM', 'KIDS_ROOM', 'KITCHEN', 'CAFE_SHOP', 'OFFICE', 'OUTDOOR'] as const;
-export type Space = (typeof SPACES)[number];
-
 export const NOTIFICATION_TYPES = ['ORDER_SUBMITTED', 'ORDER_STATUS_CHANGED', 'ORDER_MESSAGE'] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

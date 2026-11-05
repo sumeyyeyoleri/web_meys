@@ -53,7 +53,7 @@ export function Lightbox({ items, index, onIndexChange }: LightboxProps) {
           <div className="flex flex-col gap-5 lg:pt-6">
             <div className="flex flex-wrap items-center gap-3">
               {item.isSample ? <SampleBadge /> : null}
-              <span className="eyebrow">{tc(`category.${item.category}`)}</span>
+              {item.category ? <span className="eyebrow">{item.category.name}</span> : null}
             </div>
             <p className="font-display text-5xl leading-[1.1]" aria-hidden="true">
               {item.title}

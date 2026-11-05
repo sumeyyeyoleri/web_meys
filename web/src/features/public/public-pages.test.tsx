@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../../lib/i18n';
-import { mockApi, uid } from '../../test/fixtures';
+import { json, mockApi, portfolio, uid } from '../../test/fixtures';
 import { renderApp } from '../../test/render';
 
 beforeEach(() => setLocale('nl-BE'));
@@ -44,25 +44,54 @@ describe('home: curved gallery', () => {
 });
 
 describe('catalog', () => {
-  it('reads filters from the URL and writes them back', async () => {
+  it('reads the category from the URL and writes it back; there is no space filter', async () => {
     mockApi();
-    const { router } = renderApp('/catalog?category=mural&space=kids');
+    const { router } = renderApp('/catalog?category=home');
     expect(await screen.findByRole('heading', { level: 2, name: 'Maanlichtheuvels' })).toBeTruthy();
     expect(screen.queryByRole('heading', { level: 2, name: 'Warme aarde' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Muurschildering' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByRole('button', { name: 'Kinderkamer' }).getAttribute('aria-pressed')).toBe('true');
+    const filters = screen.getByRole('group', { name: 'Filter op categorie' });
+    expect(within(filters).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'Alles',
+      'Doek en portret',
+      'Woning en kinderkamer',
+      'Street art en vitrines',
+    ]);
+    expect(within(filters).getByRole('button', { name: 'Woning en kinderkamer' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.queryByRole('group', { name: /ruimte/i })).toBeNull();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Alle ruimtes' }));
-    await waitFor(() => expect(router.state.location.search).toBe('?category=mural'));
+    await userEvent.click(within(filters).getByRole('button', { name: 'Street art en vitrines' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?category=street-art'));
     expect(await screen.findByRole('heading', { level: 2, name: 'Nachthaven' })).toBeTruthy();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Buiten' }));
-    await waitFor(() => expect(router.state.location.search).toBe('?category=mural&space=outdoor'));
+    await userEvent.click(within(filters).getByRole('button', { name: 'Alles' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+    expect(await screen.findByRole('heading', { level: 2, name: 'Warme aarde' })).toBeTruthy();
   });
 
-  it('shows an empty state with a way to clear the filters', async () => {
+  it('shows the category under each work, and everything for an old or unknown category link', async () => {
     mockApi();
-    const { router } = renderApp('/catalog?category=portrait');
+    renderApp('/catalog?category=mural');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Warme aarde' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Nachthaven' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Alles' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getAllByText('Woning en kinderkamer').length).toBeGreaterThanOrEqual(2); // chip + card caption
+  });
+
+  it('only shows the categories the site lists (no filter row without any)', async () => {
+    mockApi({ routes: { 'GET /api/categories': () => json(200, []) } });
+    renderApp('/catalog');
+    await screen.findByRole('heading', { level: 2, name: 'Warme aarde' });
+    expect(screen.queryByRole('group', { name: 'Filter op categorie' })).toBeNull();
+  });
+
+  it('shows an empty state with a way to clear the filter', async () => {
+    mockApi({
+      routes: {
+        'GET /api/categories': () => json(200, [{ id: 'c9', slug: 'gym', name: 'Sportscholen' }]),
+        'GET /api/portfolio': (_init, url) => json(200, url.searchParams.get('category') === 'gym' ? [] : portfolio),
+      },
+    });
+    const { router } = renderApp('/catalog?category=gym');
     expect(await screen.findByText('Nog niets in deze combinatie')).toBeTruthy();
     await userEvent.click(screen.getByRole('button', { name: 'Filters wissen' }));
     await waitFor(() => expect(router.state.location.search).toBe(''));

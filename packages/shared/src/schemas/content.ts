@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CONTENT_KEYS, DIMENSION_UNITS, HEX_COLOR_PATTERN, PORTFOLIO_CATEGORIES, SPACES } from '../constants';
+import { CONTENT_KEYS, DIMENSION_UNITS, HEX_COLOR_PATTERN } from '../constants';
 import { DEFAULT_LOCALE, LOCALES } from '../locales';
 import {
   emptyToUndefined,
@@ -20,8 +20,6 @@ function perLocale<T extends z.ZodType>(schema: T) {
 
 /* ---------- Portfolio ---------- */
 
-export const spaceSchema = z.enum(SPACES, { error: 'validation.invalidOption' });
-
 export const portfolioTranslationSchema = z.object({
   title: requiredString(150),
   description: optionalString(2000),
@@ -29,7 +27,8 @@ export const portfolioTranslationSchema = z.object({
 
 export const portfolioItemSchema = z.object({
   imageUrl: imageUrlSchema,
-  category: z.enum(PORTFOLIO_CATEGORIES, { error: 'validation.invalidOption' }),
+  /** Empty or missing = uncategorised. */
+  categoryId: z.preprocess(emptyToUndefined, uuidSchema.optional()).transform((value) => value ?? null),
   width: optionalPositiveNumber(100_000),
   height: optionalPositiveNumber(100_000),
   unit: z.preprocess(emptyToUndefined, z.enum(DIMENSION_UNITS, { error: 'validation.invalidOption' }).optional()),
@@ -45,11 +44,6 @@ export const portfolioItemSchema = z.object({
   isFeatured: z.boolean(),
   isPublished: z.boolean(),
   isSample: z.boolean(),
-  spaces: z
-    .array(spaceSchema)
-    .max(SPACES.length)
-    .default([])
-    .transform((spaces) => SPACES.filter((space) => spaces.includes(space))),
   allowSimilarRequest: z.boolean().default(true),
   translations: perLocale(portfolioTranslationSchema),
 });
@@ -66,6 +60,9 @@ export const serviceSchema = z.object({
   imageUrl: optionalImageUrlSchema,
   isActive: z.boolean(),
   isWallService: z.boolean(),
+  defaultUnit: z
+    .preprocess(emptyToUndefined, z.enum(DIMENSION_UNITS, { error: 'validation.invalidOption' }).optional())
+    .transform((value) => value ?? null),
   translations: perLocale(serviceTranslationSchema),
 });
 export type ServiceInput = z.infer<typeof serviceSchema>;

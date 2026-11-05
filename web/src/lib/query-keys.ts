@@ -5,6 +5,7 @@ export const queryKeys = {
   me: ['me'] as const,
   site: (locale: Locale) => ['site', locale] as const,
   services: (locale: Locale) => ['services', locale] as const,
+  categories: (locale: Locale) => ['categories', locale] as const,
   portfolio: (locale: Locale, filter: Record<string, string | undefined> = {}) => ['portfolio', locale, filter] as const,
   portfolioItem: (id: string, locale: Locale) => ['portfolio-item', id, locale] as const,
   /** The customer's order behind a tracking token (`/track#<token>`). */

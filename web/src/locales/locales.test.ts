@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ERROR_CODES, LOCALES, ORDER_STATUSES, PORTFOLIO_CATEGORIES, SPACES } from '@painter/shared';
+import { ERROR_CODES, LOCALES, ORDER_STATUSES } from '@painter/shared';
 import { NAMESPACES, resources } from '../lib/i18n';
 
 type Tree = { [key: string]: string | Tree };
@@ -68,15 +68,13 @@ describe('locale files', () => {
     }
   });
 
-  it('labels every error code, status, category and space', () => {
+  it('labels every error code, status and language', () => {
     for (const locale of LOCALES) {
       const keys = flat(locale, 'common');
       const required = [
         ...ERROR_CODES.map((c) => `errors.${c}`),
         'errors.NETWORK_ERROR',
         ...ORDER_STATUSES.map((s) => `status.${s}`),
-        ...PORTFOLIO_CATEGORIES.map((c) => `category.${c}`),
-        ...SPACES.map((s) => `space.${s}`),
         ...LOCALES.map((l) => `language.${l}`),
       ];
       expect({ locale, missing: required.filter((k) => !keys.has(k)) }).toEqual({ locale, missing: [] });

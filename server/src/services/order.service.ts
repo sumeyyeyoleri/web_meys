@@ -8,6 +8,7 @@ import {
 } from '@painter/shared';
 import { pickTranslation } from '../domain/localization';
 import { AppError, notFound, validationError } from '../domain/errors';
+import { isOnSite } from '../domain/catalog';
 import { generateOrderReference } from '../domain/order-reference';
 import { assertStatusTransition } from '../domain/order-status';
 import { describeError, logger } from '../infrastructure/logger';
@@ -177,7 +178,7 @@ export function createOrderService({ repos, transaction, storage, email, trackin
       let title = '';
       if (input.inspirationItemId) {
         const item = await repos.content.findPortfolioItem(input.inspirationItemId);
-        if (!item?.isPublished || !item.allowSimilarRequest) {
+        if (!item || !isOnSite(item) || !item.allowSimilarRequest) {
           throw validationError({ inspirationItemId: 'validation.invalidInspiration' });
         }
         title = pickTranslation(item.translations, locale)?.title ?? '';

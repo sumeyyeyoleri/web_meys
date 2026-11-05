@@ -17,9 +17,8 @@
   },
   "work": {
     "selectedHeading": "Selected work",
-    "space": "Space",
     "size": "Example size",
-    "category": "Type of work",
+    "category": "Category",
     "year": "Year",
     "price": "Price",
     "requestSimilar": "Request something similar",
@@ -73,10 +72,8 @@
   "catalog": {
     "title": "Inspiration catalog",
     "intro": "Get inspired by earlier work and request something similar with one click.",
-    "filterCategory": "Filter by type of work",
-    "filterSpace": "Filter by space",
+    "filterCategory": "Filter by category",
     "all": "All",
-    "allSpaces": "All spaces",
     "results_zero": "No works",
     "results_one": "{{count}} work",
     "results_other": "{{count}} works",

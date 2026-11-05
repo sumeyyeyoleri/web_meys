@@ -68,17 +68,17 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
    - Implementation: a flex row of cards; each card gets `transform: perspective(1100px) rotateY(<-offset × 22deg>)` and grows taller towards the edges (`height: 300px + |offset| × 34px`); outermost cards at 55% opacity; the row overflows and is clipped at the viewport edges.
    - Controls: previous/next round buttons + "03 / 08" counter; keyboard ←/→ when focused; swipe on touch; clicking a side card brings it to the center. No autoplay. `aria-roledescription="carousel"`, each slide labelled.
    - Reduced motion: no transitions. Mobile: 3 visible cards with a smaller angle (12deg).
-3. **Selected-work panel** directly under the carousel, synced to the centered card: large image (left), and right: "Example" badge + category, serif title, description, a definition list (Space, Example size, Technique, Price = "Personal quote"), primary button **"Request something similar"**, secondary "Browse the full catalog", and a muted note "The selected example will be attached to your order as a reference."
+3. **Selected-work panel** directly under the carousel, synced to the centered card: large image (left), and right: "Example" badge + category, serif title, description, a definition list (Category, Example size, Year, Price = "Personal quote"), primary button **"Request something similar"**, secondary "Browse the full catalog", and a muted note "The selected example will be attached to your order as a reference."
 4. **How it works:** 4 numbered steps on dark surface cards (send request → I review → personal quote → creation).
 5. **Services preview**, **Instagram band** (profile link button), **contact**, **footer** (with "All images are examples" note while sample content exists).
 
 ### Catalog (`/catalog`, replaces "Portfolio")
 - Serif title "Inspiration catalog" + one-line intro.
-- Filter chips (pill buttons with `aria-pressed`): All + portfolio categories, and a second chip row for **space** (Living room, Bedroom, Kids' room, Kitchen, Café/Shop, Office, Outdoor).
-- Responsive grid (`repeat(auto-fill, minmax(240px, 1fr))`), each card: image (button → opens lightbox/detail), serif title, "Category · Space" line, and a small secondary pill **"Request similar →"**.
+- Filter chips (pill buttons with `aria-pressed`): **All** + the artist's categories (`GET /api/categories`: only visible categories with at least one published work; no chip row at all when there are none). There is no space/room filter.
+- Responsive grid (`repeat(auto-fill, minmax(240px, 1fr))`), each card: image (button → opens lightbox/detail), serif title, the category name (nothing for uncategorised works), and a small secondary pill **"Request similar →"**.
 - Lightbox/detail view: large image, all info, "Request something similar" primary button, prev/next, Esc closes, focus trap.
 - Empty state for a filter with no results; skeleton loaders while fetching.
-- Keep the URL in sync with filters (`?category=mural&space=kids`) so links are shareable.
+- Keep the URL in sync with the filter (`?category=horeca`) so links are shareable; an old or unknown value (e.g. `?category=mural`) shows everything.
 
 ### Order form (dark) — single page (PROMPT.md §6)
 - Same dark gallery tokens as the rest of the site; one centred column (max ~768px), no steps, no summary panel.
@@ -86,7 +86,7 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 - Sections top to bottom: service (small option cards, optional, "Clear choice"), size (width × height + unit, hint "Example: 30 × 40 cm"), request/description (large textarea), photos (drop zone + "Choose files", thumbnails with remove), name + email side by side (stacked on phones), phone (optional), address (country defaults to Belgium), privacy checkbox, "No charge now" note, "Send order".
 - **When opened from a catalog item** (`/order?from=<portfolioItemId>`):
   - A banner above the form with the thumbnail: *"You're starting from the work 'Starry Terrace'. It's attached as a reference and the matching service is selected."* + a "Remove" button.
-  - Preselect the service mapped from the item's category (mural / wall painting → the wall service; painting / portrait → the matching service; otherwise none).
+  - Preselect the service mapped from the item's category by slug (horeca, gym, shops, home → mural; street-art → shutter & shop window; canvas-portrait → canvas & portrait; other categories, uncategorised works or switched-off services → none). The unit then follows that service's default unit.
   - The confirmation page and the order detail show "Inspired by: <title>".
 - Guest confirmation: order number, the private tracking link in a read-only field with "Copy link" / "Open order", and a clear "Save this link" notice; "We also emailed it" only when the email was really sent.
 
@@ -96,12 +96,14 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 - Orders list: the reference is plain text; there is no "Details" button and no arrow — the whole row/card is the link: on hover it is lightly highlighted (`surface-2` background) with a pointer cursor; it is reachable with Tab, shows the accent focus ring (inset on table rows) and opens with Enter. Customer panel: secondary **"Message on WhatsApp"** (chat icon) and **"Call"** (phone icon) buttons under the phone number.
 - Messages: a tiny outlined language pill (NL/EN/TR) before the sender line; under the other party's messages a muted underlined **"Translate"** link button (translate icon, spinner while working) that becomes **"Show original"**, with a small "Translation (DeepL)" caption under translated text and the error in red under the message. Same component on the tracking page.
 - Admin order detail shows an **"Inspired by"** card (thumbnail + title + link to the portfolio item) when the order has one.
-- Admin portfolio editor gets the new **Spaces** multi-select and an **"Show 'Request similar' button"** toggle (default on).
+- Admin portfolio editor has a **category** select (or none) and an **"Show 'Request similar' button"** toggle (default on).
 
 ## 5. Placeholder artwork
-Keep generating original abstract SVG artworks (no reproductions of famous paintings, no copyrighted works). Make them look painterly on a dark background: rich but slightly muted palettes (deep blues, ochre, terracotta, sage, gold), layered hills, suns/moons, color blocks. Aim for ~12 sample items covering all categories and spaces, all flagged `isSample`.
+Keep generating original abstract SVG artworks (no reproductions of famous paintings, no copyrighted works). Make them look painterly on a dark background: rich but slightly muted palettes (deep blues, ochre, terracotta, sage, gold), layered hills, suns/moons, color blocks. Aim for ~12 sample items spread over the starting categories, all flagged `isSample`.
 
 ## 6. Small backend addition (do this first, with tests)
+
+_History: the `spaces` field and filter below were later removed again, and categories became a table — see PROMPT.md §10 (catalog categories)._
 1. Prisma: add `inspirationItemId String?` to `Order` (relation to `PortfolioItem`, `onDelete: SetNull`) and to `PortfolioItem` add `spaces Space[]` (new enum `Space`: LIVING_ROOM, BEDROOM, KIDS_ROOM, KITCHEN, CAFE_SHOP, OFFICE, OUTDOOR) and `allowSimilarRequest Boolean @default(true)`. New migration; update seed.
 2. Shared schemas: order submission accepts optional `inspirationItemId`; portfolio upsert accepts `spaces` and `allowSimilarRequest`.
 3. Server: on order creation, validate that the item exists, is published and `allowSimilarRequest` is true (otherwise 400 with `validation.invalidInspiration`); include `inspiration: { id, title, imageUrl } | null` (title in the order's locale) in customer and admin order DTOs. Public portfolio endpoint supports `?space=` filter and returns `spaces` and `allowSimilarRequest`.

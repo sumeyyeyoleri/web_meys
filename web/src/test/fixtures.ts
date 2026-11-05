@@ -1,4 +1,4 @@
-import type { PortfolioItemDto, ServiceDto, SiteDto, UserDto } from '@painter/shared';
+import type { CategoryDto, PortfolioItemDto, ServiceDto, SiteDto, UserDto } from '@painter/shared';
 import { vi } from 'vitest';
 
 /** Readable test ids that are valid UUIDs, e.g. uid('a2'). */
@@ -31,10 +31,18 @@ export const site: SiteDto = {
   },
 };
 
+/** Catalog categories (the artist's own list; names come from the API). */
+export const categories: CategoryDto[] = [
+  { id: uid('c1'), slug: 'canvas-portrait', name: 'Doek en portret' },
+  { id: uid('c2'), slug: 'home', name: 'Woning en kinderkamer' },
+  { id: uid('c3'), slug: 'street-art', name: 'Street art en vitrines' },
+];
+const [canvasCategory, homeCategory, streetCategory] = categories as [CategoryDto, CategoryDto, CategoryDto];
+
 export function artwork(overrides: Partial<PortfolioItemDto> & { id: string; title: string }): PortfolioItemDto {
   return {
     description: 'Acryl op doek.',
-    category: 'PAINTING',
+    category: canvasCategory,
     imageUrl: `/media/portfolio/${overrides.title.toLowerCase().replace(/\s+/g, '-')}.svg`,
     width: 100,
     height: 80,
@@ -42,7 +50,6 @@ export function artwork(overrides: Partial<PortfolioItemDto> & { id: string; tit
     year: 2025,
     isFeatured: true,
     isSample: true,
-    spaces: ['LIVING_ROOM'],
     allowSimilarRequest: true,
     ...overrides,
   };
@@ -50,13 +57,13 @@ export function artwork(overrides: Partial<PortfolioItemDto> & { id: string; tit
 
 export const portfolio: PortfolioItemDto[] = [
   artwork({ id: uid('a1'), title: 'Warme aarde' }),
-  artwork({ id: uid('a2'), title: 'Maanlichtheuvels', category: 'MURAL', spaces: ['KIDS_ROOM', 'BEDROOM'], unit: 'M', width: 3.6, height: 2.4 }),
-  artwork({ id: uid('a3'), title: 'Nachthaven', category: 'MURAL', spaces: ['OUTDOOR'], allowSimilarRequest: false }),
+  artwork({ id: uid('a2'), title: 'Maanlichtheuvels', category: homeCategory, unit: 'M', width: 3.6, height: 2.4 }),
+  artwork({ id: uid('a3'), title: 'Nachthaven', category: streetCategory, allowSimilarRequest: false }),
 ];
 
 export const services: ServiceDto[] = [
-  { id: uid('s1'), name: 'Schilderij op maat', description: 'Uniek werk.', imageUrl: null, isWallService: false },
-  { id: uid('s2'), name: 'Muurschildering', description: 'Op de muur.', imageUrl: null, isWallService: true },
+  { id: uid('s1'), slug: 'canvas-painting', name: 'Schilderij op maat', description: 'Uniek werk.', imageUrl: null, isWallService: false, defaultUnit: 'CM' },
+  { id: uid('s2'), slug: 'mural', name: 'Muurschildering', description: 'Op de muur.', imageUrl: null, isWallService: true, defaultUnit: 'M' },
 ];
 
 /** The artist (the only account). */
@@ -69,7 +76,7 @@ export const adminUser: UserDto = {
 
 /**
  * Fake API: routes GET requests by path prefix. Portfolio filtering mimics the server
- * (category / space / featured query parameters).
+ * (category slug / featured query parameters).
  */
 type Handler = (init: RequestInit | undefined, url: URL) => Response | Promise<Response>;
 
@@ -86,16 +93,11 @@ export function mockApi(options: { user?: UserDto | null; unread?: number; route
     if (p === '/api/site') body = site;
     else if (p === '/api/auth/me') body = { user: options.user ?? null };
     else if (p === '/api/services') body = services;
+    else if (p === '/api/categories') body = categories.filter((c) => portfolio.some((item) => item.category?.id === c.id));
     else if (p === '/api/portfolio') {
       const category = url.searchParams.get('category');
-      const space = url.searchParams.get('space');
       const featured = url.searchParams.get('featured');
-      body = portfolio.filter(
-        (item) =>
-          (!category || item.category === category) &&
-          (!space || item.spaces.includes(space as never)) &&
-          (!featured || item.isFeatured),
-      );
+      body = portfolio.filter((item) => (!category || item.category?.slug === category) && (!featured || item.isFeatured));
     } else if (p === '/api/notifications/unread-count') body = { count: options.unread ?? 0 };
     else if (p === '/api/auth/csrf') body = { csrfToken: 'test.token' };
     else if (p.startsWith('/api/portfolio/')) {

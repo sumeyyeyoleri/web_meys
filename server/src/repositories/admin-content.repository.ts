@@ -3,7 +3,7 @@ import type { Db } from './db';
 
 type TranslationRow<T> = { locale: Locale } & T;
 
-const portfolioInclude = { translations: true } as const;
+const portfolioInclude = { translations: true, category: { select: { isVisible: true } } } as const;
 const serviceInclude = { translations: true, _count: { select: { orders: true } } } as const;
 
 export type AdminServiceWithCount = Prisma.ServiceGetPayload<{ include: typeof serviceInclude }>;
@@ -23,6 +23,10 @@ function reorderIds(ids: string[], id: string, direction: 'up' | 'down'): string
 export function createAdminContentRepository(db: Db) {
   return {
     /* ---------- Portfolio ---------- */
+
+    categoryExists(id: string) {
+      return db.category.count({ where: { id } }).then((count) => count > 0);
+    },
 
     listPortfolio() {
       return db.portfolioItem.findMany({ include: portfolioInclude, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { PORTFOLIO_CATEGORIES, SPACES, type PortfolioCategory, type Space } from '@painter/shared';
+import type { CategoryDto } from '@painter/shared';
 import { cx } from '../../components/ui/cx';
 
 function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: string }) {
@@ -19,38 +19,26 @@ function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () =>
 }
 
 interface CatalogFiltersProps {
-  category: PortfolioCategory | undefined;
-  space: Space | undefined;
-  onCategory: (category: PortfolioCategory | undefined) => void;
-  onSpace: (space: Space | undefined) => void;
+  /** Visible categories with published works only (the artist's list, in their order). */
+  categories: CategoryDto[];
+  category: string | undefined;
+  onCategory: (slug: string | undefined) => void;
 }
 
-/** Two rows of pill chips (aria-pressed): kind of work, then space. */
-export function CatalogFilters({ category, space, onCategory, onSpace }: CatalogFiltersProps) {
+/** One row of pill chips (aria-pressed): "All", then the categories. Hidden when there are none. */
+export function CatalogFilters({ categories, category, onCategory }: CatalogFiltersProps) {
   const { t } = useTranslation('public');
-  const { t: tc } = useTranslation();
+  if (categories.length === 0) return null;
   return (
-    <div className="flex flex-col gap-3">
-      <div role="group" aria-label={t('catalog.filterCategory')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        <Chip pressed={!category} onClick={() => onCategory(undefined)}>
-          {t('catalog.all')}
+    <div role="group" aria-label={t('catalog.filterCategory')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+      <Chip pressed={!category} onClick={() => onCategory(undefined)}>
+        {t('catalog.all')}
+      </Chip>
+      {categories.map((value) => (
+        <Chip key={value.id} pressed={category === value.slug} onClick={() => onCategory(category === value.slug ? undefined : value.slug)}>
+          {value.name}
         </Chip>
-        {PORTFOLIO_CATEGORIES.map((value) => (
-          <Chip key={value} pressed={category === value} onClick={() => onCategory(category === value ? undefined : value)}>
-            {tc(`category.${value}`)}
-          </Chip>
-        ))}
-      </div>
-      <div role="group" aria-label={t('catalog.filterSpace')} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-        <Chip pressed={!space} onClick={() => onSpace(undefined)}>
-          {t('catalog.allSpaces')}
-        </Chip>
-        {SPACES.map((value) => (
-          <Chip key={value} pressed={space === value} onClick={() => onSpace(space === value ? undefined : value)}>
-            {tc(`space.${value}`)}
-          </Chip>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }

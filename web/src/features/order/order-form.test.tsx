@@ -106,6 +106,28 @@ describe('order form', () => {
     expect(sent).toMatchObject({ inspirationItemId: uid('a2'), serviceId: uid('s2') });
   });
 
+  it('switches the unit to the chosen service (m for walls, cm for canvas) until the customer picks one', async () => {
+    mockApi();
+    renderApp('/order');
+    const unit = () => field('Eenheid').value;
+    await user.click(await screen.findByRole('radio', { name: /Muurschildering/ }));
+    expect(unit()).toBe('M');
+    await user.click(screen.getByRole('radio', { name: /Schilderij op maat/ }));
+    expect(unit()).toBe('CM');
+    // Once the customer chose a unit, changing the service leaves it alone.
+    await user.selectOptions(field('Eenheid'), 'M');
+    await user.click(screen.getByRole('radio', { name: /Muurschildering/ }));
+    await user.click(screen.getByRole('radio', { name: /Schilderij op maat/ }));
+    expect(unit()).toBe('M');
+  });
+
+  it('uses the unit of the service matched to a catalog work', async () => {
+    mockApi();
+    renderApp(`/order?from=${uid('a2')}`);
+    await waitFor(() => expect((screen.getByRole('radio', { name: /Muurschildering/ }) as HTMLInputElement).checked).toBe(true));
+    expect(field('Eenheid').value).toBe('M');
+  });
+
   it('removes the catalog work when asked', async () => {
     let sent: Record<string, unknown> = {};
     mockApi({ routes: { 'POST /api/orders': (init) => ((sent = dataOf(init)), json(201, orderCreated(sent))) } });

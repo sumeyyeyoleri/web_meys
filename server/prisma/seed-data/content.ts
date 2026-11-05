@@ -1,4 +1,4 @@
-import type { ContentKey, Locale, Space } from '@painter/shared';
+import type { ContentKey, Locale } from '@painter/shared';
 import type { Composition, PaletteName } from './art';
 
 type PerLocale<T> = Record<Locale, T>;
@@ -10,95 +10,151 @@ type PerLocale<T> = Record<Locale, T>;
 export interface SeedService {
   slug: string;
   isWallService: boolean;
+  /** Unit the order form switches to for this service. */
+  defaultUnit: 'CM' | 'M';
   art: { seed: number; palette: PaletteName; composition: Composition };
   translations: PerLocale<{ name: string; description: string }>;
 }
 
+/** In display order. Existing services keep their place and the artist's edits (see SUPERSEDED_SERVICES). */
 export const SEED_SERVICES: SeedService[] = [
-  {
-    slug: 'canvas-painting',
-    isWallService: false,
-    art: { seed: 1101, palette: 'terracotta', composition: 'organic' },
-    translations: {
-      'nl-BE': {
-        name: 'Schilderij op maat',
-        description:
-          'Een uniek werk op doek, afgestemd op uw ruimte, kleuren en verhaal. Van klein formaat tot groot statement-stuk.',
-      },
-      en: {
-        name: 'Custom painting',
-        description:
-          'A unique work on canvas, tailored to your space, colours and story. From small formats to large statement pieces.',
-      },
-      tr: {
-        name: 'Size özel tablo',
-        description:
-          'Mekânınıza, renklerinize ve hikâyenize göre tuval üzerine tek bir eser. Küçük boyutlardan büyük, iddialı parçalara kadar.',
-      },
-    },
-  },
   {
     slug: 'mural',
     isWallService: true,
+    defaultUnit: 'M',
     art: { seed: 1202, palette: 'sea', composition: 'horizon' },
     translations: {
       'nl-BE': {
-        name: 'Muurschildering',
+        name: 'Muurschildering (binnen en buiten)',
         description:
-          'Een kunstwerk rechtstreeks op de muur, binnen of buiten: voor woningen, handelszaken, scholen en kantoren.',
+          'Een kunstwerk rechtstreeks op de muur, binnen of buiten: voor cafés en restaurants, sportscholen, winkels, woningen en kinderkamers.',
       },
       en: {
-        name: 'Mural',
+        name: 'Mural (indoor & outdoor)',
         description:
-          'An artwork painted directly on the wall, indoors or outdoors: for homes, shops, schools and offices.',
+          'An artwork painted directly on the wall, indoors or outdoors: for cafés and restaurants, gyms, shops, homes and kids’ rooms.',
       },
       tr: {
-        name: 'Duvar resmi (mural)',
+        name: 'Duvar resmi (iç/dış mekân)',
         description:
-          'Doğrudan duvara, iç ya da dış mekâna yapılan bir sanat eseri: evler, dükkânlar, okullar ve ofisler için.',
+          'Doğrudan duvara, iç ya da dış mekâna yapılan bir sanat eseri: kafe ve restoranlar, spor salonları, mağazalar, evler ve çocuk odaları için.',
       },
     },
   },
   {
-    slug: 'portrait',
-    isWallService: false,
-    art: { seed: 1303, palette: 'dusk', composition: 'orbits' },
-    translations: {
-      'nl-BE': {
-        name: 'Portret',
-        description:
-          'Een geschilderd portret van een persoon, koppel, gezin of huisdier, op basis van uw foto’s.',
-      },
-      en: {
-        name: 'Portrait',
-        description: 'A painted portrait of a person, couple, family or pet, based on your photos.',
-      },
-      tr: {
-        name: 'Portre',
-        description: 'Fotoğraflarınızdan yola çıkarak bir kişinin, çiftin, ailenin ya da evcil hayvanınızın portresi.',
-      },
-    },
-  },
-  {
-    slug: 'decorative-wall-painting',
+    slug: 'shutter-window',
     isWallService: true,
-    art: { seed: 1404, palette: 'gold', composition: 'colorField' },
+    defaultUnit: 'M',
+    art: { seed: 1505, palette: 'gold', composition: 'strokes' },
     translations: {
       'nl-BE': {
-        name: 'Decoratief schilderwerk',
-        description:
-          'Kalkverf, kleurvlakken, patronen en decoratieve afwerkingen die een ruimte karakter geven.',
+        name: 'Rolluiken en vitrines beschilderen',
+        description: 'Een beschilderd rolluik of een geschilderde etalage maakt uw zaak zichtbaar, ook wanneer ze gesloten is.',
       },
       en: {
-        name: 'Decorative wall painting',
-        description: 'Lime paint, colour blocks, patterns and decorative finishes that give a room its character.',
+        name: 'Shutter & shop window painting',
+        description: 'A painted roller shutter or shop window makes your business stand out, even when it is closed.',
       },
       tr: {
-        name: 'Dekoratif duvar boyama',
-        description: 'Bir mekâna karakter katan kireç boya, renk blokları, desenler ve dekoratif yüzey işlemleri.',
+        name: 'Kepenk ve vitrin boyama',
+        description: 'Boyanmış bir kepenk ya da vitrin, kapalıyken bile işletmenizi öne çıkarır.',
       },
     },
   },
+  {
+    slug: 'canvas-painting',
+    isWallService: false,
+    defaultUnit: 'CM',
+    art: { seed: 1101, palette: 'terracotta', composition: 'organic' },
+    translations: {
+      'nl-BE': {
+        name: 'Doek en portret',
+        description:
+          'Een uniek werk op doek of een geschilderd portret van een persoon, gezin of huisdier, op basis van uw foto’s.',
+      },
+      en: {
+        name: 'Canvas & portrait',
+        description: 'A unique work on canvas or a painted portrait of a person, family or pet, based on your photos.',
+      },
+      tr: {
+        name: 'Tuval ve portre',
+        description:
+          'Tuval üzerine tek bir eser ya da fotoğraflarınızdan yola çıkarak bir kişinin, ailenin veya evcil hayvanınızın portresi.',
+      },
+    },
+  },
+  {
+    slug: 'custom-piece',
+    isWallService: false,
+    defaultUnit: 'CM',
+    art: { seed: 1606, palette: 'dusk', composition: 'orbits' },
+    translations: {
+      'nl-BE': {
+        name: 'Werk op maat',
+        description: 'Een idee dat nergens anders bij past? Vertel het ons en we bekijken samen wat mogelijk is.',
+      },
+      en: {
+        name: 'Custom piece',
+        description: 'An idea that doesn’t fit anywhere else? Tell us about it and we’ll work out together what’s possible.',
+      },
+      tr: {
+        name: 'Kişiye özel eser',
+        description: 'Başka bir başlığa uymayan bir fikriniz mi var? Anlatın, neler yapılabileceğine birlikte bakalım.',
+      },
+    },
+  },
+];
+
+/**
+ * Earlier seed texts of services that are still offered: the seed replaces a translation only
+ * while it is still exactly this text, never the artist's own edits. (The former "Portrait" and
+ * "Decorative wall painting" services were switched off by a migration and are left alone.)
+ */
+export const SUPERSEDED_SERVICES: Record<string, PerLocale<{ name: string; description: string }>> = {
+  mural: {
+    'nl-BE': {
+      name: 'Muurschildering',
+      description: 'Een kunstwerk rechtstreeks op de muur, binnen of buiten: voor woningen, handelszaken, scholen en kantoren.',
+    },
+    en: {
+      name: 'Mural',
+      description: 'An artwork painted directly on the wall, indoors or outdoors: for homes, shops, schools and offices.',
+    },
+    tr: {
+      name: 'Duvar resmi (mural)',
+      description: 'Doğrudan duvara, iç ya da dış mekâna yapılan bir sanat eseri: evler, dükkânlar, okullar ve ofisler için.',
+    },
+  },
+  'canvas-painting': {
+    'nl-BE': {
+      name: 'Schilderij op maat',
+      description:
+        'Een uniek werk op doek, afgestemd op uw ruimte, kleuren en verhaal. Van klein formaat tot groot statement-stuk.',
+    },
+    en: {
+      name: 'Custom painting',
+      description:
+        'A unique work on canvas, tailored to your space, colours and story. From small formats to large statement pieces.',
+    },
+    tr: {
+      name: 'Size özel tablo',
+      description:
+        'Mekânınıza, renklerinize ve hikâyenize göre tuval üzerine tek bir eser. Küçük boyutlardan büyük, iddialı parçalara kadar.',
+    },
+  },
+};
+
+/* ---------------------------------------------------------------------------
+ * Catalog categories (the same as the migration creates; the artist manages them)
+ * ------------------------------------------------------------------------- */
+
+export const SEED_CATEGORIES: Array<{ slug: string; translations: PerLocale<string> }> = [
+  { slug: 'horeca', translations: { 'nl-BE': 'Horeca', en: 'Cafés & restaurants', tr: 'Horeca' } },
+  { slug: 'gym', translations: { 'nl-BE': 'Sportscholen', en: 'Gyms', tr: 'Spor salonu' } },
+  { slug: 'shops', translations: { 'nl-BE': 'Winkels en bedrijven', en: 'Shops & businesses', tr: 'Mağaza ve iş yeri' } },
+  { slug: 'home', translations: { 'nl-BE': 'Woning en kinderkamer', en: 'Home & kids’ rooms', tr: 'Ev ve çocuk odası' } },
+  { slug: 'street-art', translations: { 'nl-BE': 'Street art en vitrines', en: 'Street art & shop windows', tr: 'Sokak sanatı ve vitrin' } },
+  { slug: 'canvas-portrait', translations: { 'nl-BE': 'Doek en portret', en: 'Canvas & portrait', tr: 'Tuval ve portre' } },
 ];
 
 /* ---------------------------------------------------------------------------
@@ -107,28 +163,27 @@ export const SEED_SERVICES: SeedService[] = [
 
 export interface SeedPortfolioItem {
   slug: string;
-  category: 'PAINTING' | 'MURAL' | 'WALL_PAINTING' | 'PORTRAIT' | 'OTHER';
+  /** Slug of one of SEED_CATEGORIES. */
+  category: string;
   art: { seed: number; palette: PaletteName; composition: Composition; portrait?: boolean };
   width: number;
   height: number;
   unit: 'CM' | 'M';
   year: number;
   isFeatured: boolean;
-  spaces: Space[];
   translations: PerLocale<{ title: string; description: string }>;
 }
 
 export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   {
     slug: 'sample-warm-earth',
-    category: 'PAINTING',
+    category: 'canvas-portrait',
     art: { seed: 2101, palette: 'terracotta', composition: 'organic' },
     width: 100,
     height: 75,
     unit: 'CM',
     year: 2025,
     isFeatured: true,
-    spaces: ['LIVING_ROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Warme aarde', description: 'Acryl op doek. Organische vormen in aardetinten.' },
       en: { title: 'Warm earth', description: 'Acrylic on canvas. Organic shapes in earth tones.' },
@@ -137,14 +192,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-tidal-lines',
-    category: 'MURAL',
+    category: 'street-art',
     art: { seed: 2202, palette: 'sea', composition: 'horizon' },
     width: 6,
     height: 3,
     unit: 'M',
     year: 2025,
     isFeatured: true,
-    spaces: ['LIVING_ROOM', 'OUTDOOR'],
     translations: {
       'nl-BE': { title: 'Getijdenlijnen', description: 'Muurschildering voor een leefruimte, geïnspireerd op de Noordzee.' },
       en: { title: 'Tidal lines', description: 'Mural for a living space, inspired by the North Sea.' },
@@ -153,14 +207,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-ochre-study',
-    category: 'PAINTING',
+    category: 'canvas-portrait',
     art: { seed: 2303, palette: 'ochre', composition: 'colorField', portrait: true },
     width: 60,
     height: 80,
     unit: 'CM',
     year: 2024,
     isFeatured: false,
-    spaces: ['BEDROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Studie in oker', description: 'Olieverf op doek. Rustige kleurvlakken.' },
       en: { title: 'Study in ochre', description: 'Oil on canvas. Calm fields of colour.' },
@@ -169,14 +222,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-evening-figure',
-    category: 'PORTRAIT',
+    category: 'canvas-portrait',
     art: { seed: 2404, palette: 'dusk', composition: 'orbits', portrait: true },
     width: 50,
     height: 70,
     unit: 'CM',
     year: 2025,
     isFeatured: true,
-    spaces: ['LIVING_ROOM', 'BEDROOM'],
     translations: {
       'nl-BE': { title: 'Avondfiguur', description: 'Abstract portret in gedempte avondkleuren.' },
       en: { title: 'Evening figure', description: 'Abstract portrait in muted evening colours.' },
@@ -185,14 +237,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-forest-rhythm',
-    category: 'WALL_PAINTING',
+    category: 'horeca',
     art: { seed: 2505, palette: 'sage', composition: 'strokes' },
     width: 4,
     height: 2.6,
     unit: 'M',
     year: 2024,
     isFeatured: false,
-    spaces: ['KITCHEN', 'CAFE_SHOP'],
     translations: {
       'nl-BE': { title: 'Bosritme', description: 'Decoratieve wandafwerking met losse penseelstreken.' },
       en: { title: 'Forest rhythm', description: 'Decorative wall finish with loose brushstrokes.' },
@@ -201,14 +252,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-clay-garden',
-    category: 'PAINTING',
+    category: 'canvas-portrait',
     art: { seed: 2606, palette: 'clay', composition: 'organic' },
     width: 120,
     height: 90,
     unit: 'CM',
     year: 2023,
     isFeatured: true,
-    spaces: ['KITCHEN', 'LIVING_ROOM'],
     translations: {
       'nl-BE': { title: 'Kleituin', description: 'Gemengde technieken op doek.' },
       en: { title: 'Clay garden', description: 'Mixed media on canvas.' },
@@ -217,14 +267,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-night-harbour',
-    category: 'MURAL',
+    category: 'horeca',
     art: { seed: 2707, palette: 'nightBlue', composition: 'horizon' },
     width: 8,
     height: 3.5,
     unit: 'M',
     year: 2024,
     isFeatured: true,
-    spaces: ['CAFE_SHOP', 'OUTDOOR'],
     translations: {
       'nl-BE': { title: 'Nachthaven', description: 'Buitenmuur van een handelszaak, weerbestendige verf.' },
       en: { title: 'Night harbour', description: 'Exterior wall of a shop, weather-resistant paint.' },
@@ -233,14 +282,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-sand-strata',
-    category: 'WALL_PAINTING',
+    category: 'shops',
     art: { seed: 2808, palette: 'gold', composition: 'colorField' },
     width: 3.2,
     height: 2.5,
     unit: 'M',
     year: 2025,
     isFeatured: true,
-    spaces: ['BEDROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Zandlagen', description: 'Kalkverf in horizontale kleurvlakken.' },
       en: { title: 'Sand strata', description: 'Lime paint in horizontal colour blocks.' },
@@ -249,14 +297,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-quiet-gaze',
-    category: 'PORTRAIT',
+    category: 'canvas-portrait',
     art: { seed: 2909, palette: 'terracotta', composition: 'orbits', portrait: true },
     width: 40,
     height: 50,
     unit: 'CM',
     year: 2023,
     isFeatured: false,
-    spaces: ['BEDROOM'],
     translations: {
       'nl-BE': { title: 'Stille blik', description: 'Portretstudie in warme tinten.' },
       en: { title: 'Quiet gaze', description: 'Portrait study in warm tones.' },
@@ -265,14 +312,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-paper-wind',
-    category: 'OTHER',
+    category: 'home',
     art: { seed: 3010, palette: 'nightBlue', composition: 'strokes' },
     width: 42,
     height: 30,
     unit: 'CM',
     year: 2025,
     isFeatured: false,
-    spaces: ['KIDS_ROOM', 'OFFICE'],
     translations: {
       'nl-BE': { title: 'Papieren wind', description: 'Gouache op papier.' },
       en: { title: 'Paper wind', description: 'Gouache on paper.' },
@@ -281,14 +327,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-moonlit-hills',
-    category: 'MURAL',
+    category: 'home',
     art: { seed: 3111, palette: 'nightBlue', composition: 'hills' },
     width: 3.6,
     height: 2.4,
     unit: 'M',
     year: 2025,
     isFeatured: true,
-    spaces: ['KIDS_ROOM', 'BEDROOM'],
     translations: {
       'nl-BE': { title: 'Maanlichtheuvels', description: 'Rustige muurschildering voor een kinder- of slaapkamer.' },
       en: { title: 'Moonlit hills', description: 'A calm mural for a children’s room or bedroom.' },
@@ -297,14 +342,13 @@ export const SEED_PORTFOLIO: SeedPortfolioItem[] = [
   },
   {
     slug: 'sample-golden-valley',
-    category: 'PAINTING',
+    category: 'canvas-portrait',
     art: { seed: 3212, palette: 'gold', composition: 'hills' },
     width: 140,
     height: 100,
     unit: 'CM',
     year: 2025,
     isFeatured: true,
-    spaces: ['LIVING_ROOM', 'CAFE_SHOP'],
     translations: {
       'nl-BE': { title: 'Gouden vallei', description: 'Acryl op doek. Gelaagde heuvels in warm avondlicht.' },
       en: { title: 'Golden valley', description: 'Acrylic on canvas. Layered hills in warm evening light.' },
@@ -398,9 +442,12 @@ export const SUPERSEDED_CONTENT: Partial<Record<ContentKey, Record<Locale, strin
  * Default settings (placeholders — replace before launch)
  * ------------------------------------------------------------------------- */
 
+/** Earlier placeholder settings the seed replaces while they are unchanged. */
+export const SUPERSEDED_SETTINGS = { instagramUrl: ['https://www.instagram.com/'] };
+
 export const SEED_SETTINGS = {
   businessName: 'MeysArt',
-  instagramUrl: 'https://www.instagram.com/',
+  instagramUrl: 'https://www.instagram.com/meysart__',
   contactEmail: 'contact@example.com',
   contactPhone: '+32 470 00 00 00',
   contactAddress: 'Voorbeeldstraat 1, 9000 Gent, België',

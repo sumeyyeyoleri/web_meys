@@ -5,11 +5,9 @@ import { SampleBadge } from '../../components/ui/Badge';
 import { Icon } from '../../components/ui/Icon';
 import { ArtworkImage } from './ArtworkImage';
 import { requestSimilarHref } from './catalog-url';
-import { useWorkCaption } from './WorkDetails';
 
 export function CatalogCard({ item, onOpen }: { item: PortfolioItemDto; onOpen: () => void }) {
   const { t } = useTranslation('public');
-  const caption = useWorkCaption();
   return (
     <article className="flex flex-col gap-3">
       <button
@@ -28,7 +26,7 @@ export function CatalogCard({ item, onOpen }: { item: PortfolioItemDto; onOpen: 
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="truncate font-display text-2xl">{item.title}</h2>
-          <p className="text-sm text-text-subtle">{caption(item)}</p>
+          {item.category ? <p className="text-sm text-text-subtle">{item.category.name}</p> : null}
         </div>
       </div>
       {item.allowSimilarRequest ? (

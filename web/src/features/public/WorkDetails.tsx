@@ -11,8 +11,7 @@ export function WorkDetails({ item }: { item: PortfolioItemDto }) {
   const none = t('work.notSpecified');
 
   const rows: Array<[string, string]> = [
-    [t('work.category'), tc(`category.${item.category}`)],
-    [t('work.space'), item.spaces.length ? item.spaces.map((s) => tc(`space.${s}`)).join(', ') : none],
+    ...(item.category ? ([[t('work.category'), item.category.name]] as Array<[string, string]>) : []),
     [
       t('work.size'),
       item.width !== null && item.height !== null && item.unit ? formatDimensions(item.width, item.height, item.unit, locale) : none,
@@ -31,11 +30,4 @@ export function WorkDetails({ item }: { item: PortfolioItemDto }) {
       ))}
     </dl>
   );
-}
-
-/** "Category · Space" caption line. */
-export function useWorkCaption() {
-  const { t } = useTranslation();
-  return (item: PortfolioItemDto) =>
-    [t(`category.${item.category}`), ...item.spaces.slice(0, 1).map((s) => t(`space.${s}`))].join(' · ');
 }

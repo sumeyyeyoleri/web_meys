@@ -53,6 +53,8 @@ const TABLES = [
   'Service',
   'PortfolioItemTranslation',
   'PortfolioItem',
+  'CategoryTranslation',
+  'Category',
   'LocalizedContent',
   'SiteSettings',
   'PasswordResetToken',

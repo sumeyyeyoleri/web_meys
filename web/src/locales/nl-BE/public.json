@@ -17,9 +17,8 @@
   },
   "work": {
     "selectedHeading": "Geselecteerd werk",
-    "space": "Ruimte",
     "size": "Afmetingen voorbeeld",
-    "category": "Soort werk",
+    "category": "Categorie",
     "year": "Jaar",
     "price": "Prijs",
     "requestSimilar": "Iets gelijkaardigs aanvragen",
@@ -73,10 +72,8 @@
   "catalog": {
     "title": "Inspiratiecatalogus",
     "intro": "Laat u inspireren door eerder werk en vraag met één klik iets gelijkaardigs aan.",
-    "filterCategory": "Filter op soort werk",
-    "filterSpace": "Filter op ruimte",
+    "filterCategory": "Filter op categorie",
     "all": "Alles",
-    "allSpaces": "Alle ruimtes",
     "results_zero": "Geen werken",
     "results_one": "{{count}} werk",
     "results_other": "{{count}} werken",

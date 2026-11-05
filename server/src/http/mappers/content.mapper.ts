@@ -1,5 +1,6 @@
-import type { PortfolioItem, PortfolioItemTranslation, Service, ServiceTranslation, SiteSettings } from '@prisma/client';
-import { localeFromDb, type Locale, type PortfolioItemDto, type PublicSettingsDto, type ServiceDto } from '@painter/shared';
+import type { Category, CategoryTranslation, Service, ServiceTranslation, SiteSettings } from '@prisma/client';
+import { localeFromDb, type CategoryDto, type Locale, type PortfolioItemDto, type PublicSettingsDto, type ServiceDto } from '@painter/shared';
+import type { PublicPortfolioItem } from '../../repositories/content.repository';
 import { pickTranslation } from '../../domain/localization';
 import { toNumberOrNull } from './common';
 
@@ -30,23 +31,26 @@ export function toServiceDto(service: Service & { translations: ServiceTranslati
   const t = pickTranslation(service.translations, locale);
   return {
     id: service.id,
+    slug: service.slug,
     name: t?.name ?? '',
     description: t?.description ?? null,
     imageUrl: service.imageUrl,
     isWallService: service.isWallService,
+    defaultUnit: service.defaultUnit,
   };
 }
 
-export function toPortfolioItemDto(
-  item: PortfolioItem & { translations: PortfolioItemTranslation[] },
-  locale: Locale,
-): PortfolioItemDto {
+export function toCategoryDto(category: Category & { translations: CategoryTranslation[] }, locale: Locale): CategoryDto {
+  return { id: category.id, slug: category.slug, name: pickTranslation(category.translations, locale)?.name ?? '' };
+}
+
+export function toPortfolioItemDto(item: PublicPortfolioItem, locale: Locale): PortfolioItemDto {
   const t = pickTranslation(item.translations, locale);
   return {
     id: item.id,
     title: t?.title ?? '',
     description: t?.description ?? null,
-    category: item.category,
+    category: item.category ? toCategoryDto(item.category, locale) : null,
     imageUrl: item.imageUrl,
     width: toNumberOrNull(item.width),
     height: toNumberOrNull(item.height),
@@ -54,7 +58,6 @@ export function toPortfolioItemDto(
     year: item.year,
     isFeatured: item.isFeatured,
     isSample: item.isSample,
-    spaces: item.spaces,
     allowSimilarRequest: item.allowSimilarRequest,
   };
 }
