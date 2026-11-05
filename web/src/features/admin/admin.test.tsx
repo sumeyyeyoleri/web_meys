@@ -184,6 +184,14 @@ describe('order detail', () => {
     expect(screen.getByRole('link', { name: 'Ara' }).getAttribute('href')).toBe('tel:+32470123456');
   });
 
+  it('says "Telefon numarası yok" instead of the buttons when the order has no phone', async () => {
+    adminApi({ 'GET /api/admin/orders/o1': () => json(200, { ...detail, contact: { ...detail.contact, phone: null } }) });
+    renderApp('/admin/orders/o1');
+    expect(await screen.findByText('Telefon numarası yok')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'WhatsApp’tan yaz' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Ara' })).toBeNull();
+  });
+
   it("tags every message with the sender's language and translates the customer's message on request", async () => {
     let translateCalls = 0;
     const fetchMock = adminApi({

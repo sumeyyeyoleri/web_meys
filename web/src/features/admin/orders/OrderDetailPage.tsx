@@ -200,7 +200,7 @@ function OrderDetail({ order }: { order: AdminOrderDetailDto }) {
                 ],
               ]}
             />
-            {contact.phone ? <PhoneActions phone={contact.phone} /> : null}
+            {contact.phone ? <PhoneActions phone={contact.phone} /> : <p className="text-sm text-text-muted">{t('detail.noPhone')}</p>}
           </Panel>
 
           <Panel id="status" title={t('status.title')}>

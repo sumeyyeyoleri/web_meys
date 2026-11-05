@@ -76,7 +76,8 @@
     "deadline": "Desired date",
     "instructions": "Extra instructions",
     "whatsapp": "Message on WhatsApp",
-    "call": "Call"
+    "call": "Call",
+    "noPhone": "No phone number"
   },
   "status": {
     "title": "Status",

@@ -76,7 +76,8 @@
     "deadline": "İstenen tarih",
     "instructions": "Ek talimatlar",
     "whatsapp": "WhatsApp’tan yaz",
-    "call": "Ara"
+    "call": "Ara",
+    "noPhone": "Telefon numarası yok"
   },
   "status": {
     "title": "Durum",

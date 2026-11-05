@@ -76,7 +76,8 @@
     "deadline": "Gewenste datum",
     "instructions": "Extra instructies",
     "whatsapp": "Via WhatsApp schrijven",
-    "call": "Bellen"
+    "call": "Bellen",
+    "noPhone": "Geen telefoonnummer"
   },
   "status": {
     "title": "Status",

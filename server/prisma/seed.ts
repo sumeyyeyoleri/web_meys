@@ -340,13 +340,20 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
   }
 }
 
+const DEMO_GUEST_PHONE = '+32 486 55 66 77';
+
 /**
  * An order with a private tracking link. The link is printed once when the
  * order is created — like the confirmation page, the token itself is never stored.
  */
 async function seedGuestOrder(adminId: string, services: Map<string, string>) {
   const reference = 'ORD-2026-GST4KQ';
-  if (await prisma.order.findUnique({ where: { reference } })) return;
+  const existing = await prisma.order.findUnique({ where: { reference } });
+  if (existing) {
+    // Earlier seeds created this order without a phone number.
+    if (!existing.contactPhone) await prisma.order.update({ where: { reference }, data: { contactPhone: DEMO_GUEST_PHONE } });
+    return;
+  }
   const token = generateToken(32);
   await prisma.$transaction(async (tx) => {
     const order = await tx.order.create({
@@ -362,7 +369,7 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
         description: 'Een klein schilderij van de duinen bij zonsondergang, in zachte pasteltinten, voor boven de kast.',
         contactName: 'Gast Voorbeeld',
         contactEmail: 'gast@example.com',
-        contactPhone: null,
+        contactPhone: DEMO_GUEST_PHONE,
         communicationLocale: 'NL_BE',
         projectCountry: 'België',
         projectCity: 'Oostende',
