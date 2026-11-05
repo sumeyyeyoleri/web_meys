@@ -179,7 +179,10 @@ describe('orders list rows', () => {
     // The table row (desktop) and the card (phones) are both focusable.
     expect(rows).toHaveLength(2);
     for (const row of rows) expect(row.getAttribute('tabindex')).toBe('0');
-    rows[0]!.focus();
+    // Tab from the last filter control lands on the first row.
+    screen.getByRole('checkbox').focus();
+    await user.tab();
+    expect(document.activeElement).toBe(rows[0]);
     await user.keyboard('{Enter}');
     await waitFor(() => expect(router.state.location.pathname).toBe('/admin/orders/o1'));
   });
