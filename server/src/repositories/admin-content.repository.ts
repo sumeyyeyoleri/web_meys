@@ -156,6 +156,21 @@ export function createAdminContentRepository(db: Db) {
       return counts.reduce((sum, n) => sum + n, 0);
     },
 
+    /** For the "Personalise your site" checklist. */
+    async countWorksForSetup() {
+      const [ownWorks, publishedSamples] = await Promise.all([
+        db.portfolioItem.count({ where: { isSample: false } }),
+        db.portfolioItem.count({ where: { isSample: true, isPublished: true } }),
+      ]);
+      return { ownWorks, publishedSamples };
+    },
+
+    /** Unpublishes every sample work; returns how many were hidden. */
+    async unpublishSamples(): Promise<number> {
+      const result = await db.portfolioItem.updateMany({ where: { isSample: true, isPublished: true }, data: { isPublished: false } });
+      return result.count;
+    },
+
     /* ---------- Text blocks & settings ---------- */
 
     listAllContent() {

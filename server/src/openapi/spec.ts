@@ -357,6 +357,11 @@ const schemas: Record<string, Json> = {
       translations: translations({ name: str, description: nstr }),
     },
   },
+  SetupChecklist: {
+    type: 'object',
+    description: '"Personalise your site": true = done, worked out from the data',
+    properties: { logo: bool, firstWork: bool, aboutText: bool, samplesHidden: bool, contactDetails: bool },
+  },
   AdminContent: {
     type: 'object',
     properties: {
@@ -573,6 +578,9 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/stats': {
         get: { tags: ['Admin: orders'], summary: 'Dashboard overview', security: session, responses: { 200: ok('Stats', ref('AdminStats')), ...errors(401, 403) } },
       },
+      '/api/admin/setup-checklist': {
+        get: { tags: ['Admin: content'], summary: '"Personalise your site" checklist', security: session, responses: { 200: ok('Checklist', ref('SetupChecklist')), ...errors(401, 403) } },
+      },
       '/api/admin/orders': {
         get: {
           tags: ['Admin: orders'],
@@ -638,6 +646,14 @@ export function buildOpenApiSpec(): Json {
       },
       '/api/admin/portfolio/reorder': {
         post: { tags: ['Admin: content'], summary: 'Move one item up or down', security: csrf, requestBody: body(reorderSchema), responses: { 200: ok('Items', { type: 'array', items: ref('AdminPortfolioItem') }), ...errors(400, 401, 403, 404) } },
+      },
+      '/api/admin/portfolio/hide-samples': {
+        post: {
+          tags: ['Admin: content'],
+          summary: 'Hide all sample works (unpublishes every isSample item)',
+          security: csrf,
+          responses: { 200: ok('Hidden', { type: 'object', properties: { hidden: { type: 'integer' } } }), ...errors(401, 403) },
+        },
       },
       '/api/admin/portfolio/{id}': {
         put: { tags: ['Admin: content'], summary: 'Update', security: csrf, parameters: [idParam], requestBody: body(portfolioItemSchema), responses: { 200: ok('Updated', ref('AdminPortfolioItem')), ...errors(400, 401, 403, 404) } },

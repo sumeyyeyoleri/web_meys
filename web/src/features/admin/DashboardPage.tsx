@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { SetupChecklistDto } from '@painter/shared';
 import { StatusBadge } from '../../components/ui/Badge';
+import { Icon } from '../../components/ui/Icon';
 import { Skeleton } from '../../components/ui/Spinner';
 import { ErrorState } from '../../components/ui/States';
 import { formatDate, formatRelativeTime } from '../../lib/format';
 import { useLocale } from '../../lib/i18n';
 import { AdminPageHeader } from './AdminPageHeader';
-import { useAdminStats } from './hooks';
+import { useAdminStats, useSetupChecklist } from './hooks';
 
 /** Overview: order counters, recent orders and recent customer messages (PROMPT.md §10). */
 export function DashboardPage() {
@@ -28,6 +30,7 @@ export function DashboardPage() {
   return (
     <>
       <AdminPageHeader title={t('dashboard.title')} intro={t('dashboard.intro')} />
+      <SetupChecklist />
       {stats.isError ? <ErrorState error={stats.error} onRetry={() => void stats.refetch()} /> : null}
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {stats.isPending
@@ -110,5 +113,52 @@ export function DashboardPage() {
         </div>
       ) : null}
     </>
+  );
+}
+
+const SETUP_STEPS: Array<{ key: keyof SetupChecklistDto; to: string }> = [
+  { key: 'logo', to: '/admin/settings' },
+  { key: 'firstWork', to: '/admin/catalog' },
+  { key: 'aboutText', to: '/admin/texts' },
+  { key: 'samplesHidden', to: '/admin/catalog' },
+  { key: 'contactDetails', to: '/admin/settings' },
+];
+
+/** "Personalise your site" (PROMPT.md §18.3): ticked off from the real data; gone once everything is done. */
+function SetupChecklist() {
+  const { t } = useTranslation('admin');
+  const checklist = useSetupChecklist();
+  if (!checklist.data) return null;
+  const done = SETUP_STEPS.filter((step) => checklist.data[step.key]).length;
+  if (done === SETUP_STEPS.length) return null;
+
+  return (
+    <section aria-labelledby="setup-title" className="mb-8 rounded-[var(--radius-card)] border border-border bg-surface p-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 id="setup-title" className="font-sans text-lg font-semibold">
+          {t('setup.title')}
+        </h2>
+        <span className="text-sm text-text-muted">{t('setup.progress', { done, total: SETUP_STEPS.length })}</span>
+      </div>
+      <p className="mt-1 text-sm text-text-muted">{t('setup.intro')}</p>
+      <ul className="mt-4 flex flex-col divide-y divide-border">
+        {SETUP_STEPS.map((step) => {
+          const complete = checklist.data[step.key];
+          return (
+            <li key={step.key}>
+              <Link to={step.to} className="flex min-h-11 items-center gap-3 py-2 transition-colors hover:text-text">
+                <span
+                  className={`flex size-6 shrink-0 items-center justify-center rounded-full border ${complete ? 'border-accent bg-accent text-on-accent' : 'border-border-strong'}`}
+                >
+                  {complete ? <Icon name="check" size={14} /> : null}
+                </span>
+                <span className={complete ? 'text-text-subtle line-through' : 'text-text'}>{t(`setup.steps.${step.key}`)}</span>{' '}
+                <span className="sr-only">{complete ? t('setup.done') : t('setup.todo')}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }

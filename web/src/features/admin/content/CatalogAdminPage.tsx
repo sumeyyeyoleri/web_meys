@@ -46,6 +46,7 @@ export function CatalogAdminPage() {
   const [editing, setEditing] = useState<AdminPortfolioItemDto | 'new' | null>(null);
   const [deleting, setDeleting] = useState<AdminPortfolioItemDto | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [hidingSamples, setHidingSamples] = useState(false);
 
   const filter = params.get('category') ?? '';
   const all = portfolio.data ?? [];
@@ -53,6 +54,7 @@ export function CatalogAdminPage() {
   const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]));
   const titleOf = (item: AdminPortfolioItemDto) => item.translations[locale].title || item.translations['nl-BE'].title;
   const onError = (error: unknown) => toast.error(errorMessage(error));
+  const publishedSamples = all.filter((i) => i.isSample && i.isPublished).length;
 
   return (
     <>
@@ -79,6 +81,24 @@ export function CatalogAdminPage() {
           </>
         }
       />
+
+      {publishedSamples > 0 ? (
+        <section
+          aria-labelledby="samples-title"
+          className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-[var(--radius-card)] border border-border bg-surface p-4"
+        >
+          <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
+            <h2 id="samples-title" className="font-sans text-base font-semibold">
+              {t('catalog.samplesTitle', { count: publishedSamples })}
+            </h2>
+            <p className="text-sm text-text-muted">{t('catalog.samplesIntro')}</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => setHidingSamples(true)}>
+            <Icon name="eyeOff" size={18} />
+            {t('catalog.hideSamples')}
+          </Button>
+        </section>
+      ) : null}
 
       <div className="mb-5 max-w-xs">
         <Field label={t('catalog.filter')}>
@@ -175,6 +195,26 @@ export function CatalogAdminPage() {
         />
       ) : null}
       {bulkOpen ? <BulkUploadDialog categories={categories.data ?? []} defaultCategoryId={filter && filter !== NONE ? filter : ''} onClose={() => setBulkOpen(false)} /> : null}
+      <ConfirmDialog
+        open={hidingSamples}
+        onClose={() => setHidingSamples(false)}
+        loading={actions.hideSamples.isPending}
+        title={t('catalog.hideSamplesTitle')}
+        description={t('catalog.hideSamplesBody', { count: publishedSamples })}
+        confirmLabel={t('catalog.hideSamples')}
+        onConfirm={() =>
+          actions.hideSamples.mutate(undefined, {
+            onSuccess: ({ hidden }) => {
+              setHidingSamples(false);
+              toast.success(t('catalog.samplesHidden', { count: hidden }));
+            },
+            onError: (error) => {
+              setHidingSamples(false);
+              onError(error);
+            },
+          })
+        }
+      />
       <ConfirmDialog
         open={!!deleting}
         onClose={() => setDeleting(null)}

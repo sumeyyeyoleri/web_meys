@@ -36,6 +36,8 @@ describe('reference images', () => {
 describe('admin area', () => {
   const adminRoutes: Array<['get' | 'post' | 'put' | 'delete', string]> = [
     ['get', '/api/admin/stats'],
+    ['get', '/api/admin/setup-checklist'],
+    ['post', '/api/admin/portfolio/hide-samples'],
     ['get', '/api/admin/orders'],
     ['get', '/api/admin/portfolio'],
     ['post', '/api/admin/portfolio'],

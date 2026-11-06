@@ -8,6 +8,7 @@ import {
   siteSettingsSchema,
   toggleSchema,
   type AdminContentDto,
+  type HideSamplesResultDto,
   type MediaUploadDto,
 } from '@painter/shared';
 import type { Services } from '../../container';
@@ -42,6 +43,13 @@ export function createAdminContentController({ adminContent, translation }: Serv
     async deletePortfolio(req: Request, res: Response) {
       await adminContent.deletePortfolio(parseIdParam(req));
       res.status(204).end();
+    },
+    async hideSamples(_req: Request, res: Response) {
+      const body: HideSamplesResultDto = { hidden: await adminContent.hideSamples() };
+      res.json(body);
+    },
+    async setupChecklist(_req: Request, res: Response) {
+      res.json(await adminContent.setupChecklist());
     },
     async reorderPortfolio(req: Request, res: Response) {
       const { id, direction } = parseBody(reorderSchema, req);

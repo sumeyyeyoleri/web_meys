@@ -179,6 +179,32 @@ describe('catalog page', () => {
     ]);
   });
 
+  it('hides all published sample works after confirming, and only offers it while there are some', async () => {
+    let called = 0;
+    const samples = [work('s1', 'Örnek 1', CAT1, { isSample: true }), work('s2', 'Örnek 2', CAT1, { isSample: true }), work('s3', 'Örnek 3', CAT1, { isSample: true, isPublished: false })];
+    let list = [...works, ...samples];
+    catalogApi({
+      'GET /api/admin/portfolio': () => json(200, list),
+      'POST /api/admin/portfolio/hide-samples': () => {
+        called++;
+        list = list.map((w) => (w.isSample ? { ...w, isPublished: false } : w));
+        return json(200, { hidden: 2 });
+      },
+    });
+    renderApp('/admin/catalog');
+    const notice = await screen.findByRole('region', { name: 'Sitede 2 örnek eser yayında' });
+    await user.click(within(notice).getByRole('button', { name: 'Tüm örnek eserleri gizle' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Örnek eserler gizlensin mi?' });
+    expect(within(dialog).getByText(/2 örnek eser yayından kaldırılır. Silinmezler/)).toBeTruthy();
+    expect(called).toBe(0);
+    await user.click(within(dialog).getByRole('button', { name: 'Tüm örnek eserleri gizle' }));
+    expect(await screen.findByText('2 örnek eser gizlendi.')).toBeTruthy();
+    expect(called).toBe(1);
+    await waitFor(() => expect(screen.queryByRole('region', { name: /örnek eser yayında/ })).toBeNull());
+    // Still in the list, as drafts.
+    expect(within(screen.getByText('Örnek 1').closest('li')!).getByText('Taslak')).toBeTruthy();
+  });
+
   it('makes a title from the file name', () => {
     expect(titleFromFileName('IMG_2041 kepenk-gent.JPG')).toBe('IMG 2041 kepenk gent');
     expect(titleFromFileName('.jpg')).toBe('Foto');

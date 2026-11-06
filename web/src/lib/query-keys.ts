@@ -19,6 +19,7 @@ export const queryKeys = {
   admin: {
     all: ['admin'] as const,
     stats: ['admin', 'stats'] as const,
+    setupChecklist: ['admin', 'setup-checklist'] as const,
     orderLists: ['admin', 'orders'] as const,
     orders: (filter: Record<string, unknown>) => ['admin', 'orders', filter] as const,
     order: (id: string) => ['admin', 'order', id] as const,

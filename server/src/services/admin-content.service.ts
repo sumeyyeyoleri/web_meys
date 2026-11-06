@@ -13,6 +13,7 @@ import {
   type SiteSettingsInput,
 } from '@painter/shared';
 import { AppError, notFound } from '../domain/errors';
+import { setupChecklist } from '../domain/setup-checklist';
 import { optimizeImage } from '../infrastructure/image-optimizer';
 import { describeError, logger } from '../infrastructure/logger';
 import type { StorageDriver } from '../infrastructure/storage';
@@ -188,6 +189,20 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     async setPortfolioPublished(id: string, isPublished: boolean) {
       await requirePortfolio(id);
       return repos.adminContent.setPortfolioPublished(id, isPublished);
+    },
+
+    /** "Hide all sample works": unpublishes them (they stay in the catalog list as drafts). */
+    hideSamples() {
+      return repos.adminContent.unpublishSamples();
+    },
+
+    async setupChecklist() {
+      const [{ settings }, content, works] = await Promise.all([
+        getSettings(),
+        repos.adminContent.listAllContent(),
+        repos.adminContent.countWorksForSetup(),
+      ]);
+      return setupChecklist({ settings, content, ...works });
     },
 
     /* ---------- Catalog categories ---------- */

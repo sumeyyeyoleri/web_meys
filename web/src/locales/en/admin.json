@@ -33,6 +33,20 @@
     "noMessages": "No messages yet.",
     "unread": "Unread"
   },
+  "setup": {
+    "title": "Personalise your site",
+    "intro": "A few steps to make the site your own. Finished steps are ticked off automatically.",
+    "progress": "{{done}} of {{total}} done",
+    "done": "(done)",
+    "todo": "(to do)",
+    "steps": {
+      "logo": "Upload your logo",
+      "firstWork": "Add your first work",
+      "aboutText": "Replace the about text with your own story",
+      "samplesHidden": "Hide the sample works",
+      "contactDetails": "Enter your contact details"
+    }
+  },
   "orders": {
     "title": "Orders",
     "search": "Search",
@@ -339,7 +353,16 @@
     "bulkDone_one": "{{count}} work added as a draft.",
     "bulkDone_other": "{{count}} works added as drafts.",
     "bulkFailed_one": "{{count}} photo could not be uploaded:",
-    "bulkFailed_other": "{{count}} photos could not be uploaded:"
+    "bulkFailed_other": "{{count}} photos could not be uploaded:",
+    "samplesTitle_one": "{{count}} sample work is on the site",
+    "samplesTitle_other": "{{count}} sample works are on the site",
+    "samplesIntro": "Samples show on the site with an “Example” label. Once you have added your own works, you can hide them all at once.",
+    "hideSamples": "Hide all sample works",
+    "hideSamplesTitle": "Hide the sample works?",
+    "hideSamplesBody_one": "{{count}} sample work will be unpublished. It is not deleted: it stays in the list as a draft and you can publish it again.",
+    "hideSamplesBody_other": "{{count}} sample works will be unpublished. They are not deleted: they stay in the list as drafts and you can publish any of them again.",
+    "samplesHidden_one": "{{count}} sample work hidden.",
+    "samplesHidden_other": "{{count}} sample works hidden."
   },
   "texts": {
     "title": "Texts",

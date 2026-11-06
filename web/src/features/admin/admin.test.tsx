@@ -78,6 +78,8 @@ const messages: MessageDto[] = [
   { id: 'm2', senderRole: 'ADMIN', senderName: 'Atelier Test', locale: 'tr', body: 'Tabii, mavi de olur.', readAt: null, createdAt: '2026-11-02T12:00:00.000Z', isOwn: true },
 ];
 
+const allDone = { logo: true, firstWork: true, aboutText: true, samplesHidden: true, contactDetails: true };
+
 const page = (items: AdminOrderSummaryDto[]) => ({ items, page: 1, pageSize: 20, total: items.length, totalPages: 1 });
 
 type Route = (init: RequestInit | undefined, url: URL) => Response | Promise<Response>;
@@ -87,6 +89,7 @@ function adminApi(routes: Record<string, Route> = {}) {
     user: artist,
     routes: {
       'GET /api/admin/stats': () => json(200, stats),
+      'GET /api/admin/setup-checklist': () => json(200, allDone),
       'GET /api/admin/orders': () => json(200, page([summary])),
       'GET /api/admin/orders/o1': () => json(200, detail),
       'GET /api/admin/orders/o1/messages': () => json(200, messages),
@@ -140,6 +143,25 @@ describe('dashboard layout', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeTruthy();
     const patch = fetchMock.mock.calls.find(([url, init]) => String(url).includes('/api/admin/me') && init?.method === 'PATCH');
     expect(JSON.parse(String(patch![1]!.body))).toEqual({ preferredLocale: 'en' });
+  });
+});
+
+describe('personalise your site', () => {
+  it('lists the open steps with links, ticks off the finished ones and counts them', async () => {
+    adminApi({ 'GET /api/admin/setup-checklist': () => json(200, { ...allDone, logo: false, samplesHidden: false }) });
+    renderApp('/admin');
+    const checklist = await screen.findByRole('region', { name: 'Sitenizi kişiselleştirin' });
+    expect(within(checklist).getByText('3 / 5 tamamlandı')).toBeTruthy();
+    expect(within(checklist).getByRole('link', { name: 'Logonuzu yükleyin (yapılacak)' }).getAttribute('href')).toBe('/admin/settings');
+    expect(within(checklist).getByRole('link', { name: 'Örnek eserleri gizleyin (yapılacak)' }).getAttribute('href')).toBe('/admin/catalog');
+    expect(within(checklist).getByRole('link', { name: 'Hakkında yazısını kendi hikâyenizle değiştirin (tamamlandı)' }).getAttribute('href')).toBe('/admin/texts');
+  });
+
+  it('is gone once every step is done', async () => {
+    adminApi();
+    renderApp('/admin');
+    await screen.findByText('Toplam sipariş');
+    expect(screen.queryByRole('region', { name: 'Sitenizi kişiselleştirin' })).toBeNull();
   });
 });
 

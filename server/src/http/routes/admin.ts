@@ -14,6 +14,7 @@ export function createAdminRouter(services: Services, translationLimiter: Reques
   router.use(requireAdmin);
 
   router.get('/stats', orders.stats);
+  router.get('/setup-checklist', content.setupChecklist);
 
   router.get('/orders', orders.list);
   router.get('/orders/:id', orders.detail);
@@ -31,6 +32,7 @@ export function createAdminRouter(services: Services, translationLimiter: Reques
   router.get('/portfolio', content.listPortfolio);
   router.post('/portfolio', content.createPortfolio);
   router.post('/portfolio/reorder', content.reorderPortfolio);
+  router.post('/portfolio/hide-samples', content.hideSamples);
   router.put('/portfolio/:id', content.updatePortfolio);
   router.post('/portfolio/:id/featured', content.setPortfolioFeatured);
   router.post('/portfolio/:id/published', content.setPortfolioPublished);

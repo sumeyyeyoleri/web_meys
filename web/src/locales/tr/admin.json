@@ -33,6 +33,20 @@
     "noMessages": "Henüz mesaj yok.",
     "unread": "Okunmadı"
   },
+  "setup": {
+    "title": "Sitenizi kişiselleştirin",
+    "intro": "Siteyi kendinize ait hâle getirmek için birkaç adım. Tamamladıklarınız kendiliğinden işaretlenir.",
+    "progress": "{{done}} / {{total}} tamamlandı",
+    "done": "(tamamlandı)",
+    "todo": "(yapılacak)",
+    "steps": {
+      "logo": "Logonuzu yükleyin",
+      "firstWork": "İlk eserinizi ekleyin",
+      "aboutText": "Hakkında yazısını kendi hikâyenizle değiştirin",
+      "samplesHidden": "Örnek eserleri gizleyin",
+      "contactDetails": "İletişim bilgilerinizi girin"
+    }
+  },
   "orders": {
     "title": "Siparişler",
     "search": "Ara",
@@ -339,7 +353,16 @@
     "bulkDone_one": "{{count}} eser taslak olarak eklendi.",
     "bulkDone_other": "{{count}} eser taslak olarak eklendi.",
     "bulkFailed_one": "{{count}} fotoğraf yüklenemedi:",
-    "bulkFailed_other": "{{count}} fotoğraf yüklenemedi:"
+    "bulkFailed_other": "{{count}} fotoğraf yüklenemedi:",
+    "samplesTitle_one": "Sitede {{count}} örnek eser yayında",
+    "samplesTitle_other": "Sitede {{count}} örnek eser yayında",
+    "samplesIntro": "Örnekler sitede “Örnek” etiketiyle görünür. Kendi eserlerinizi ekleyince hepsini tek seferde gizleyebilirsiniz.",
+    "hideSamples": "Tüm örnek eserleri gizle",
+    "hideSamplesTitle": "Örnek eserler gizlensin mi?",
+    "hideSamplesBody_one": "{{count}} örnek eser yayından kaldırılır. Silinmez; listede taslak olarak kalır ve istediğinizi tekrar yayınlayabilirsiniz.",
+    "hideSamplesBody_other": "{{count}} örnek eser yayından kaldırılır. Silinmezler; listede taslak olarak kalır ve istediğinizi tekrar yayınlayabilirsiniz.",
+    "samplesHidden_one": "{{count}} örnek eser gizlendi.",
+    "samplesHidden_other": "{{count}} örnek eser gizlendi."
   },
   "texts": {
     "title": "Metinler",

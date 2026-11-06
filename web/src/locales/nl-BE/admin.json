@@ -33,6 +33,20 @@
     "noMessages": "Nog geen berichten.",
     "unread": "Ongelezen"
   },
+  "setup": {
+    "title": "Maak de site van u",
+    "intro": "Een paar stappen om de site eigen te maken. Afgewerkte stappen worden vanzelf afgevinkt.",
+    "progress": "{{done}} van {{total}} klaar",
+    "done": "(klaar)",
+    "todo": "(nog te doen)",
+    "steps": {
+      "logo": "Upload uw logo",
+      "firstWork": "Voeg uw eerste werk toe",
+      "aboutText": "Vervang de tekst “Over” door uw eigen verhaal",
+      "samplesHidden": "Verberg de voorbeeldwerken",
+      "contactDetails": "Vul uw contactgegevens in"
+    }
+  },
   "orders": {
     "title": "Bestellingen",
     "search": "Zoeken",
@@ -339,7 +353,16 @@
     "bulkDone_one": "{{count}} werk als concept toegevoegd.",
     "bulkDone_other": "{{count}} werken als concept toegevoegd.",
     "bulkFailed_one": "{{count}} foto kon niet geüpload worden:",
-    "bulkFailed_other": "{{count}} foto’s konden niet geüpload worden:"
+    "bulkFailed_other": "{{count}} foto’s konden niet geüpload worden:",
+    "samplesTitle_one": "Er staat {{count}} voorbeeldwerk op de site",
+    "samplesTitle_other": "Er staan {{count}} voorbeeldwerken op de site",
+    "samplesIntro": "Voorbeelden staan op de site met het label “Voorbeeld”. Zodra u uw eigen werken hebt toegevoegd, verbergt u ze allemaal in één keer.",
+    "hideSamples": "Alle voorbeeldwerken verbergen",
+    "hideSamplesTitle": "Voorbeeldwerken verbergen?",
+    "hideSamplesBody_one": "{{count}} voorbeeldwerk wordt offline gehaald. Het wordt niet verwijderd: het blijft als concept in de lijst en u kunt het opnieuw publiceren.",
+    "hideSamplesBody_other": "{{count}} voorbeeldwerken worden offline gehaald. Ze worden niet verwijderd: ze blijven als concept in de lijst en u kunt ze opnieuw publiceren.",
+    "samplesHidden_one": "{{count}} voorbeeldwerk verborgen.",
+    "samplesHidden_other": "{{count}} voorbeeldwerken verborgen."
   },
   "texts": {
     "title": "Teksten",

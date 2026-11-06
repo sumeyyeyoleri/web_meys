@@ -371,3 +371,47 @@ describe('brand and welcome screen', () => {
     await customer.get(image).expect(404);
   });
 });
+
+describe('personalise your site', () => {
+  const work = (isSample: boolean, isPublished = true) => ({
+    imageUrl: '/media/portfolio/test.svg',
+    isFeatured: false,
+    isPublished,
+    isSample,
+    translations: { 'nl-BE': { title: 'Werk' }, en: { title: 'Work' }, tr: { title: 'Eser' } },
+  });
+
+  it('hides every published sample work in one go and leaves her own works alone', async () => {
+    const samples = await Promise.all([admin.post('/api/admin/portfolio').send(work(true)), admin.post('/api/admin/portfolio').send(work(true))]);
+    await admin.post('/api/admin/portfolio').send(work(true, false)).expect(201);
+    const own = await admin.post('/api/admin/portfolio').send(work(false)).expect(201);
+
+    const res = await admin.post('/api/admin/portfolio/hide-samples').expect(200);
+    expect(res.body).toEqual({ hidden: 2 });
+    const items = (await admin.get('/api/admin/portfolio')).body as Array<{ id: string; isPublished: boolean }>;
+    expect(items).toHaveLength(4);
+    for (const sample of samples) expect(items.find((i) => i.id === sample.body.id)?.isPublished).toBe(false);
+    expect(items.find((i) => i.id === own.body.id)?.isPublished).toBe(true);
+    expect((await customer.get('/api/portfolio')).body.map((i: { id: string }) => i.id)).toEqual([own.body.id]);
+
+    expect((await admin.post('/api/admin/portfolio/hide-samples').expect(200)).body).toEqual({ hidden: 0 });
+  });
+
+  it('ticks off the checklist from the real data', async () => {
+    const checklist = () => admin.get('/api/admin/setup-checklist').expect(200).then((r) => r.body);
+    // Test settings have no logo and no contact details; no works yet.
+    expect(await checklist()).toEqual({ logo: false, firstWork: false, aboutText: false, samplesHidden: true, contactDetails: false });
+
+    await admin.post('/api/admin/portfolio').send(work(true)).expect(201);
+    expect(await checklist()).toMatchObject({ firstWork: false, samplesHidden: false });
+    await admin.post('/api/admin/portfolio').send(work(false)).expect(201);
+    await admin.post('/api/admin/portfolio/hide-samples').expect(200);
+    expect(await checklist()).toMatchObject({ firstWork: true, samplesHidden: true });
+
+    await admin.post('/api/admin/settings/logo').attach('file', IMAGES.png, { filename: 'logo.png', contentType: 'image/png' }).expect(200);
+    const settings = (await admin.get('/api/admin/settings')).body;
+    await admin.put('/api/admin/settings').send({ ...settings, contactEmail: 'hallo@atelier.be' }).expect(200);
+    await admin.put('/api/admin/content').send({ items: [{ key: 'about.body', locale: 'nl-BE', value: 'Mijn verhaal.' }] }).expect(200);
+    expect(await checklist()).toEqual({ logo: true, firstWork: true, aboutText: true, samplesHidden: true, contactDetails: true });
+  });
+});

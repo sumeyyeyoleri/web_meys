@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AdminCategoryDto, AdminContentDto, AdminOrderDetailDto, AdminOrderSummaryDto, AdminOrderUpdateInput, AdminPortfolioItemDto, AdminProfileInput, AdminSettingsDto, AdminStatsDto, AdminStatusChangeInput, CategoryInput, ChangeEmailInput, ChangePasswordInput, ContentUpdateInput, InternalNoteDto, Locale, MediaUploadDto, MessageDto, MessageTranslationDto, NotificationDto, Paginated, PortfolioItemInput, SiteSettingsInput, TrackingLinkDto, UnreadCountDto, UserDto } from '@painter/shared';
+import type { AdminCategoryDto, AdminContentDto, AdminOrderDetailDto, AdminOrderSummaryDto, AdminOrderUpdateInput, AdminPortfolioItemDto, AdminProfileInput, AdminSettingsDto, AdminStatsDto, AdminStatusChangeInput, CategoryInput, HideSamplesResultDto, SetupChecklistDto, ChangeEmailInput, ChangePasswordInput, ContentUpdateInput, InternalNoteDto, Locale, MediaUploadDto, MessageDto, MessageTranslationDto, NotificationDto, Paginated, PortfolioItemInput, SiteSettingsInput, TrackingLinkDto, UnreadCountDto, UserDto } from '@painter/shared';
 import { api } from '../../lib/api';
 import { setLocale, useLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
@@ -23,6 +23,14 @@ export function useAdminStats() {
     queryFn: ({ signal }) => api.get<AdminStatsDto>('/api/admin/stats', { locale }, signal),
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
+  });
+}
+
+/** "Personalise your site"; fetched again whenever the overview opens, so it follows changes made elsewhere. */
+export function useSetupChecklist() {
+  return useQuery({
+    queryKey: queryKeys.admin.setupChecklist,
+    queryFn: ({ signal }) => api.get<SetupChecklistDto>('/api/admin/setup-checklist', undefined, signal),
   });
 }
 
@@ -260,7 +268,7 @@ export function useUploadMedia() {
 function useRefreshCatalog() {
   const queryClient = useQueryClient();
   return () => {
-    for (const queryKey of [queryKeys.admin.portfolio, queryKeys.admin.categories, ['portfolio'], ['portfolio-item'], ['categories']]) {
+    for (const queryKey of [queryKeys.admin.portfolio, queryKeys.admin.categories, queryKeys.admin.setupChecklist, ['portfolio'], ['portfolio-item'], ['categories']]) {
       void queryClient.invalidateQueries({ queryKey });
     }
   };
@@ -372,6 +380,7 @@ export function usePortfolioActions() {
       onSuccess: refresh,
     }),
     remove: useMutation({ mutationFn: (id: string) => api.delete(`/api/admin/portfolio/${id}`), onSuccess: refresh }),
+    hideSamples: useMutation({ mutationFn: () => api.post<HideSamplesResultDto>('/api/admin/portfolio/hide-samples'), onSuccess: refresh }),
   };
 }
 

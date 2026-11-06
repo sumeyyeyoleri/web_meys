@@ -324,6 +324,24 @@ export interface AdminCategoryDto {
   translations: Translations<{ name: string; description: string | null }>;
 }
 
+/** "Personalise your site" on the overview: true = done (from the real data, not ticked by hand). */
+export interface SetupChecklistDto {
+  logo: boolean;
+  /** At least one work of her own (not a sample). */
+  firstWork: boolean;
+  /** The about text no longer is the sample text in any language. */
+  aboutText: boolean;
+  /** No sample work is published. */
+  samplesHidden: boolean;
+  /** Email or phone filled in and none of the placeholder contact details left. */
+  contactDetails: boolean;
+}
+
+export interface HideSamplesResultDto {
+  /** Number of sample works that were unpublished. */
+  hidden: number;
+}
+
 export interface AdminContentDto {
   items: Array<{ key: ContentKey; locale: Locale; value: string }>;
 }
