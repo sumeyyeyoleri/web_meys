@@ -1,4 +1,4 @@
-import type { CategoryDto, PortfolioItemDto, ServiceDto, SiteDto, UserDto } from '@painter/shared';
+import type { CategoryDto, CategoryRefDto, PortfolioItemDto, SiteDto, UserDto } from '@painter/shared';
 import { vi } from 'vitest';
 
 /** Readable test ids that are valid UUIDs, e.g. uid('a2'). */
@@ -31,13 +31,21 @@ export const site: SiteDto = {
   },
 };
 
-/** Catalog categories (the artist's own list; names come from the API). */
+export function category(overrides: Partial<CategoryDto> & { id: string; slug: string; name: string }): CategoryDto {
+  return { description: null, coverImageUrl: null, defaultUnit: 'M', showOnSite: true, showInOrderForm: true, hasWorks: false, ...overrides };
+}
+
+/** The artist's categories: catalog filter, services page card and order form choice in one. */
 export const categories: CategoryDto[] = [
-  { id: uid('c1'), slug: 'canvas-portrait', name: 'Doek en portret' },
-  { id: uid('c2'), slug: 'home', name: 'Woning en kinderkamer' },
-  { id: uid('c3'), slug: 'street-art', name: 'Street art en vitrines' },
+  category({ id: uid('c1'), slug: 'canvas-portrait', name: 'Doek en portret', description: 'Uniek werk.', defaultUnit: 'CM', hasWorks: true }),
+  category({ id: uid('c2'), slug: 'home', name: 'Woning en kinderkamer', description: 'Op de muur.', hasWorks: true }),
+  category({ id: uid('c3'), slug: 'street-art', name: 'Street art en vitrines', hasWorks: true }),
+  category({ id: uid('c4'), slug: 'gym', name: 'Sportscholen' }),
+  // Only in the order form.
+  category({ id: uid('c5'), slug: 'custom', name: 'Werk op maat', defaultUnit: 'CM', showOnSite: false }),
 ];
-const [canvasCategory, homeCategory, streetCategory] = categories as [CategoryDto, CategoryDto, CategoryDto];
+const ref = ({ id, slug, name }: CategoryDto): CategoryRefDto => ({ id, slug, name });
+const [canvasCategory, homeCategory, streetCategory] = categories.map(ref) as [CategoryRefDto, CategoryRefDto, CategoryRefDto];
 
 export function artwork(overrides: Partial<PortfolioItemDto> & { id: string; title: string }): PortfolioItemDto {
   return {
@@ -59,11 +67,6 @@ export const portfolio: PortfolioItemDto[] = [
   artwork({ id: uid('a1'), title: 'Warme aarde' }),
   artwork({ id: uid('a2'), title: 'Maanlichtheuvels', category: homeCategory, unit: 'M', width: 3.6, height: 2.4 }),
   artwork({ id: uid('a3'), title: 'Nachthaven', category: streetCategory, allowSimilarRequest: false }),
-];
-
-export const services: ServiceDto[] = [
-  { id: uid('s1'), slug: 'canvas-painting', name: 'Schilderij op maat', description: 'Uniek werk.', imageUrl: null, isWallService: false, defaultUnit: 'CM' },
-  { id: uid('s2'), slug: 'mural', name: 'Muurschildering', description: 'Op de muur.', imageUrl: null, isWallService: true, defaultUnit: 'M' },
 ];
 
 /** The artist (the only account). */
@@ -93,8 +96,7 @@ export function mockApi(options: { user?: UserDto | null; unread?: number; route
     let body: unknown = {};
     if (p === '/api/site') body = site;
     else if (p === '/api/auth/me') body = { user: options.user ?? null };
-    else if (p === '/api/services') body = services;
-    else if (p === '/api/categories') body = categories.filter((c) => portfolio.some((item) => item.category?.id === c.id));
+    else if (p === '/api/categories') body = categories;
     else if (p === '/api/portfolio') {
       const category = url.searchParams.get('category');
       const featured = url.searchParams.get('featured');

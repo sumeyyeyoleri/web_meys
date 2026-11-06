@@ -66,7 +66,7 @@ describe('orders inspired by a catalog item', () => {
     const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
-      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.wallServiceId, communicationLocale: 'tr' }),
+      orderPayload({ inspirationItemId: item.id, categoryId: ctx.ids.wallCategoryId, communicationLocale: 'tr' }),
       [pngFile()],
     ).expect(201);
 
@@ -84,11 +84,11 @@ describe('orders inspired by a catalog item', () => {
     expect(adminView.body.inspiration).toEqual(expected);
   });
 
-  it('accepts a catalog example without a service', async () => {
+  it('accepts a catalog example without a category', async () => {
     const item = await createItem();
     const client = await guest(ctx.app);
     const res = await submitOrder(client, orderPayload({ inspirationItemId: item.id })).expect(201);
-    expect(res.body.order).toMatchObject({ serviceId: null, title: 'Maanlichtheuvels' });
+    expect(res.body.order).toMatchObject({ categoryId: null, title: 'Maanlichtheuvels' });
   });
 
   it('works without an email address too', async () => {
@@ -96,10 +96,10 @@ describe('orders inspired by a catalog item', () => {
     const client = await guest(ctx.app);
     const res = await submitOrder(
       client,
-      orderPayload({ inspirationItemId: item.id, serviceId: ctx.ids.serviceId, email: '' }),
+      orderPayload({ inspirationItemId: item.id, categoryId: ctx.ids.categoryId, email: '' }),
     ).expect(201);
     expect(res.body.order.inspiration.id).toBe(item.id);
-    expect(res.body.order.serviceId).toBe(ctx.ids.serviceId);
+    expect(res.body.order.categoryId).toBe(ctx.ids.categoryId);
     expect(res.body.tracking.url).toMatch(/\/track#/);
   });
 
@@ -151,10 +151,22 @@ describe('catalog categories', () => {
     const client = await guest(ctx.app);
 
     const res = await client.get('/api/categories?locale=tr').expect(200);
-    expect(res.body).toEqual([
-      { id: horeca.id, slug: 'horeca', name: 'horeca TR' },
-      { id: home.id, slug: 'home', name: 'home TR' },
+    const bySlug = (slug: string) => res.body.find((c: { slug: string }) => c.slug === slug);
+    // Catalog filters: shown on the site and with works on the site, in the artist's order.
+    expect(res.body.filter((c: { showOnSite: boolean; hasWorks: boolean }) => c.showOnSite && c.hasWorks)).toEqual([
+      expect.objectContaining({ id: horeca.id, slug: 'horeca', name: 'horeca TR' }),
+      expect.objectContaining({ id: home.id, slug: 'home', name: 'home TR' }),
     ]);
+    expect(bySlug('gym')).toMatchObject({ showOnSite: true, hasWorks: false });
+    expect(bySlug('drafts')).toMatchObject({ hasWorks: false });
+    // Hidden on the site, still in the order form (the default); its works do not count.
+    expect(bySlug('hidden')).toMatchObject({ showOnSite: false, showInOrderForm: true, hasWorks: false });
+  });
+
+  it('leaves out categories shown neither on the site nor in the order form', async () => {
+    await ctx.prisma.category.create({ data: { slug: 'off', isVisible: false, showInOrderForm: false, translations: { create: [{ locale: 'NL_BE', name: 'Uit' }] } } });
+    const res = await (await guest(ctx.app)).get('/api/categories').expect(200);
+    expect(res.body.map((c: { slug: string }) => c.slug)).not.toContain('off');
   });
 
   it('filters the portfolio by category slug; uncategorised works only appear under "All"', async () => {
@@ -187,7 +199,7 @@ describe('catalog categories', () => {
     expect((await client.get('/api/portfolio')).body).toEqual([]);
     expect((await client.get('/api/portfolio?featured=true')).body).toEqual([]);
     expect((await client.get('/api/portfolio?category=street-art')).body).toEqual([]);
-    expect((await client.get('/api/categories')).body).toEqual([]);
+    expect((await client.get('/api/categories')).body.find((c: { slug: string }) => c.slug === 'street-art')).toMatchObject({ showOnSite: false, hasWorks: false });
     await client.get(`/api/portfolio/${item.id}`).expect(404);
     // The work itself is untouched; the dashboard says why it is not on the site.
     const list = await admin.get('/api/admin/portfolio').expect(200);

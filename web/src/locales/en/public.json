@@ -89,14 +89,14 @@
   },
   "services": {
     "title": "Services",
-    "intro": "Every piece is made to measure. Choose a service to start a request right away — you always receive a personal quote first.",
-    "request": "Request this service",
-    "requestFor": "Request {{name}}",
-    "wall": "On the wall",
-    "empty": "No services are available at the moment.",
+    "intro": "Every piece is made to measure. Choose a category to start a request right away — you always receive a personal quote first.",
+    "request": "Request",
+    "requestFor": "Request: {{name}}",
+    "empty": "No categories to show at the moment.",
     "customTitle": "Something else in mind?",
     "customBody": "Describe your own idea — unusual requests are welcome too.",
-    "customCta": "Describe your own request"
+    "customCta": "Describe your own request",
+    "seeWorks": "See the works"
   },
   "privacy": {
     "title": "Privacy policy",

@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { z } from 'zod';
 import { localeSchema, queryBooleanSchema, type SiteDto } from '@painter/shared';
 import type { Services } from '../../container';
-import { toCategoryDto, toPortfolioItemDto, toPublicSettingsDto, toServiceDto } from '../mappers/content.mapper';
+import { toCategoryDto, toPortfolioItemDto, toPublicSettingsDto } from '../mappers/content.mapper';
 import { parseIdParam, parseQuery } from '../middleware/validation';
 
 const localeQuery = z.object({ locale: localeSchema.optional() });
@@ -20,12 +20,6 @@ export function createPublicController({ content, email, translation }: Services
       const [settings, texts] = await Promise.all([content.requireSettings(), content.getContent(locale)]);
       const body: SiteDto = { locale, settings: toPublicSettingsDto(settings, { emailAvailable: email.isConfigured, translationAvailable: translation.available }), content: texts };
       res.json(body);
-    },
-
-    async services(req: Request, res: Response) {
-      const locale = await content.resolveLocale(parseQuery(localeQuery, req).locale);
-      const services = await content.listActiveServices();
-      res.json(services.map((service) => toServiceDto(service, locale)));
     },
 
     async portfolio(req: Request, res: Response) {

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { ADMIN, closeTestPrisma, guest, setupTest, signedIn, type Client, type TestContext } from './helpers';
+import { ADMIN, closeTestPrisma, guest, orderPayload, setupTest, signedIn, submitOrder, type Client, type TestContext } from './helpers';
 
 let ctx: TestContext;
 let admin: Client;
@@ -42,7 +42,57 @@ describe('catalog categories (dashboard)', () => {
     expect(renamed.body).toMatchObject({ slug: 'cafes-restaurants', translations: { en: { name: 'Hospitality' } } });
 
     const site = await (await guest(ctx.app)).get('/api/categories?locale=en').expect(200);
-    expect(site.body).toEqual([]); // no works yet
+    expect(site.body.find((c: { id: string }) => c.id === first.body.id)).toMatchObject({ name: 'Hospitality', hasWorks: false }); // no works yet
+  });
+
+  it('stores description, cover image, default unit and the two switches, and shows them on the site', async () => {
+    const created = await admin
+      .post('/api/admin/categories')
+      .send({
+        translations: {
+          'nl-BE': { name: 'Rolluiken', description: 'Beschilderde rolluiken.' },
+          en: { name: 'Shutters', description: '' },
+          tr: { name: 'Kepenk', description: 'Boyalı kepenkler.' },
+        },
+        isVisible: true,
+        showInOrderForm: false,
+        coverImageUrl: '/media/categories/x.svg',
+        defaultUnit: 'M',
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({
+      showInOrderForm: false,
+      coverImageUrl: '/media/categories/x.svg',
+      defaultUnit: 'M',
+      orderCount: 0,
+      translations: { en: { description: null }, tr: { description: 'Boyalı kepenkler.' } },
+    });
+
+    const site = (await (await guest(ctx.app)).get('/api/categories?locale=tr').expect(200)).body;
+    expect(site.find((c: { id: string }) => c.id === created.body.id)).toEqual({
+      id: created.body.id,
+      slug: 'shutters',
+      name: 'Kepenk',
+      description: 'Boyalı kepenkler.',
+      coverImageUrl: '/media/categories/x.svg',
+      defaultUnit: 'M',
+      showOnSite: true,
+      showInOrderForm: false,
+      hasWorks: false,
+    });
+
+    // Not in the order form: an order cannot choose it.
+    const order = await submitOrder(await guest(ctx.app), orderPayload({ categoryId: created.body.id })).expect(400);
+    expect(order.body.error.fields).toEqual({ categoryId: 'validation.invalidOption' });
+    const bad = await admin.post('/api/admin/categories').send({ ...names('X', 'X', 'X'), defaultUnit: 'KM', coverImageUrl: 'javascript:x' }).expect(400);
+    expect(bad.body.error.fields).toEqual({ defaultUnit: 'validation.invalidOption', coverImageUrl: 'validation.url' });
+  });
+
+  it('counts the orders of a category', async () => {
+    const client = await guest(ctx.app);
+    await submitOrder(client, orderPayload({ categoryId: ctx.ids.categoryId })).expect(201);
+    const list = (await admin.get('/api/admin/categories').expect(200)).body as Array<{ id: string; orderCount: number }>;
+    expect(list.find((c) => c.id === ctx.ids.categoryId)?.orderCount).toBe(1);
   });
 
   it('orders categories and counts their works', async () => {
@@ -51,7 +101,8 @@ describe('catalog categories (dashboard)', () => {
     await createWork(b.id);
     await createWork(b.id, false);
     const moved = await admin.post('/api/admin/categories/reorder').send({ id: b.id, direction: 'up' }).expect(200);
-    expect(moved.body.map((c: { id: string; itemCount: number }) => [c.id, c.itemCount])).toEqual([
+    // After the two test categories (canvas, mural) from the setup.
+    expect(moved.body.slice(2).map((c: { id: string; itemCount: number }) => [c.id, c.itemCount])).toEqual([
       [b.id, 2],
       [a.id, 0],
     ]);

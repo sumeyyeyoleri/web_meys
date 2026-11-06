@@ -16,16 +16,16 @@
     "leave": "Verlaten"
   },
   "inspiration": {
-    "banner": "U vertrekt van het werk ‘{{title}}’. Het is als referentie toegevoegd en de passende dienst is gekozen.",
-    "bannerNoService": "U vertrekt van het werk ‘{{title}}’. Het is als referentie toegevoegd.",
+    "banner": "U vertrekt van het werk ‘{{title}}’. Het is als referentie toegevoegd en de categorie is gekozen.",
+    "bannerNoCategory": "U vertrekt van het werk ‘{{title}}’. Het is als referentie toegevoegd.",
     "remove": "Verwijderen",
     "inspiredBy": "Geïnspireerd op: {{title}}",
     "unavailable": "Dit werk is niet (meer) beschikbaar als voorbeeld. U kunt gewoon verder zonder."
   },
   "form": {
-    "service": "Dienst",
-    "servicesError": "De diensten konden niet geladen worden. U kunt uw wens hieronder beschrijven.",
-    "clearService": "Keuze wissen",
+    "category": "Categorie",
+    "categoriesError": "De categorieën konden niet geladen worden. U kunt uw wens hieronder beschrijven.",
+    "clearCategory": "Keuze wissen",
     "size": "Afmetingen",
     "width": "Breedte",
     "height": "Hoogte",

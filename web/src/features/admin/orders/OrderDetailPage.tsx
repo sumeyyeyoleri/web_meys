@@ -138,7 +138,9 @@ function OrderDetail({ order }: { order: AdminOrderDetailDto }) {
             ) : null}
             <Facts
               rows={[
-                [to('form.service'), order.serviceName],
+                [to('form.category'), order.categoryName],
+                // What the customer chose, when it differs from the category (e.g. a former service).
+                [t('detail.previousService'), order.previousServiceName],
                 [to('form.size'), formatDimensions(order.width, order.height, order.unit, locale)],
                 [to('form.description'), order.description],
                 // Fields of orders from the former wizard, shown when present.

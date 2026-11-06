@@ -89,14 +89,14 @@
   },
   "services": {
     "title": "Hizmetler",
-    "intro": "Her eser ölçüye göre yapılır. Hemen talep başlatmak için bir hizmet seçin; önce her zaman kişisel bir teklif alırsınız.",
-    "request": "Bu hizmeti iste",
-    "requestFor": "{{name}} iste",
-    "wall": "Duvar üzerine",
-    "empty": "Şu anda sunulan bir hizmet yok.",
+    "intro": "Her eser ölçüye göre yapılır. Hemen talep başlatmak için bir kategori seçin; önce her zaman kişisel bir teklif alırsınız.",
+    "request": "Talep et",
+    "requestFor": "Talep et: {{name}}",
+    "empty": "Şu anda gösterilecek bir kategori yok.",
     "customTitle": "Aklınızda başka bir şey mi var?",
     "customBody": "Kendi fikrinizi anlatın; alışılmadık talepler de memnuniyetle karşılanır.",
-    "customCta": "Kendi talebinizi anlatın"
+    "customCta": "Kendi talebinizi anlatın",
+    "seeWorks": "Eserleri gör"
   },
   "privacy": {
     "title": "Gizlilik politikası",

@@ -23,7 +23,7 @@ const optionalDate = z.preprocess(emptyToUndefined, isoDateSchema.optional());
 
 /** Fields of the single-page order form, in the order they appear (used to focus the first error). */
 export const orderFormShape = {
-  serviceId: optionalUuid,
+  categoryId: optionalUuid,
   width: requiredPositiveNumber(100_000),
   height: requiredPositiveNumber(100_000),
   unit: z.enum(DIMENSION_UNITS, { error: 'validation.invalidOption' }),
@@ -84,7 +84,7 @@ export type AdminStatusChangeInput = z.infer<typeof adminStatusChangeSchema>;
 
 /** Admin correction of the submitted order data. Fields of older orders (budget, deadline …) stay as submitted. */
 export const adminOrderUpdateSchema = z.object({
-  serviceId: optionalUuid,
+  categoryId: optionalUuid,
   title: requiredString(150),
   width: orderFormShape.width,
   height: orderFormShape.height,

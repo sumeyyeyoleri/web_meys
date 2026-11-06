@@ -17,7 +17,7 @@ const summary: AdminOrderSummaryDto = {
   reference: 'ORD-2026-7K3QXM',
   title: 'Duinen bij zonsondergang',
   status: 'UNDER_REVIEW',
-  serviceName: 'Schilderij op maat',
+  categoryName: 'Doek en portret',
   quoteAmount: null,
   unreadMessages: 2,
   createdAt: '2026-11-01T10:00:00.000Z',
@@ -43,11 +43,11 @@ const stats: AdminStatsDto = {
 
 const detail = {
   ...summary,
-  serviceId: null,
+  categoryId: null,
+  previousServiceName: null,
   customRequest: null,
   inspiration: null,
   additionalSpecs: null,
-  isWallService: false,
   width: 30,
   height: 40,
   unit: 'CM',
@@ -90,7 +90,7 @@ function adminApi(routes: Record<string, Route> = {}) {
       'GET /api/admin/orders': () => json(200, page([summary])),
       'GET /api/admin/orders/o1': () => json(200, detail),
       'GET /api/admin/orders/o1/messages': () => json(200, messages),
-      'GET /api/admin/services': () => json(200, []),
+      'GET /api/admin/categories': () => json(200, []),
       'PATCH /api/admin/me': (init) => json(200, { ...artist, preferredLocale: JSON.parse(String(init?.body)).preferredLocale }),
       ...routes,
     },
@@ -196,6 +196,21 @@ describe('order detail', () => {
     expect(whatsapp.getAttribute('href')).toBe('https://wa.me/32470123456');
     expect(whatsapp.getAttribute('rel')).toContain('noopener');
     expect(screen.getByRole('link', { name: 'Ara' }).getAttribute('href')).toBe('tel:+32470123456');
+  });
+
+  it('shows the category, and the former service name only when it differs', async () => {
+    adminApi({ 'GET /api/admin/orders/o1': () => json(200, { ...detail, categoryName: 'Doek en portret', previousServiceName: 'Muurschildering' }) });
+    renderApp('/admin/orders/o1');
+    expect(await screen.findByText('Seçilen hizmet')).toBeTruthy();
+    expect(screen.getByText('Muurschildering')).toBeTruthy();
+    expect(screen.getAllByText('Doek en portret').length).toBeGreaterThan(0);
+  });
+
+  it('has no "former service" row when the order matches its category', async () => {
+    adminApi();
+    renderApp('/admin/orders/o1');
+    await screen.findByRole('heading', { level: 1, name: 'ORD-2026-7K3QXM' });
+    expect(screen.queryByText('Seçilen hizmet')).toBeNull();
   });
 
   it('says "Telefon numarası yok" instead of the buttons when the order has no phone', async () => {

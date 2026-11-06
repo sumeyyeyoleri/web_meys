@@ -70,10 +70,10 @@ export function TrackPage() {
         </header>
 
         <dl className="grid gap-x-6 gap-y-2 rounded-[var(--radius-card)] border border-border bg-surface p-5 text-[15px] sm:grid-cols-[minmax(140px,auto)_1fr]">
-          {o.serviceName ? (
+          {o.categoryName ? (
             <div className="contents">
-              <dt className="text-text-subtle">{t('form.service')}</dt>
-              <dd>{o.serviceName}</dd>
+              <dt className="text-text-subtle">{t('form.category')}</dt>
+              <dd>{o.categoryName}</dd>
             </div>
           ) : null}
           <div className="contents">

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   ADMIN,
@@ -26,7 +27,7 @@ afterAll(closeTestPrisma);
 describe('order creation', () => {
   it('creates an order with images, history and an admin notification in one go', async () => {
     const client = await guest(ctx.app);
-    const res = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId, customRequest: '' }), [
+    const res = await submitOrder(client, orderPayload({ categoryId: ctx.ids.categoryId, customRequest: '' }), [
       pngFile('schets één.png'),
       { buffer: IMAGES.jpeg, name: 'photo.JPG', type: 'image/jpeg' },
       { buffer: IMAGES.webp, name: 'wall.webp', type: 'image/webp' },
@@ -36,7 +37,7 @@ describe('order creation', () => {
     expect(created).toBe(true);
     expect(order.reference).toMatch(ORDER_REFERENCE_PATTERN);
     expect(order.status).toBe('SUBMITTED');
-    expect(order.serviceName).toBe('Canvas NL');
+    expect(order).toMatchObject({ categoryName: 'Canvas NL', categoryId: ctx.ids.categoryId, previousServiceName: null });
     expect(order.attachments.map((a: { originalName: string }) => a.originalName)).toEqual([
       'schets één.png',
       'photo.JPG',
@@ -81,11 +82,29 @@ describe('order creation', () => {
     expect(missing.body.error.fields).toEqual({ data: 'validation.required' });
   });
 
-  it('rejects an inactive or unknown service', async () => {
-    await ctx.prisma.service.update({ where: { id: ctx.ids.serviceId }, data: { isActive: false } });
+  it('rejects a category that is not in the order form, and unknown ones', async () => {
+    await ctx.prisma.category.update({ where: { id: ctx.ids.categoryId }, data: { showInOrderForm: false } });
     const client = await guest(ctx.app);
-    const res = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId })).expect(400);
-    expect(res.body.error.fields).toEqual({ serviceId: 'validation.invalidOption' });
+    for (const categoryId of [ctx.ids.categoryId, randomUUID()]) {
+      const res = await submitOrder(client, orderPayload({ categoryId })).expect(400);
+      expect(res.body.error.fields).toEqual({ categoryId: 'validation.invalidOption' });
+    }
+  });
+
+  it("stores the category's name with the order, so it survives renaming and deleting the category", async () => {
+    const client = await guest(ctx.app);
+    const res = await submitOrder(client, orderPayload({ categoryId: ctx.ids.wallCategoryId, communicationLocale: 'tr' })).expect(201);
+    const admin = await signedIn(ctx.app, ADMIN);
+    const url = `/api/admin/orders/${res.body.order.id}`;
+    // The artist reads the category in the dashboard language; the stored name is in the order's (Turkish).
+    expect((await admin.get(url)).body).toMatchObject({ categoryName: 'Mural NL', previousServiceName: null });
+
+    await ctx.prisma.categoryTranslation.updateMany({ where: { categoryId: ctx.ids.wallCategoryId, locale: 'TR' }, data: { name: 'Duvar resmi' } });
+    expect((await admin.get(url)).body).toMatchObject({ categoryName: 'Mural NL', previousServiceName: 'Mural TR' });
+
+    await admin.delete(`/api/admin/categories/${ctx.ids.wallCategoryId}`).expect(204);
+    expect((await admin.get(url)).body).toMatchObject({ categoryId: null, categoryName: 'Mural TR', previousServiceName: 'Mural TR' });
+    expect((await admin.get('/api/admin/orders')).body.items[0].categoryName).toBe('Mural TR');
   });
 
   it('validates the size and the project address', async () => {
@@ -107,12 +126,12 @@ describe('order creation', () => {
     expect(await ctx.prisma.order.count()).toBe(0);
   });
 
-  it('requires name and phone, keeps the email, service and extra address line optional, and derives a title', async () => {
+  it('requires name and phone, keeps the email, category and extra address line optional, and derives a title', async () => {
     const client = await guest(ctx.app);
     const missing = await submitOrder(client, orderPayload({ fullName: ' ', phone: '' })).expect(400);
     expect(missing.body.error.fields).toEqual({ fullName: 'validation.required', phone: 'validation.required' });
     const plain = await submitOrder(client, orderPayload({ email: '', addressExtra: '' })).expect(201);
-    expect(plain.body.order).toMatchObject({ serviceId: null, contact: { email: null, phone: CUSTOMER.phone }, projectAddress: { addressExtra: null } });
+    expect(plain.body.order).toMatchObject({ categoryId: null, categoryName: null, contact: { email: null, phone: CUSTOMER.phone }, projectAddress: { addressExtra: null } });
     expect(plain.body.order.title).toBe('Warm earth tones, loose brushwork, something calm and quiet.');
 
     const long = 'Een groot doek voor de inkomhal met zachte, warme kleuren en veel ruimte voor licht, zoals een ochtend aan zee.';
@@ -120,7 +139,7 @@ describe('order creation', () => {
     expect(cut.body.order.title).toMatch(/^Een groot doek voor de inkomhal .*…$/);
     expect(cut.body.order.title.length).toBeLessThanOrEqual(81);
 
-    const withService = await submitOrder(client, orderPayload({ serviceId: ctx.ids.serviceId, communicationLocale: 'en' })).expect(201);
+    const withService = await submitOrder(client, orderPayload({ categoryId: ctx.ids.categoryId, communicationLocale: 'en' })).expect(201);
     expect(withService.body.order.title).toBe('Canvas EN');
   });
 

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../../lib/i18n';
-import { json, mockApi, portfolio, uid } from '../../test/fixtures';
+import { category, json, mockApi, portfolio, uid } from '../../test/fixtures';
 import { renderApp } from '../../test/render';
 
 beforeEach(() => setLocale('nl-BE'));
@@ -87,7 +87,7 @@ describe('catalog', () => {
   it('shows an empty state with a way to clear the filter', async () => {
     mockApi({
       routes: {
-        'GET /api/categories': () => json(200, [{ id: 'c9', slug: 'gym', name: 'Sportscholen' }]),
+        'GET /api/categories': () => json(200, [category({ id: 'c9', slug: 'gym', name: 'Sportscholen', hasWorks: true })]),
         'GET /api/portfolio': (_init, url) => json(200, url.searchParams.get('category') === 'gym' ? [] : portfolio),
       },
     });
@@ -108,12 +108,23 @@ describe('catalog', () => {
 });
 
 describe('services, contact and privacy', () => {
-  it('links every service to the order form with that service preselected', async () => {
+  it('shows the categories shown on the site as cards that link to the order form', async () => {
     mockApi();
     renderApp('/services');
-    const link = await screen.findByRole('link', { name: 'Muurschildering aanvragen' });
-    expect(link.getAttribute('href')).toBe(`/order?service=${uid('s2')}`);
-    expect(screen.getByText('Op de muur')).toBeTruthy();
+    const link = await screen.findByRole('link', { name: 'Aanvragen: Doek en portret' });
+    expect(link.getAttribute('href')).toBe('/order?category=canvas-portrait');
+    expect(screen.getByText('Op de muur.')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: 'Sportscholen' })).toBeTruthy();
+    // "Custom piece" is only in the order form, not on the site.
+    expect(screen.queryByRole('heading', { level: 2, name: 'Werk op maat' })).toBeNull();
+  });
+
+  it('offers only order-form categories in the form, including ones not shown on the site', async () => {
+    mockApi({ routes: { 'GET /api/categories': () => json(200, [category({ id: uid('c9'), slug: 'murals-only-site', name: 'Alleen op de site', showInOrderForm: false }), category({ id: uid('c5'), slug: 'custom', name: 'Werk op maat', showOnSite: false, defaultUnit: 'CM' })]) } });
+    renderApp('/services');
+    expect(await screen.findByRole('heading', { level: 2, name: 'Alleen op de site' })).toBeTruthy();
+    // Shown on the site but not in the order form: no request link.
+    expect(screen.queryByRole('link', { name: /Aanvragen: Alleen op de site/ })).toBeNull();
   });
 
   it('shows contact details and business hours', async () => {

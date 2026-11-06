@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import type { CategoryDto } from '@painter/shared';
+import type { CategoryRefDto } from '@painter/shared';
 import { cx } from '../../components/ui/cx';
 
 function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: string }) {
@@ -20,7 +20,7 @@ function Chip({ pressed, onClick, children }: { pressed: boolean; onClick: () =>
 
 interface CatalogFiltersProps {
   /** Visible categories with published works only (the artist's list, in their order). */
-  categories: CategoryDto[];
+  categories: CategoryRefDto[];
   category: string | undefined;
   onCategory: (slug: string | undefined) => void;
 }

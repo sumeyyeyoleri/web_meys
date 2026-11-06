@@ -16,16 +16,16 @@
     "leave": "Ayrıl"
   },
   "inspiration": {
-    "banner": "‘{{title}}’ eserinden başlıyorsunuz. Eser referans olarak eklendi ve uygun hizmet seçildi.",
-    "bannerNoService": "‘{{title}}’ eserinden başlıyorsunuz. Eser referans olarak eklendi.",
+    "banner": "‘{{title}}’ eserinden başlıyorsunuz. Eser referans olarak eklendi ve kategorisi seçildi.",
+    "bannerNoCategory": "‘{{title}}’ eserinden başlıyorsunuz. Eser referans olarak eklendi.",
     "remove": "Kaldır",
     "inspiredBy": "Esin kaynağı: {{title}}",
     "unavailable": "Bu eser örnek olarak (artık) kullanılamıyor. Onsuz devam edebilirsiniz."
   },
   "form": {
-    "service": "Hizmet",
-    "servicesError": "Hizmetler yüklenemedi. İsteğinizi aşağıda anlatabilirsiniz.",
-    "clearService": "Seçimi kaldır",
+    "category": "Kategori",
+    "categoriesError": "Kategoriler yüklenemedi. İsteğinizi aşağıda anlatabilirsiniz.",
+    "clearCategory": "Seçimi kaldır",
     "size": "Ölçü",
     "width": "Genişlik",
     "height": "Yükseklik",

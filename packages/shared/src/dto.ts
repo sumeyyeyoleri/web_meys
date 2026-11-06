@@ -58,24 +58,27 @@ export interface SiteDto {
   content: Partial<Record<ContentKey, string>>;
 }
 
-export interface ServiceDto {
-  id: string;
-  /** Stable technical identifier (lets a catalog category preselect its service). */
-  slug: string;
-  name: string;
-  description: string | null;
-  imageUrl: string | null;
-  isWallService: boolean;
-  /** Unit the order form switches to when this service is chosen. */
-  defaultUnit: DimensionUnit | null;
-}
-
-/** A catalog category on the site (only visible categories with published works are listed). */
-export interface CategoryDto {
+/** A category as a work or order refers to it. */
+export interface CategoryRefDto {
   id: string;
   /** URL value: `/catalog?category=<slug>`. */
   slug: string;
   name: string;
+}
+
+/**
+ * A category on the site: catalog filter (shown on the site and with works), card on the services
+ * page (shown on the site) and choice in the order form (shown in the order form).
+ */
+export interface CategoryDto extends CategoryRefDto {
+  description: string | null;
+  coverImageUrl: string | null;
+  /** Unit the order form switches to when this category is chosen. */
+  defaultUnit: DimensionUnit | null;
+  showOnSite: boolean;
+  showInOrderForm: boolean;
+  /** Has at least one work on the site (then it is a catalog filter). */
+  hasWorks: boolean;
 }
 
 export interface PortfolioItemDto {
@@ -83,7 +86,7 @@ export interface PortfolioItemDto {
   title: string;
   description: string | null;
   /** null = uncategorised. */
-  category: CategoryDto | null;
+  category: CategoryRefDto | null;
   imageUrl: string;
   width: number | null;
   height: number | null;
@@ -142,7 +145,8 @@ export interface OrderSummaryDto {
   reference: string;
   title: string;
   status: OrderStatus;
-  serviceName: string | null;
+  /** The chosen category in the viewer's language, else the former service name. */
+  categoryName: string | null;
   quoteAmount: number | null;
   unreadMessages: number;
   createdAt: string;
@@ -157,13 +161,17 @@ export interface InspirationDto {
 }
 
 export interface OrderDetailDto extends OrderSummaryDto {
-  serviceId: string | null;
+  categoryId: string | null;
+  /**
+   * What the customer chose, when it differs from the current category (e.g. an older order's
+   * service "Mural" that matched no category, or a category renamed since); otherwise null.
+   */
+  previousServiceName: string | null;
   /** Older orders only (6-step wizard): free-text request. */
   customRequest: string | null;
   inspiration: InspirationDto | null;
   /** Older orders only: requested changes compared to the inspiration example. */
   additionalSpecs: string | null;
-  isWallService: boolean;
   width: number;
   height: number;
   unit: DimensionUnit;
@@ -307,18 +315,11 @@ export interface AdminCategoryDto {
   /** Hidden = the category and all its works are hidden on the site. */
   isVisible: boolean;
   sortOrder: number;
+  showInOrderForm: boolean;
+  coverImageUrl: string | null;
+  defaultUnit: DimensionUnit | null;
   /** All works in it, published or not. */
   itemCount: number;
-  translations: Translations<{ name: string }>;
-}
-
-export interface AdminServiceDto {
-  id: string;
-  imageUrl: string | null;
-  isActive: boolean;
-  isWallService: boolean;
-  defaultUnit: DimensionUnit | null;
-  sortOrder: number;
   orderCount: number;
   translations: Translations<{ name: string; description: string | null }>;
 }

@@ -4,157 +4,105 @@ import type { Composition, PaletteName } from './art';
 type PerLocale<T> = Record<Locale, T>;
 
 /* ---------------------------------------------------------------------------
- * Services
+ * Categories — catalog filter, services page card and order form choice in one
+ * (the same as the migrations create; the artist manages them in the dashboard)
  * ------------------------------------------------------------------------- */
 
-export interface SeedService {
+export interface SeedCategory {
   slug: string;
-  isWallService: boolean;
-  /** Unit the order form switches to for this service. */
+  /** "Show on the site" (catalog filter, services page). */
+  isVisible: boolean;
+  showInOrderForm: boolean;
   defaultUnit: 'CM' | 'M';
   art: { seed: number; palette: PaletteName; composition: Composition };
   translations: PerLocale<{ name: string; description: string }>;
 }
 
-/** In display order. Existing services keep their place and the artist's edits (see SUPERSEDED_SERVICES). */
-export const SEED_SERVICES: SeedService[] = [
+export const SEED_CATEGORIES: SeedCategory[] = [
   {
-    slug: 'mural',
-    isWallService: true,
+    slug: 'horeca',
+    isVisible: true,
+    showInOrderForm: true,
     defaultUnit: 'M',
-    art: { seed: 1202, palette: 'sea', composition: 'horizon' },
+    art: { seed: 3101, palette: 'terracotta', composition: 'colorField' },
     translations: {
-      'nl-BE': {
-        name: 'Muurschildering (binnen en buiten)',
-        description:
-          'Een kunstwerk rechtstreeks op de muur, binnen of buiten: voor cafés en restaurants, sportscholen, winkels, woningen en kinderkamers.',
-      },
-      en: {
-        name: 'Mural (indoor & outdoor)',
-        description:
-          'An artwork painted directly on the wall, indoors or outdoors: for cafés and restaurants, gyms, shops, homes and kids’ rooms.',
-      },
-      tr: {
-        name: 'Duvar resmi (iç/dış mekân)',
-        description:
-          'Doğrudan duvara, iç ya da dış mekâna yapılan bir sanat eseri: kafe ve restoranlar, spor salonları, mağazalar, evler ve çocuk odaları için.',
-      },
+      'nl-BE': { name: 'Horeca', description: 'Muurschilderingen die een café, restaurant of bar een eigen sfeer geven.' },
+      en: { name: 'Cafés & restaurants', description: 'Murals that give a café, restaurant or bar an atmosphere of its own.' },
+      tr: { name: 'Horeca', description: 'Kafe, restoran ya da bara kendine has bir hava katan duvar resimleri.' },
     },
   },
   {
-    slug: 'shutter-window',
-    isWallService: true,
+    slug: 'gym',
+    isVisible: true,
+    showInOrderForm: true,
+    defaultUnit: 'M',
+    art: { seed: 3202, palette: 'ochre', composition: 'strokes' },
+    translations: {
+      'nl-BE': { name: 'Sportscholen', description: 'Energieke wanden voor sportscholen en studio’s.' },
+      en: { name: 'Gyms', description: 'Energetic walls for gyms and studios.' },
+      tr: { name: 'Spor salonu', description: 'Spor salonları ve stüdyolar için enerjik duvarlar.' },
+    },
+  },
+  {
+    slug: 'shops',
+    isVisible: true,
+    showInOrderForm: true,
+    defaultUnit: 'M',
+    art: { seed: 3303, palette: 'gold', composition: 'organic' },
+    translations: {
+      'nl-BE': { name: 'Winkels en bedrijven', description: 'Wanden die uw winkel of kantoor herkenbaar maken.' },
+      en: { name: 'Shops & businesses', description: 'Walls that make your shop or office recognisable.' },
+      tr: { name: 'Mağaza ve iş yeri', description: 'Mağazanızı ya da ofisinizi akılda kalıcı kılan duvarlar.' },
+    },
+  },
+  {
+    slug: 'home',
+    isVisible: true,
+    showInOrderForm: true,
+    defaultUnit: 'M',
+    art: { seed: 3404, palette: 'dusk', composition: 'hills' },
+    translations: {
+      'nl-BE': { name: 'Woning en kinderkamer', description: 'Een muurschildering voor de woonkamer, slaapkamer of kinderkamer.' },
+      en: { name: 'Home & kids’ rooms', description: 'A mural for the living room, bedroom or kids’ room.' },
+      tr: { name: 'Ev ve çocuk odası', description: 'Oturma odası, yatak odası ya da çocuk odası için bir duvar resmi.' },
+    },
+  },
+  {
+    slug: 'street-art',
+    isVisible: true,
+    showInOrderForm: true,
     defaultUnit: 'M',
     art: { seed: 1505, palette: 'gold', composition: 'strokes' },
     translations: {
-      'nl-BE': {
-        name: 'Rolluiken en vitrines beschilderen',
-        description: 'Een beschilderd rolluik of een geschilderde etalage maakt uw zaak zichtbaar, ook wanneer ze gesloten is.',
-      },
-      en: {
-        name: 'Shutter & shop window painting',
-        description: 'A painted roller shutter or shop window makes your business stand out, even when it is closed.',
-      },
-      tr: {
-        name: 'Kepenk ve vitrin boyama',
-        description: 'Boyanmış bir kepenk ya da vitrin, kapalıyken bile işletmenizi öne çıkarır.',
-      },
+      'nl-BE': { name: 'Street art en vitrines', description: 'Beschilderde rolluiken, gevels en etalages die opvallen, ook als de zaak gesloten is.' },
+      en: { name: 'Street art & shop windows', description: 'Painted shutters, façades and shop windows that stand out, even when the business is closed.' },
+      tr: { name: 'Sokak sanatı ve vitrin', description: 'İşletme kapalıyken bile göze çarpan boyanmış kepenkler, cepheler ve vitrinler.' },
     },
   },
   {
-    slug: 'canvas-painting',
-    isWallService: false,
+    slug: 'canvas-portrait',
+    isVisible: true,
+    showInOrderForm: true,
     defaultUnit: 'CM',
     art: { seed: 1101, palette: 'terracotta', composition: 'organic' },
     translations: {
-      'nl-BE': {
-        name: 'Doek en portret',
-        description:
-          'Een uniek werk op doek of een geschilderd portret van een persoon, gezin of huisdier, op basis van uw foto’s.',
-      },
-      en: {
-        name: 'Canvas & portrait',
-        description: 'A unique work on canvas or a painted portrait of a person, family or pet, based on your photos.',
-      },
-      tr: {
-        name: 'Tuval ve portre',
-        description:
-          'Tuval üzerine tek bir eser ya da fotoğraflarınızdan yola çıkarak bir kişinin, ailenin veya evcil hayvanınızın portresi.',
-      },
+      'nl-BE': { name: 'Doek en portret', description: 'Een uniek werk op doek of een geschilderd portret van een persoon, gezin of huisdier.' },
+      en: { name: 'Canvas & portrait', description: 'A unique work on canvas or a painted portrait of a person, family or pet.' },
+      tr: { name: 'Tuval ve portre', description: 'Tuval üzerine tek bir eser ya da bir kişinin, ailenin veya evcil hayvanınızın portresi.' },
     },
   },
   {
-    slug: 'custom-piece',
-    isWallService: false,
+    slug: 'custom',
+    isVisible: false,
+    showInOrderForm: true,
     defaultUnit: 'CM',
     art: { seed: 1606, palette: 'dusk', composition: 'orbits' },
     translations: {
-      'nl-BE': {
-        name: 'Werk op maat',
-        description: 'Een idee dat nergens anders bij past? Vertel het ons en we bekijken samen wat mogelijk is.',
-      },
-      en: {
-        name: 'Custom piece',
-        description: 'An idea that doesn’t fit anywhere else? Tell us about it and we’ll work out together what’s possible.',
-      },
-      tr: {
-        name: 'Kişiye özel eser',
-        description: 'Başka bir başlığa uymayan bir fikriniz mi var? Anlatın, neler yapılabileceğine birlikte bakalım.',
-      },
+      'nl-BE': { name: 'Werk op maat', description: 'Een idee dat nergens anders bij past? Vertel het ons en we bekijken samen wat mogelijk is.' },
+      en: { name: 'Custom piece', description: 'An idea that doesn’t fit anywhere else? Tell us about it and we’ll work out together what’s possible.' },
+      tr: { name: 'Kişiye özel eser', description: 'Başka bir başlığa uymayan bir fikriniz mi var? Anlatın, neler yapılabileceğine birlikte bakalım.' },
     },
   },
-];
-
-/**
- * Earlier seed texts of services that are still offered: the seed replaces a translation only
- * while it is still exactly this text, never the artist's own edits. (The former "Portrait" and
- * "Decorative wall painting" services were switched off by a migration and are left alone.)
- */
-export const SUPERSEDED_SERVICES: Record<string, PerLocale<{ name: string; description: string }>> = {
-  mural: {
-    'nl-BE': {
-      name: 'Muurschildering',
-      description: 'Een kunstwerk rechtstreeks op de muur, binnen of buiten: voor woningen, handelszaken, scholen en kantoren.',
-    },
-    en: {
-      name: 'Mural',
-      description: 'An artwork painted directly on the wall, indoors or outdoors: for homes, shops, schools and offices.',
-    },
-    tr: {
-      name: 'Duvar resmi (mural)',
-      description: 'Doğrudan duvara, iç ya da dış mekâna yapılan bir sanat eseri: evler, dükkânlar, okullar ve ofisler için.',
-    },
-  },
-  'canvas-painting': {
-    'nl-BE': {
-      name: 'Schilderij op maat',
-      description:
-        'Een uniek werk op doek, afgestemd op uw ruimte, kleuren en verhaal. Van klein formaat tot groot statement-stuk.',
-    },
-    en: {
-      name: 'Custom painting',
-      description:
-        'A unique work on canvas, tailored to your space, colours and story. From small formats to large statement pieces.',
-    },
-    tr: {
-      name: 'Size özel tablo',
-      description:
-        'Mekânınıza, renklerinize ve hikâyenize göre tuval üzerine tek bir eser. Küçük boyutlardan büyük, iddialı parçalara kadar.',
-    },
-  },
-};
-
-/* ---------------------------------------------------------------------------
- * Catalog categories (the same as the migration creates; the artist manages them)
- * ------------------------------------------------------------------------- */
-
-export const SEED_CATEGORIES: Array<{ slug: string; translations: PerLocale<string> }> = [
-  { slug: 'horeca', translations: { 'nl-BE': 'Horeca', en: 'Cafés & restaurants', tr: 'Horeca' } },
-  { slug: 'gym', translations: { 'nl-BE': 'Sportscholen', en: 'Gyms', tr: 'Spor salonu' } },
-  { slug: 'shops', translations: { 'nl-BE': 'Winkels en bedrijven', en: 'Shops & businesses', tr: 'Mağaza ve iş yeri' } },
-  { slug: 'home', translations: { 'nl-BE': 'Woning en kinderkamer', en: 'Home & kids’ rooms', tr: 'Ev ve çocuk odası' } },
-  { slug: 'street-art', translations: { 'nl-BE': 'Street art en vitrines', en: 'Street art & shop windows', tr: 'Sokak sanatı ve vitrin' } },
-  { slug: 'canvas-portrait', translations: { 'nl-BE': 'Doek en portret', en: 'Canvas & portrait', tr: 'Tuval ve portre' } },
 ];
 
 /* ---------------------------------------------------------------------------

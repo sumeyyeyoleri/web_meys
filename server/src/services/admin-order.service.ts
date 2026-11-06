@@ -1,3 +1,4 @@
+import { pickTranslation } from '../domain/localization';
 import { Prisma } from '@prisma/client';
 import { localeToDb, TERMINAL_STATUSES, type AdminOrderListQuery, type AdminOrderUpdateInput } from '@painter/shared';
 import { AppError, notFound, validationError } from '../domain/errors';
@@ -44,12 +45,18 @@ export function createAdminOrderService({
     async update(id: string, input: AdminOrderUpdateInput) {
       const order = await requireOrder(id);
       if (order.archivedAt) throw new AppError(409, 'CONFLICT', 'Archived orders cannot be edited');
-      if (input.serviceId && input.serviceId !== order.serviceId) {
-        if (!(await repos.content.findService(input.serviceId))) throw validationError({ serviceId: 'validation.invalidOption' });
+      // A new category also becomes the stored name (in the order's language); clearing the
+      // category keeps the stored name, so what the customer chose stays visible.
+      let serviceLabel = order.serviceLabel;
+      if (input.categoryId && input.categoryId !== order.categoryId) {
+        const category = await repos.content.findCategory(input.categoryId);
+        if (!category) throw validationError({ categoryId: 'validation.invalidOption' });
+        serviceLabel = pickTranslation(category.translations, input.communicationLocale)?.name ?? serviceLabel;
       }
       // Fields of older orders (budget, deadline, style …) are kept as they were submitted.
       await repos.adminOrders.update(id, {
-        serviceId: input.serviceId ?? null,
+        categoryId: input.categoryId ?? null,
+        serviceLabel,
         width: new Prisma.Decimal(input.width),
         height: new Prisma.Decimal(input.height),
         unit: input.unit,

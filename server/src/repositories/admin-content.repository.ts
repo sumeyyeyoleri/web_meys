@@ -4,12 +4,10 @@ import type { Db } from './db';
 type TranslationRow<T> = { locale: Locale } & T;
 
 const portfolioInclude = { translations: true, category: { select: { isVisible: true } } } as const;
-const serviceInclude = { translations: true, _count: { select: { orders: true } } } as const;
-const categoryInclude = { translations: true, _count: { select: { items: true } } } as const;
+const categoryInclude = { translations: true, _count: { select: { items: true, orders: true } } } as const;
 
 export type AdminCategoryWithCount = Prisma.CategoryGetPayload<{ include: typeof categoryInclude }>;
 
-export type AdminServiceWithCount = Prisma.ServiceGetPayload<{ include: typeof serviceInclude }>;
 export type PortfolioWithTranslations = Prisma.PortfolioItemGetPayload<{ include: typeof portfolioInclude }>;
 
 /** Rewrites sortOrder as 0..n-1 after moving `id` one place up or down. */
@@ -111,17 +109,17 @@ export function createAdminContentRepository(db: Db) {
       return (result._max.sortOrder ?? -1) + 1;
     },
 
-    createCategory(data: { slug: string; isVisible: boolean; sortOrder: number }, translations: TranslationRow<{ name: string }>[]) {
+    createCategory(data: Omit<Prisma.CategoryCreateInput, 'translations'>, translations: TranslationRow<{ name: string; description: string | null }>[]) {
       return db.category.create({ data: { ...data, translations: { create: translations } }, include: categoryInclude });
     },
 
-    async updateCategory(id: string, data: { isVisible: boolean }, translations: TranslationRow<{ name: string }>[]) {
+    async updateCategory(id: string, data: Prisma.CategoryUpdateInput, translations: TranslationRow<{ name: string; description: string | null }>[]) {
       await db.category.update({ where: { id }, data });
       for (const t of translations) {
         await db.categoryTranslation.upsert({
           where: { categoryId_locale: { categoryId: id, locale: t.locale } },
           create: { categoryId: id, ...t },
-          update: { name: t.name },
+          update: { name: t.name, description: t.description },
         });
       }
       return db.category.findUniqueOrThrow({ where: { id }, include: categoryInclude });
@@ -147,70 +145,15 @@ export function createAdminContentRepository(db: Db) {
       return true;
     },
 
-    /* ---------- Services ---------- */
-
-    listServices() {
-      return db.service.findMany({ include: serviceInclude, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
-    },
-
-    findService(id: string) {
-      return db.service.findUnique({ where: { id }, include: serviceInclude });
-    },
-
-    async nextServiceSortOrder(): Promise<number> {
-      const result = await db.service.aggregate({ _max: { sortOrder: true } });
-      return (result._max.sortOrder ?? -1) + 1;
-    },
-
-    createService(
-      data: Omit<Prisma.ServiceCreateInput, 'translations'>,
-      translations: TranslationRow<{ name: string; description: string | null }>[],
-    ) {
-      return db.service.create({ data: { ...data, translations: { create: translations } }, include: serviceInclude });
-    },
-
-    async updateService(
-      id: string,
-      data: Prisma.ServiceUpdateInput,
-      translations: TranslationRow<{ name: string; description: string | null }>[],
-    ) {
-      await db.service.update({ where: { id }, data });
-      for (const t of translations) {
-        await db.serviceTranslation.upsert({
-          where: { serviceId_locale: { serviceId: id, locale: t.locale } },
-          create: { serviceId: id, ...t },
-          update: { name: t.name, description: t.description },
-        });
-      }
-      return db.service.findUniqueOrThrow({ where: { id }, include: serviceInclude });
-    },
-
-    setServiceActive(id: string, isActive: boolean) {
-      return db.service.update({ where: { id }, data: { isActive }, include: serviceInclude });
-    },
-
-    deleteService(id: string) {
-      return db.service.delete({ where: { id } });
-    },
-
-    async moveService(id: string, direction: 'up' | 'down'): Promise<boolean> {
-      const rows = await db.service.findMany({ select: { id: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
-      const ids = reorderIds(rows.map((r) => r.id), id, direction);
-      if (!ids) return false;
-      for (const [sortOrder, serviceId] of ids.entries()) {
-        await db.service.update({ where: { id: serviceId }, data: { sortOrder } });
-      }
-      return true;
-    },
-
-    /** Number of portfolio items and services still pointing at an image URL. */
+    /** Number of works, category covers, (legacy) services and settings still pointing at an image URL. */
     async countImageReferences(imageUrl: string): Promise<number> {
-      const [portfolio, services, settings] = await Promise.all([
+      const counts = await Promise.all([
         db.portfolioItem.count({ where: { imageUrl } }),
+        db.category.count({ where: { coverImageUrl: imageUrl } }),
         db.service.count({ where: { imageUrl } }),
         db.siteSettings.count({ where: { OR: [{ logoUrl: imageUrl }, { welcomeImageUrl: imageUrl }] } }),
       ]);
-      return portfolio + services + settings;
+      return counts.reduce((sum, n) => sum + n, 0);
     },
 
     /* ---------- Text blocks & settings ---------- */

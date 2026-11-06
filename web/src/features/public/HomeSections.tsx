@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { ButtonLink, buttonClasses } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { ArtworkImage } from './ArtworkImage';
-import { useServices, useSite } from './hooks';
+import { requestHref } from './catalog-url';
+import { useCategories, useSite } from './hooks';
 import { SectionHeading } from './SectionHeading';
 
 export function HowItWorks() {
@@ -45,8 +46,9 @@ export function AboutSection() {
 
 export function ServicesPreview() {
   const { t } = useTranslation('public');
-  const { data: services } = useServices();
-  if (!services?.length) return null;
+  const { data } = useCategories();
+  const services = data?.filter((c) => c.showOnSite) ?? [];
+  if (!services.length) return null;
   return (
     <section aria-labelledby="services-preview-title" className="container-content section flex flex-col gap-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -60,11 +62,11 @@ export function ServicesPreview() {
         {services.map((service) => (
           <li key={service.id}>
             <Link
-              to={`/order?service=${service.id}`}
+              to={service.showInOrderForm ? requestHref(service.slug) : '/services'}
               className="group flex h-full flex-col gap-4 rounded-[var(--radius-card)] border border-border bg-surface p-3 transition-colors duration-300 hover:border-border-strong"
             >
-              {service.imageUrl ? (
-                <ArtworkImage src={service.imageUrl} alt="" className="aspect-[4/3] w-full" />
+              {service.coverImageUrl ? (
+                <ArtworkImage src={service.coverImageUrl} alt="" className="aspect-[4/3] w-full" />
               ) : null}
               <span className="flex flex-col gap-1 px-2 pb-2">
                 <span className="font-display text-2xl">{service.name}</span>

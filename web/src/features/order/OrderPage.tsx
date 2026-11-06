@@ -18,11 +18,10 @@ import { isApiError } from '../../lib/api';
 import { useLocale, useValidationMessage, VALIDATION_PARAMS } from '../../lib/i18n';
 import { usePageTitle } from '../../lib/use-page-title';
 import { ArtworkImage } from '../public/ArtworkImage';
-import { usePortfolioItem, useServices } from '../public/hooks';
+import { useCategories, usePortfolioItem } from '../public/hooks';
 import { InspirationBanner } from './InspirationBanner';
 import { initialValues, newIdempotencyKey, splitServerErrors, type OrderFile, type OrderFormValues } from './order-form';
 import { PhotoPicker } from './PhotoPicker';
-import { matchServiceForCategory } from './service-match';
 import { useLeaveGuard } from './useLeaveGuard';
 import { useSubmitOrder, type ConfirmationState } from './useSubmitOrder';
 
@@ -41,7 +40,9 @@ export function OrderPage() {
   const translate = useValidationMessage();
   const locale = useLocale();
   const [params] = useSearchParams();
-  const services = useServices();
+  const categoriesQuery = useCategories();
+  // The choices of the order form (it replaced services).
+  const categories = categoriesQuery.data?.filter((c) => c.showInOrderForm);
   const submit = useSubmitOrder();
   const [idempotencyKey] = useState(newIdempotencyKey);
   const [defaultCountry] = useState(() => t('form.defaultCountry'));
@@ -64,38 +65,39 @@ export function OrderPage() {
   const inspirationQuery = usePortfolioItem(inspirationId);
   const inspiration = inspirationQuery.data?.allowSimilarRequest ? inspirationQuery.data : null;
   const inspirationUnavailable = !!fromId && (inspirationQuery.isError || inspirationQuery.data?.allowSimilarRequest === false);
-  const [matchedServiceId, setMatchedServiceId] = useState<string | null>(null);
+  const [matchedCategoryId, setMatchedCategoryId] = useState<string | null>(null);
 
-  // Preselect a service once: `?service=<id>`, else the one matching the catalog example.
+  // Preselect a category once: `?category=<slug>`, else the catalog example's own category
+  // (when it is in the order form).
   const preselected = useRef(false);
   useEffect(() => {
-    if (preselected.current || !services.data || (inspirationId && inspirationQuery.isPending)) return;
+    if (preselected.current || !categories || (inspirationId && inspirationQuery.isPending)) return;
     preselected.current = true;
-    const requested = services.data.find((s) => s.id === params.get('service'))?.id;
-    const matched = inspiration ? matchServiceForCategory(services.data, inspiration.category)?.id : undefined;
-    const serviceId = requested ?? matched;
-    if (serviceId) form.setValue('serviceId', serviceId);
-    if (!requested && matched) setMatchedServiceId(matched);
-  }, [services.data, inspiration, inspirationId, inspirationQuery.isPending, params, form]);
+    const requested = categories.find((c) => c.slug === params.get('category'))?.id;
+    const matched = inspiration?.category ? categories.find((c) => c.id === inspiration.category?.id)?.id : undefined;
+    const categoryId = requested ?? matched;
+    if (categoryId) form.setValue('categoryId', categoryId);
+    if (!requested && matched) setMatchedCategoryId(matched);
+  }, [categories, inspiration, inspirationId, inspirationQuery.isPending, params, form]);
 
   // Object URLs are released when files are removed (below) and when the page closes.
   const filesRef = useRef(files);
   filesRef.current = files;
   useEffect(() => () => filesRef.current.forEach((f) => URL.revokeObjectURL(f.previewUrl)), []);
 
-  const selectedServiceId = form.watch('serviceId');
+  const selectedCategoryId = form.watch('categoryId');
 
-  // The unit follows the chosen service (m for walls, shutters and windows, cm for canvas)
+  // The unit follows the chosen category (m for walls, shutters and windows, cm for canvas)
   // until the customer picks a unit themselves.
   const unitChosen = useRef(false);
   useEffect(() => {
-    const unit = services.data?.find((s) => s.id === selectedServiceId)?.defaultUnit;
+    const unit = categories?.find((c) => c.id === selectedCategoryId)?.defaultUnit;
     if (unit && !unitChosen.current) form.setValue('unit', unit);
-  }, [selectedServiceId, services.data, form]);
+  }, [selectedCategoryId, categories, form]);
 
   function removeInspiration() {
     setInspirationId(null);
-    setMatchedServiceId(null);
+    setMatchedCategoryId(null);
   }
 
   const onSubmit = form.handleSubmit((values) => {
@@ -173,17 +175,17 @@ export function OrderPage() {
 
         {inspirationUnavailable ? <FormAlert tone="info">{t('inspiration.unavailable')}</FormAlert> : null}
         {inspiration ? (
-          <InspirationBanner item={inspiration} serviceMatched={!!matchedServiceId && selectedServiceId === matchedServiceId} onRemove={removeInspiration} />
+          <InspirationBanner item={inspiration} categoryMatched={!!matchedCategoryId && selectedCategoryId === matchedCategoryId} onRemove={removeInspiration} />
         ) : null}
 
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-10" aria-busy={submit.isPending || undefined}>
-          {/* 1. Service (optional) */}
+          {/* 1. Category (optional) */}
           <fieldset className="flex flex-col gap-3">
             <legend className={`${sectionTitle} mb-3`}>
-              {t('form.service')} <span className="font-normal text-text-subtle">({tc('labels.optional')})</span>
+              {t('form.category')} <span className="font-normal text-text-subtle">({tc('labels.optional')})</span>
             </legend>
-            {services.isError ? <p className="text-text-muted">{t('form.servicesError')}</p> : null}
-            {services.isPending ? (
+            {categoriesQuery.isError ? <p className="text-text-muted">{t('form.categoriesError')}</p> : null}
+            {categoriesQuery.isPending ? (
               <div className="grid gap-3 sm:grid-cols-3">
                 {[0, 1, 2].map((i) => (
                   <Skeleton key={i} className="h-20 rounded-[var(--radius-card)]" />
@@ -191,22 +193,22 @@ export function OrderPage() {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-3">
-                {services.data?.map((service) => (
+                {categories?.map((category) => (
                   <ChoiceCard
-                    key={service.id}
-                    id={`service-${service.id}`}
-                    value={service.id}
-                    {...r('serviceId')}
-                    title={service.name}
+                    key={category.id}
+                    id={`category-${category.id}`}
+                    value={category.id}
+                    {...r('categoryId')}
+                    title={category.name}
                     className="p-3"
-                    media={service.imageUrl ? <ArtworkImage src={service.imageUrl} alt="" className="hidden size-10 shrink-0 sm:block" /> : undefined}
+                    media={category.coverImageUrl ? <ArtworkImage src={category.coverImageUrl} alt="" className="hidden size-10 shrink-0 sm:block" /> : undefined}
                   />
                 ))}
               </div>
             )}
-            {selectedServiceId ? (
-              <Button variant="ghost" size="sm" className="self-start" onClick={() => form.setValue('serviceId', '', { shouldDirty: true })}>
-                {t('form.clearService')}
+            {selectedCategoryId ? (
+              <Button variant="ghost" size="sm" className="self-start" onClick={() => form.setValue('categoryId', '', { shouldDirty: true })}>
+                {t('form.clearCategory')}
               </Button>
             ) : null}
           </fieldset>

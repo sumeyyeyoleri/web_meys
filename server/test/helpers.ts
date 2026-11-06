@@ -72,7 +72,8 @@ export interface TestContext {
   prisma: PrismaClient;
   mailer: FakeMailer;
   translator: FakeTranslator;
-  ids: { adminId: string; serviceId: string; wallServiceId: string };
+  /** Two order-form categories: canvas (cm) and mural (m), named "Canvas NL/EN/TR", "Mural …". */
+  ids: { adminId: string; categoryId: string; wallCategoryId: string };
 }
 
 let sharedPrisma: PrismaClient | null = null;
@@ -128,11 +129,11 @@ export async function setupTest(
       { locale: 'TR' as const, name: `${name} TR` },
     ],
   });
-  const service = await prisma.service.create({
-    data: { slug: 'canvas', isActive: true, sortOrder: 0, translations: translations('Canvas') },
+  const category = await prisma.category.create({
+    data: { slug: 'canvas', defaultUnit: 'CM', sortOrder: 0, translations: translations('Canvas') },
   });
-  const wallService = await prisma.service.create({
-    data: { slug: 'mural', isActive: true, isWallService: true, sortOrder: 1, translations: translations('Mural') },
+  const wallCategory = await prisma.category.create({
+    data: { slug: 'mural', defaultUnit: 'M', sortOrder: 1, translations: translations('Mural') },
   });
 
   const mailer = options.mailer ?? new FakeMailer(true);
@@ -148,8 +149,8 @@ export async function setupTest(
     translator,
     ids: {
       adminId: admin.id,
-      serviceId: service.id,
-      wallServiceId: wallService.id,
+      categoryId: category.id,
+      wallCategoryId: wallCategory.id,
     },
   };
 }

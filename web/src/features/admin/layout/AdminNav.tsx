@@ -21,7 +21,6 @@ const ITEMS: NavItem[] = [
   { to: '/admin/orders', labelKey: 'nav.orders', icon: 'inbox', unread: true },
   { to: '/admin/catalog', labelKey: 'nav.catalog', icon: 'image' },
   { to: '/admin/categories', labelKey: 'nav.categories', icon: 'tag' },
-  { to: '/admin/services', labelKey: 'nav.services', icon: 'brush' },
   { to: '/admin/texts', labelKey: 'nav.texts', icon: 'text' },
   { to: '/admin/settings', labelKey: 'nav.settings', icon: 'settings' },
 ];

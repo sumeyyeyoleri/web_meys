@@ -20,7 +20,7 @@ function orderResult(data: Record<string, unknown>): OrderDetailDto {
     reference: 'ORD-2026-7K3QXM',
     title: 'Maanlichtheuvels',
     status: 'SUBMITTED',
-    serviceName: 'Muurschildering',
+    categoryName: 'Woning en kinderkamer',
     quoteAmount: null,
     unreadMessages: 0,
     createdAt: '2026-11-04T10:00:00.000Z',
@@ -56,7 +56,7 @@ describe('order form', () => {
     mockApi();
     renderApp('/order');
     await screen.findByRole('heading', { level: 1, name: 'Uw bestelling' });
-    expect(await screen.findByRole('radio', { name: /Schilderij op maat/ })).toBeTruthy();
+    expect(await screen.findByRole('radio', { name: /Doek en portret/ })).toBeTruthy();
     expect(screen.getByText(/Bijvoorbeeld: 30 × 40 cm/)).toBeTruthy();
     expect(field('Land').value).toBe('België');
     expect(field(/E-mailadres/)).toBeTruthy();
@@ -97,34 +97,34 @@ describe('order form', () => {
     });
     renderApp(`/order?from=${uid('a2')}`);
     expect(await screen.findByText(/U vertrekt van het werk ‘Maanlichtheuvels’/)).toBeTruthy();
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Muurschildering/ }) as HTMLInputElement).checked).toBe(true));
+    await waitFor(() => expect((screen.getByRole('radio', { name: /Woning en kinderkamer/ }) as HTMLInputElement).checked).toBe(true));
 
     await fillRequiredFields();
     await user.click(screen.getByRole('checkbox', { name: /privacyverklaring/ }));
     await user.click(submitButton());
     await screen.findByRole('heading', { name: 'Bedankt voor uw bestelling' });
-    expect(sent).toMatchObject({ inspirationItemId: uid('a2'), serviceId: uid('s2') });
+    expect(sent).toMatchObject({ inspirationItemId: uid('a2'), categoryId: uid('c2') });
   });
 
-  it('switches the unit to the chosen service (m for walls, cm for canvas) until the customer picks one', async () => {
+  it('switches the unit to the chosen category (m for walls, cm for canvas) until the customer picks one', async () => {
     mockApi();
     renderApp('/order');
     const unit = () => field('Eenheid').value;
-    await user.click(await screen.findByRole('radio', { name: /Muurschildering/ }));
+    await user.click(await screen.findByRole('radio', { name: /Woning en kinderkamer/ }));
     expect(unit()).toBe('M');
-    await user.click(screen.getByRole('radio', { name: /Schilderij op maat/ }));
+    await user.click(screen.getByRole('radio', { name: /Doek en portret/ }));
     expect(unit()).toBe('CM');
     // Once the customer chose a unit, changing the service leaves it alone.
     await user.selectOptions(field('Eenheid'), 'M');
-    await user.click(screen.getByRole('radio', { name: /Muurschildering/ }));
-    await user.click(screen.getByRole('radio', { name: /Schilderij op maat/ }));
+    await user.click(screen.getByRole('radio', { name: /Woning en kinderkamer/ }));
+    await user.click(screen.getByRole('radio', { name: /Doek en portret/ }));
     expect(unit()).toBe('M');
   });
 
-  it('uses the unit of the service matched to a catalog work', async () => {
+  it("selects the catalog work's own category and uses its unit", async () => {
     mockApi();
     renderApp(`/order?from=${uid('a2')}`);
-    await waitFor(() => expect((screen.getByRole('radio', { name: /Muurschildering/ }) as HTMLInputElement).checked).toBe(true));
+    await waitFor(() => expect((screen.getByRole('radio', { name: /Woning en kinderkamer/ }) as HTMLInputElement).checked).toBe(true));
     expect(field('Eenheid').value).toBe('M');
   });
 
@@ -156,7 +156,7 @@ describe('order form', () => {
         },
       },
     });
-    const { router } = renderApp(`/order?service=${uid('s1')}`);
+    const { router } = renderApp('/order?category=canvas-portrait');
     await screen.findByRole('heading', { level: 1, name: 'Uw bestelling' });
     await fillRequiredFields();
     await user.type(field(/E-mailadres/), 'lotte@example.be');
@@ -176,7 +176,7 @@ describe('order form', () => {
     expect(posts).toBe(1);
     const data = JSON.parse(String(sent!.get('data'))) as Record<string, unknown>;
     expect(data).toMatchObject({
-      serviceId: uid('s1'),
+      categoryId: uid('c1'),
       width: 30,
       height: 40,
       unit: 'CM',

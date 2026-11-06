@@ -43,13 +43,6 @@ export function createAdminRouter(services: Services, translationLimiter: Reques
   router.post('/categories/:id/visible', content.setCategoryVisible);
   router.delete('/categories/:id', content.deleteCategory);
 
-  router.get('/services', content.listServices);
-  router.post('/services', content.createService);
-  router.post('/services/reorder', content.reorderServices);
-  router.put('/services/:id', content.updateService);
-  router.post('/services/:id/active', content.setServiceActive);
-  router.delete('/services/:id', content.deleteService);
-
   router.get('/content', content.listContent);
   router.put('/content', content.updateContent);
 

@@ -4,6 +4,7 @@ import type { Db } from './db';
 
 const portfolioInclude = { translations: true, category: { include: { translations: true } } } as const;
 export type PublicPortfolioItem = Prisma.PortfolioItemGetPayload<{ include: typeof portfolioInclude }>;
+export type SiteCategory = Awaited<ReturnType<ContentRepository['listSiteCategories']>>[number];
 
 export function createContentRepository(db: Db) {
   return {
@@ -15,16 +16,8 @@ export function createContentRepository(db: Db) {
       return db.localizedContent.findMany({ where: { locale: { in: locales } } });
     },
 
-    findService(id: string) {
-      return db.service.findUnique({ where: { id }, include: { translations: true } });
-    },
-
-    listActiveServices() {
-      return db.service.findMany({
-        where: { isActive: true },
-        include: { translations: true },
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
-      });
+    findCategory(id: string) {
+      return db.category.findUnique({ where: { id }, include: { translations: true } });
     },
 
     findPortfolioItem(id: string) {
@@ -44,11 +37,11 @@ export function createContentRepository(db: Db) {
       });
     },
 
-    /** Visible categories that have at least one published work (the catalog filters). */
-    listCategoriesWithWorks() {
+    /** Categories shown on the site or in the order form, with their number of published works. */
+    listSiteCategories() {
       return db.category.findMany({
-        where: { isVisible: true, items: { some: { isPublished: true } } },
-        include: { translations: true },
+        where: { OR: [{ isVisible: true }, { showInOrderForm: true }] },
+        include: { translations: true, _count: { select: { items: { where: { isPublished: true } } } } },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       });
     },

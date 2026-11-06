@@ -2,8 +2,8 @@
  * Idempotent seed: running it again never duplicates rows and never overwrites
  * content that an administrator has edited since (rows are only created when missing).
  *
- * Creates: the admin (from env), three demo orders (customers have no account), 4 services,
- * 6 catalog categories, 12 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
+ * Creates: the admin (from env), three demo orders (customers have no account), the 7 starting
+ * categories (catalog, services page and order form), 12 sample portfolio items with generated SVG artwork, all text blocks in 3 languages
  * and the default site settings.
  */
 import 'dotenv/config';
@@ -26,10 +26,8 @@ import {
   SEED_CATEGORIES,
   SEED_CONTENT,
   SEED_PORTFOLIO,
-  SEED_SERVICES,
   SEED_SETTINGS,
   SUPERSEDED_CONTENT,
-  SUPERSEDED_SERVICES,
   SUPERSEDED_SETTINGS,
 } from './seed-data/content';
 
@@ -69,53 +67,53 @@ async function seedAdmin() {
   });
 }
 
-async function seedServices() {
-  const services = new Map<string, string>();
-  for (const [index, item] of SEED_SERVICES.entries()) {
-    const imageUrl = await writePublicMedia(
-      `services/${item.slug}.svg`,
+/**
+ * Creates the starting categories only on an empty table, so categories the artist deleted stay
+ * deleted. Existing starting categories get a description, cover image and unit only where those
+ * are still empty — never over the artist's own.
+ */
+async function seedCategories() {
+  const empty = (await prisma.category.count()) === 0;
+  for (const [sortOrder, item] of SEED_CATEGORIES.entries()) {
+    const coverImageUrl = await writePublicMedia(
+      `categories/${item.slug}.svg`,
       generateArtwork({ ...item.art, title: item.translations.en.name }),
     );
-    const service = await prisma.service.upsert({
-      where: { slug: item.slug },
-      update: {},
-      create: { slug: item.slug, isWallService: item.isWallService, defaultUnit: item.defaultUnit, imageUrl, sortOrder: index },
+    if (empty) {
+      await prisma.category.create({
+        data: {
+          slug: item.slug,
+          sortOrder,
+          isVisible: item.isVisible,
+          showInOrderForm: item.showInOrderForm,
+          defaultUnit: item.defaultUnit,
+          coverImageUrl,
+          translations: {
+            create: LOCALES.map((locale) => ({ locale: localeToDb(locale), ...item.translations[locale] })),
+          },
+        },
+      });
+      continue;
+    }
+    const existing = await prisma.category.findUnique({ where: { slug: item.slug } });
+    if (!existing) continue;
+    await prisma.category.update({
+      where: { id: existing.id },
+      data: { coverImageUrl: existing.coverImageUrl ?? coverImageUrl, defaultUnit: existing.defaultUnit ?? item.defaultUnit },
     });
     for (const locale of LOCALES) {
-      const t = item.translations[locale];
-      const where = { serviceId_locale: { serviceId: service.id, locale: localeToDb(locale) } };
-      await prisma.serviceTranslation.upsert({
-        where,
-        update: {},
-        create: { serviceId: service.id, locale: localeToDb(locale), name: t.name, description: t.description },
+      await prisma.categoryTranslation.updateMany({
+        where: { categoryId: existing.id, locale: localeToDb(locale), description: null },
+        data: { description: item.translations[locale].description },
       });
-      // An unchanged earlier default gets the current text (e.g. "Mural" → "Mural (indoor & outdoor)").
-      const old = SUPERSEDED_SERVICES[item.slug]?.[locale];
-      if (old) {
-        await prisma.serviceTranslation.updateMany({
-          where: { serviceId: service.id, locale: localeToDb(locale), name: old.name, description: old.description },
-          data: { name: t.name, description: t.description },
-        });
-      }
     }
   }
-  // Every service by slug, including ones no longer in the seed list (used by the demo orders).
-  const rows = await prisma.service.findMany({ select: { id: true, slug: true } });
-  return new Map(rows.map((row) => [row.slug, row.id]));
 }
 
-/** Creates the starting categories only on an empty table, so categories the artist deleted stay deleted. */
-async function seedCategories() {
-  if ((await prisma.category.count()) > 0) return;
-  for (const [sortOrder, category] of SEED_CATEGORIES.entries()) {
-    await prisma.category.create({
-      data: {
-        slug: category.slug,
-        sortOrder,
-        translations: { create: LOCALES.map((locale) => ({ locale: localeToDb(locale), name: category.translations[locale] })) },
-      },
-    });
-  }
+/** Categories by slug (for the demo orders). */
+async function categoryIds() {
+  const rows = await prisma.category.findMany({ select: { id: true, slug: true } });
+  return new Map(rows.map((row) => [row.slug, row.id]));
 }
 
 async function seedPortfolio() {
@@ -210,11 +208,10 @@ const daysAgo = (days: number, hour = 10) => {
   return date;
 };
 
-async function seedDemoOrders(adminId: string, services: Map<string, string>) {
-  const muralId = services.get('mural');
-  // The former portrait service on databases that still have it (switched off), else canvas & portrait.
-  const portraitId = services.get('portrait') ?? services.get('canvas-painting');
-  if (!muralId || !portraitId) throw new Error('Demo services are missing.');
+async function seedDemoOrders(adminId: string, categories: Map<string, string>) {
+  const muralId = categories.get('home');
+  const portraitId = categories.get('canvas-portrait');
+  if (!muralId || !portraitId) throw new Error('Demo categories are missing.');
 
   const contact = {
     contactName: 'Demo Klant',
@@ -232,7 +229,8 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
           reference: quoteRef,
           idempotencyKey: '7b0d9c4e-1f2a-4e3b-8c5d-6a7b8c9d0e1f',
           status: 'QUOTE_SENT',
-          serviceId: muralId,
+          categoryId: muralId,
+          serviceLabel: 'Woning en kinderkamer',
           width: new Prisma.Decimal(4.5),
           height: new Prisma.Decimal(2.6),
           unit: 'M',
@@ -343,7 +341,8 @@ async function seedDemoOrders(adminId: string, services: Map<string, string>) {
           reference: submittedRef,
           idempotencyKey: '2c4e6a8b-0d1f-4a3c-9e5b-7d9f1b3d5f7a',
           status: 'SUBMITTED',
-          serviceId: portraitId,
+          categoryId: portraitId,
+          serviceLabel: 'Doek en portret',
           width: new Prisma.Decimal(50),
           height: new Prisma.Decimal(70),
           unit: 'CM',
@@ -383,7 +382,7 @@ const DEMO_GUEST_PHONE = '+32 486 55 66 77';
  * An order with a private tracking link. The link is printed once when the
  * order is created — like the confirmation page, the token itself is never stored.
  */
-async function seedGuestOrder(adminId: string, services: Map<string, string>) {
+async function seedGuestOrder(adminId: string, categories: Map<string, string>) {
   const reference = 'ORD-2026-GST4KQ';
   const existing = await prisma.order.findUnique({ where: { reference } });
   if (existing) {
@@ -398,7 +397,8 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
         reference,
         idempotencyKey: '5e7a9c1b-3d5f-4b7d-9f1a-3c5e7a9c1b3d',
         status: 'SUBMITTED',
-        serviceId: services.get('canvas-painting') ?? null,
+        categoryId: categories.get('canvas-portrait') ?? null,
+        serviceLabel: 'Doek en portret',
         width: new Prisma.Decimal(30),
         height: new Prisma.Decimal(40),
         unit: 'CM',
@@ -434,22 +434,22 @@ async function seedGuestOrder(adminId: string, services: Map<string, string>) {
 
 async function main() {
   const admin = await seedAdmin();
-  const services = await seedServices();
   await seedCategories();
   await seedPortfolio();
   await seedContentAndSettings();
-  await seedDemoOrders(admin.id, services);
-  await seedGuestOrder(admin.id, services);
+  const categories = await categoryIds();
+  await seedDemoOrders(admin.id, categories);
+  await seedGuestOrder(admin.id, categories);
 
   const counts = await Promise.all([
     prisma.user.count(),
-    prisma.service.count(),
+    prisma.category.count(),
     prisma.portfolioItem.count(),
     prisma.localizedContent.count(),
     prisma.order.count(),
   ]);
   console.log(
-    `Seed complete: ${counts[0]} users, ${counts[1]} services, ${counts[2]} portfolio items, ${counts[3]} text blocks, ${counts[4]} orders.`,
+    `Seed complete: ${counts[0]} users, ${counts[1]} categories, ${counts[2]} portfolio items, ${counts[3]} text blocks, ${counts[4]} orders.`,
   );
 }
 

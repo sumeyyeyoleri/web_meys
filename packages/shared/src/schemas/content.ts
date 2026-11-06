@@ -52,8 +52,14 @@ export type PortfolioItemInput = z.infer<typeof portfolioItemSchema>;
 /* ---------- Catalog categories ---------- */
 
 export const categorySchema = z.object({
-  translations: perLocale(z.object({ name: requiredString(60) })),
+  translations: perLocale(z.object({ name: requiredString(60), description: optionalString(600) })),
+  /** "Show on the site" (catalog filter, services page); off also hides its works. */
   isVisible: z.boolean().default(true),
+  showInOrderForm: z.boolean().default(true),
+  coverImageUrl: optionalImageUrlSchema,
+  defaultUnit: z
+    .preprocess(emptyToUndefined, z.enum(DIMENSION_UNITS, { error: 'validation.invalidOption' }).optional())
+    .transform((value) => value ?? null),
 });
 export type CategoryInput = z.infer<typeof categorySchema>;
 
@@ -62,24 +68,6 @@ export const deleteCategorySchema = z.object({
   moveTo: z.preprocess(emptyToUndefined, uuidSchema.optional()),
 });
 export type DeleteCategoryInput = z.infer<typeof deleteCategorySchema>;
-
-/* ---------- Services ---------- */
-
-export const serviceTranslationSchema = z.object({
-  name: requiredString(120),
-  description: optionalString(2000),
-});
-
-export const serviceSchema = z.object({
-  imageUrl: optionalImageUrlSchema,
-  isActive: z.boolean(),
-  isWallService: z.boolean(),
-  defaultUnit: z
-    .preprocess(emptyToUndefined, z.enum(DIMENSION_UNITS, { error: 'validation.invalidOption' }).optional())
-    .transform((value) => value ?? null),
-  translations: perLocale(serviceTranslationSchema),
-});
-export type ServiceInput = z.infer<typeof serviceSchema>;
 
 /* ---------- Ordering (accessible move up / move down) ---------- */
 

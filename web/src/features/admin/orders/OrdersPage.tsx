@@ -171,7 +171,7 @@ export function OrdersPage() {
                     </td>
                     <td className="max-w-xs px-4 py-3">
                       <div className="truncate">{order.title}</div>
-                      {order.serviceName ? <div className="text-sm text-text-subtle">{order.serviceName}</div> : null}
+                      {order.categoryName ? <div className="text-sm text-text-subtle">{order.categoryName}</div> : null}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={order.status} />

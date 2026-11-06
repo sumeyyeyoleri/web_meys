@@ -7,13 +7,12 @@ import {
   type AdminOrderDetailDto,
   type AdminOrderSummaryDto,
   type AdminPortfolioItemDto,
-  type AdminServiceDto,
   type AdminSettingsDto,
   type InternalNoteDto,
   type Locale,
   type Translations,
 } from '@painter/shared';
-import type { AdminCategoryWithCount, AdminServiceWithCount, PortfolioWithTranslations } from '../../repositories/admin-content.repository';
+import type { AdminCategoryWithCount, PortfolioWithTranslations } from '../../repositories/admin-content.repository';
 import type { AdminOrderWithSummary, InternalNoteWithAuthor } from '../../repositories/admin-order.repository';
 import type { OrderWithDetail } from '../../repositories/order.repository';
 import { toIso, toIsoOrNull, toNumberOrNull } from './common';
@@ -75,22 +74,13 @@ export function toAdminCategoryDto(category: AdminCategoryWithCount): AdminCateg
     id: category.id,
     slug: category.slug,
     isVisible: category.isVisible,
+    showInOrderForm: category.showInOrderForm,
+    coverImageUrl: category.coverImageUrl,
+    defaultUnit: category.defaultUnit,
     sortOrder: category.sortOrder,
     itemCount: category._count.items,
-    translations: byLocale(category.translations, (t) => ({ name: t?.name ?? '' })),
-  };
-}
-
-export function toAdminServiceDto(service: AdminServiceWithCount): AdminServiceDto {
-  return {
-    id: service.id,
-    imageUrl: service.imageUrl,
-    isActive: service.isActive,
-    isWallService: service.isWallService,
-    defaultUnit: service.defaultUnit,
-    sortOrder: service.sortOrder,
-    orderCount: service._count.orders,
-    translations: byLocale(service.translations, (t) => ({ name: t?.name ?? '', description: t?.description ?? null })),
+    orderCount: category._count.orders,
+    translations: byLocale(category.translations, (t) => ({ name: t?.name ?? '', description: t?.description ?? null })),
   };
 }
 

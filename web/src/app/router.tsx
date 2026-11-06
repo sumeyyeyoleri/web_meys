@@ -29,7 +29,6 @@ export const routes: RouteObject[] = [
           { path: 'orders/:id', lazy: async () => ({ Component: (await import('../features/admin/orders/OrderDetailPage')).OrderDetailPage }) },
           { path: 'catalog', lazy: async () => ({ Component: (await import('../features/admin/content/CatalogAdminPage')).CatalogAdminPage }) },
           { path: 'categories', lazy: async () => ({ Component: (await import('../features/admin/content/CategoriesPage')).CategoriesPage }) },
-          { path: 'services', lazy: async () => ({ Component: (await import('../features/admin/content/ServicesPage')).ServicesPage }) },
           { path: 'texts', lazy: async () => ({ Component: (await import('../features/admin/content/TextsPage')).TextsPage }) },
           { path: 'settings', lazy: async () => ({ Component: (await import('../features/admin/content/SettingsPage')).SettingsPage }) },
           { path: 'account', lazy: async () => ({ Component: (await import('../features/admin/AccountPage')).AccountPage }) },

@@ -16,16 +16,16 @@
     "leave": "Leave"
   },
   "inspiration": {
-    "banner": "You're starting from the work ‘{{title}}’. It's attached as a reference and the matching service is selected.",
-    "bannerNoService": "You're starting from the work ‘{{title}}’. It's attached as a reference.",
+    "banner": "You're starting from the work ‘{{title}}’. It's attached as a reference and its category is selected.",
+    "bannerNoCategory": "You're starting from the work ‘{{title}}’. It's attached as a reference.",
     "remove": "Remove",
     "inspiredBy": "Inspired by: {{title}}",
     "unavailable": "This work is not (or no longer) available as an example. You can simply continue without it."
   },
   "form": {
-    "service": "Service",
-    "servicesError": "The services could not be loaded. You can describe your wish below.",
-    "clearService": "Clear choice",
+    "category": "Category",
+    "categoriesError": "The categories could not be loaded. You can describe your wish below.",
+    "clearCategory": "Clear choice",
     "size": "Size",
     "width": "Width",
     "height": "Height",

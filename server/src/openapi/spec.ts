@@ -23,7 +23,6 @@ import {
   portfolioItemSchema,
   reorderSchema,
   resetPasswordSchema,
-  serviceSchema,
   siteSettingsSchema,
   toggleSchema,
   ERROR_CODES,
@@ -146,13 +145,25 @@ const schemas: Record<string, Json> = {
       { type: 'object', properties: { emailNotificationsEnabled: bool, smtpConfigured: bool } },
     ],
   },
-  Service: {
-    type: 'object',
-    properties: { id: str, slug: str, name: str, description: nstr, imageUrl: nstr, isWallService: bool, defaultUnit: unit },
-  },
-  Category: {
+  CategoryRef: {
     type: 'object',
     properties: { id: str, slug: { type: 'string', description: 'URL value for the catalog filter' }, name: str },
+  },
+  Category: {
+    allOf: [
+      ref('CategoryRef'),
+      {
+        type: 'object',
+        properties: {
+          description: nstr,
+          coverImageUrl: nstr,
+          defaultUnit: unit,
+          showOnSite: { type: 'boolean', description: 'Catalog filter and services page' },
+          showInOrderForm: bool,
+          hasWorks: { type: 'boolean', description: 'Has works on the site (then it is a catalog filter)' },
+        },
+      },
+    ],
   },
   PortfolioItem: {
     type: 'object',
@@ -160,7 +171,7 @@ const schemas: Record<string, Json> = {
       id: str,
       title: str,
       description: nstr,
-      category: { oneOf: [ref('Category'), { type: 'null' }], description: 'null = uncategorised' },
+      category: { oneOf: [ref('CategoryRef'), { type: 'null' }], description: 'null = uncategorised' },
       imageUrl: str,
       width: nnum,
       height: nnum,
@@ -183,7 +194,7 @@ const schemas: Record<string, Json> = {
       reference: { type: 'string', example: 'ORD-2026-7K3QXM' },
       title: str,
       status,
-      serviceName: nstr,
+      categoryName: { type: ['string', 'null'], description: "The category in the viewer's language, else the former service name" },
       quoteAmount: nnum,
       unreadMessages: { type: 'integer' },
       createdAt: dateTime,
@@ -197,6 +208,8 @@ const schemas: Record<string, Json> = {
         type: 'object',
         description: 'All submitted data, attachments, status history and allowed transitions for the viewer.',
         properties: {
+          categoryId: { type: ['string', 'null'] },
+          previousServiceName: { type: ['string', 'null'], description: 'The chosen service/category name when the order has no category or it differs from the category' },
           inspiration: ref('Inspiration'),
           additionalSpecs: { ...nstr, description: 'Older orders only: requested changes compared to the inspiration example' },
           width: num,
@@ -336,19 +349,10 @@ const schemas: Record<string, Json> = {
       slug: str,
       isVisible: { type: 'boolean', description: 'false = the category and all its works are hidden on the site' },
       sortOrder: { type: 'integer' },
-      itemCount: { type: 'integer' },
-      translations: translations({ name: str }),
-    },
-  },
-  AdminService: {
-    type: 'object',
-    properties: {
-      id: str,
-      imageUrl: nstr,
-      isActive: bool,
-      isWallService: bool,
+      showInOrderForm: bool,
+      coverImageUrl: nstr,
       defaultUnit: unit,
-      sortOrder: { type: 'integer' },
+      itemCount: { type: 'integer' },
       orderCount: { type: 'integer' },
       translations: translations({ name: str, description: nstr }),
     },
@@ -397,7 +401,7 @@ export function buildOpenApiSpec(): Json {
         E401: errorResponse('Not signed in (UNAUTHENTICATED) or wrong credentials (INVALID_CREDENTIALS)'),
         E403: errorResponse('Forbidden (FORBIDDEN) or CSRF failure (CSRF_INVALID)'),
         E404: errorResponse('Not found — also returned for unknown, expired or revoked tracking tokens'),
-        E409: errorResponse('Conflict (ORDER_INVALID_TRANSITION, SERVICE_IN_USE, …)'),
+        E409: errorResponse('Conflict (ORDER_INVALID_TRANSITION, …)'),
         E429: errorResponse('Rate limited (RATE_LIMITED)'),
         E502: errorResponse('Translation service error (TRANSLATION_FAILED)'),
         E503: errorResponse('Translation not configured or quota used up (TRANSLATION_UNAVAILABLE, TRANSLATION_LIMIT_REACHED)'),
@@ -407,18 +411,10 @@ export function buildOpenApiSpec(): Json {
       '/api/site': {
         get: { tags: ['Public'], summary: 'Public settings and text blocks', parameters: [localeParam], responses: { 200: ok('Site', ref('Site')) } },
       },
-      '/api/services': {
-        get: {
-          tags: ['Public'],
-          summary: 'Active services',
-          parameters: [localeParam],
-          responses: { 200: ok('Services', { type: 'array', items: ref('Service') }) },
-        },
-      },
       '/api/categories': {
         get: {
           tags: ['Public'],
-          summary: 'Catalog filter categories: visible and with at least one published work',
+          summary: 'Categories shown on the site or in the order form (catalog filters = showOnSite && hasWorks; services page = showOnSite; order form = showInOrderForm)',
           parameters: [localeParam],
           responses: { 200: ok('Categories', { type: 'array', items: ref('Category') }) },
         },
@@ -673,20 +669,6 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/categories/{id}/visible': {
         post: { tags: ['Admin: content'], summary: 'Show / hide the category and its works on the site', security: csrf, parameters: [idParam], requestBody: body(toggleSchema), responses: { 200: ok('Updated', ref('AdminCategory')), ...errors(400, 401, 403, 404) } },
       },
-      '/api/admin/services': {
-        get: { tags: ['Admin: content'], summary: 'All services with order counts', security: session, responses: { 200: ok('Services', { type: 'array', items: ref('AdminService') }), ...errors(401, 403) } },
-        post: { tags: ['Admin: content'], summary: 'Create', security: csrf, requestBody: body(serviceSchema), responses: { 201: ok('Created', ref('AdminService')), ...errors(400, 401, 403) } },
-      },
-      '/api/admin/services/reorder': {
-        post: { tags: ['Admin: content'], summary: 'Move one service up or down', security: csrf, requestBody: body(reorderSchema), responses: { 200: ok('Services', { type: 'array', items: ref('AdminService') }), ...errors(400, 401, 403, 404) } },
-      },
-      '/api/admin/services/{id}': {
-        put: { tags: ['Admin: content'], summary: 'Update', security: csrf, parameters: [idParam], requestBody: body(serviceSchema), responses: { 200: ok('Updated', ref('AdminService')), ...errors(400, 401, 403, 404) } },
-        delete: { tags: ['Admin: content'], summary: 'Delete (409 SERVICE_IN_USE when orders reference it)', security: csrf, parameters: [idParam], responses: { 204: ok('Deleted'), ...errors(401, 403, 404, 409) } },
-      },
-      '/api/admin/services/{id}/active': {
-        post: { tags: ['Admin: content'], summary: 'Activate / deactivate', security: csrf, parameters: [idParam], requestBody: body(toggleSchema), responses: { 200: ok('Updated', ref('AdminService')), ...errors(400, 401, 403, 404) } },
-      },
       '/api/admin/content': {
         get: { tags: ['Admin: content'], summary: 'All text blocks in all languages', security: session, responses: { 200: ok('Content', ref('AdminContent')), ...errors(401, 403) } },
         put: { tags: ['Admin: content'], summary: 'Update text blocks', security: csrf, requestBody: body(contentUpdateSchema), responses: { 200: ok('Content', ref('AdminContent')), ...errors(400, 401, 403) } },
@@ -711,7 +693,7 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/media': {
         post: {
           tags: ['Admin: content'],
-          summary: 'Upload a public image (portfolio/service/welcome); optimised to WebP, at most 2400 px, metadata removed',
+          summary: 'Upload a public image (catalog work, category cover, welcome screen); optimised to WebP, at most 2400 px, metadata removed',
           security: csrf,
           requestBody: {
             required: true,

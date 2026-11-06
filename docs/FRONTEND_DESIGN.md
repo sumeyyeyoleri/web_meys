@@ -83,10 +83,10 @@ If the admin picks an accent that fails 4.5:1 contrast with `#0A0A0A`, automatic
 ### Order form (dark) — single page (PROMPT.md §6)
 - Same dark gallery tokens as the rest of the site; one centred column (max ~768px), no steps, no summary panel.
 - Header: "Back to catalog" link, eyebrow, title, one-line intro ("No account needed").
-- Sections top to bottom: service (small option cards, optional, "Clear choice"), size (width × height + unit, hint "Example: 30 × 40 cm"), request/description (large textarea), photos (drop zone + "Choose files", thumbnails with remove), name + email side by side (stacked on phones), phone (optional), address (country defaults to Belgium), privacy checkbox, "No charge now" note, "Send order".
+- Sections top to bottom: category (small option cards for the order-form categories, optional, "Clear choice"), size (width × height + unit, hint "Example: 30 × 40 cm"), request/description (large textarea), photos (drop zone + "Choose files", thumbnails with remove), name + email side by side (stacked on phones), phone (optional), address (country defaults to Belgium), privacy checkbox, "No charge now" note, "Send order".
 - **When opened from a catalog item** (`/order?from=<portfolioItemId>`):
-  - A banner above the form with the thumbnail: *"You're starting from the work 'Starry Terrace'. It's attached as a reference and the matching service is selected."* + a "Remove" button.
-  - Preselect the service mapped from the item's category by slug (horeca, gym, shops, home → mural; street-art → shutter & shop window; canvas-portrait → canvas & portrait; other categories, uncategorised works or switched-off services → none). The unit then follows that service's default unit.
+  - A banner above the form with the thumbnail: *"You're starting from the work 'Starry Terrace'. It's attached as a reference and its category is selected."* + a "Remove" button.
+  - Preselect the work's own category when it is in the order form (otherwise nothing). The unit then follows that category's default unit.
   - The confirmation page and the order detail show "Inspired by: <title>".
 - Guest confirmation: order number, the private tracking link in a read-only field with "Copy link" / "Open order", and a clear "Save this link" notice; "We also emailed it" only when the email was really sent.
 

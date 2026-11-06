@@ -17,9 +17,11 @@ export function CatalogPage() {
   usePageTitle(t('meta.catalogTitle'));
   const [params, setParams] = useSearchParams();
   const categories = useCategories();
+  // Filters: categories shown on the site that have works there.
+  const filters = categories.data?.filter((c) => c.showOnSite && c.hasWorks);
   // An old or unknown link (e.g. `?category=mural`, a hidden or empty category) shows everything.
   const requested = params.get('category') || undefined;
-  const category = requested && (!categories.data || categories.data.some((c) => c.slug === requested)) ? requested : undefined;
+  const category = requested && (!filters || filters.some((c) => c.slug === requested)) ? requested : undefined;
   const portfolio = usePortfolio({ category });
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -38,7 +40,7 @@ export function CatalogPage() {
         <p className="max-w-2xl text-lg text-text-muted">{t('catalog.intro')}</p>
       </header>
 
-      <CatalogFilters categories={categories.data ?? []} category={category} onCategory={update} />
+      <CatalogFilters categories={filters ?? []} category={category} onCategory={update} />
 
       <p className="text-sm text-text-subtle" aria-live="polite">
         {portfolio.isPending ? '' : t('catalog.results', { count: items.length })}

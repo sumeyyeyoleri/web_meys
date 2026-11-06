@@ -19,7 +19,7 @@ export function toOrderSummaryDto(order: OrderWithSummary, locale: Locale, unrea
     reference: order.reference,
     title: order.title,
     status: order.status,
-    serviceName: order.service ? (pickTranslation(order.service.translations, locale)?.name ?? null) : null,
+    categoryName: (order.category ? pickTranslation(order.category.translations, locale)?.name : undefined) ?? order.serviceLabel,
     quoteAmount: toNumberOrNull(order.quoteAmount),
     unreadMessages,
     createdAt: toIso(order.createdAt),
@@ -51,6 +51,18 @@ function toStatusHistoryDto(entry: OrderWithDetail['statusHistory'][number]): St
   };
 }
 
+/**
+ * The stored service/category name when it is worth showing next to the category: the order has
+ * no category (e.g. an older order's service that matched none) or the name differs from the
+ * category's name in the order's language (the category was changed or renamed since).
+ */
+function previousServiceName(order: OrderWithSummary): string | null {
+  if (!order.serviceLabel) return null;
+  if (!order.category) return order.serviceLabel;
+  const current = pickTranslation(order.category.translations, localeFromDb(order.communicationLocale))?.name;
+  return current === order.serviceLabel ? null : order.serviceLabel;
+}
+
 function toInspirationDto(order: OrderWithDetail): InspirationDto | null {
   const item = order.inspirationItem;
   if (!item) return null;
@@ -68,11 +80,11 @@ export function toOrderDetailDto(
 ): OrderDetailDto {
   return {
     ...toOrderSummaryDto(order, locale, unreadMessages),
-    serviceId: order.serviceId,
+    categoryId: order.categoryId,
+    previousServiceName: previousServiceName(order),
     customRequest: order.customRequest,
     inspiration: toInspirationDto(order),
     additionalSpecs: order.additionalSpecs,
-    isWallService: order.service?.isWallService ?? false,
     width: toNumber(order.width),
     height: toNumber(order.height),
     unit: order.unit,

@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AdminCategoryDto, AdminContentDto, AdminOrderDetailDto, AdminOrderSummaryDto, AdminOrderUpdateInput, AdminPortfolioItemDto, AdminProfileInput, AdminServiceDto, AdminSettingsDto, AdminStatsDto, AdminStatusChangeInput, CategoryInput, ChangeEmailInput, ChangePasswordInput, ContentUpdateInput, InternalNoteDto, Locale, MediaUploadDto, MessageDto, MessageTranslationDto, NotificationDto, Paginated, PortfolioItemInput, ServiceInput, SiteSettingsInput, TrackingLinkDto, UnreadCountDto, UserDto } from '@painter/shared';
+import type { AdminCategoryDto, AdminContentDto, AdminOrderDetailDto, AdminOrderSummaryDto, AdminOrderUpdateInput, AdminPortfolioItemDto, AdminProfileInput, AdminSettingsDto, AdminStatsDto, AdminStatusChangeInput, CategoryInput, ChangeEmailInput, ChangePasswordInput, ContentUpdateInput, InternalNoteDto, Locale, MediaUploadDto, MessageDto, MessageTranslationDto, NotificationDto, Paginated, PortfolioItemInput, SiteSettingsInput, TrackingLinkDto, UnreadCountDto, UserDto } from '@painter/shared';
 import { api } from '../../lib/api';
 import { setLocale, useLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
@@ -47,13 +47,6 @@ export function useAdminOrder(id: string) {
   return useQuery({
     queryKey: [...queryKeys.admin.order(id), locale],
     queryFn: ({ signal }) => api.get<AdminOrderDetailDto>(`/api/admin/orders/${encodeURIComponent(id)}`, { locale }, signal),
-  });
-}
-
-export function useAdminServices() {
-  return useQuery({
-    queryKey: queryKeys.admin.services,
-    queryFn: ({ signal }) => api.get<AdminServiceDto[]>('/api/admin/services', undefined, signal),
   });
 }
 
@@ -259,41 +252,6 @@ export function useUploadMedia() {
       return api.post<MediaUploadDto>('/api/admin/media', body);
     },
   });
-}
-
-/* ---------- Services (phase 9b) ---------- */
-
-/** After a service change: the dashboard list, the public services and the order form. */
-function useRefreshServices() {
-  const queryClient = useQueryClient();
-  return () => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.admin.services });
-    void queryClient.invalidateQueries({ queryKey: ['services'] });
-  };
-}
-
-export function useSaveService(id: string | null) {
-  const refresh = useRefreshServices();
-  return useMutation({
-    mutationFn: (input: ServiceInput) =>
-      id ? api.put<AdminServiceDto>(`/api/admin/services/${id}`, input) : api.post<AdminServiceDto>('/api/admin/services', input),
-    onSuccess: refresh,
-  });
-}
-
-export function useServiceActions() {
-  const refresh = useRefreshServices();
-  return {
-    move: useMutation({
-      mutationFn: (input: { id: string; direction: 'up' | 'down' }) => api.post<AdminServiceDto[]>('/api/admin/services/reorder', input),
-      onSuccess: refresh,
-    }),
-    setActive: useMutation({
-      mutationFn: ({ id, value }: { id: string; value: boolean }) => api.post<AdminServiceDto>(`/api/admin/services/${id}/active`, { value }),
-      onSuccess: refresh,
-    }),
-    remove: useMutation({ mutationFn: (id: string) => api.delete(`/api/admin/services/${id}`), onSuccess: refresh }),
-  };
 }
 
 /* ---------- Catalog: categories and works (phase 9b) ---------- */

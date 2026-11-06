@@ -11,12 +11,12 @@ const user = userEvent.setup();
 beforeEach(() => setLocale('tr'));
 afterEach(() => vi.unstubAllGlobals());
 
-const names = (tr: string) => ({ 'nl-BE': { name: `${tr} NL` }, en: { name: `${tr} EN` }, tr: { name: tr } });
+const names = (tr: string) => ({ 'nl-BE': { name: `${tr} NL`, description: null }, en: { name: `${tr} EN`, description: null }, tr: { name: tr, description: null } });
 // Category ids are UUIDs (the work form checks them).
 const CAT1 = uid('cat1');
 const CAT2 = uid('cat2');
-const horeca: AdminCategoryDto = { id: CAT1, slug: 'horeca', isVisible: true, sortOrder: 0, itemCount: 1, translations: names('Horeca') };
-const gym: AdminCategoryDto = { id: CAT2, slug: 'gym', isVisible: false, sortOrder: 1, itemCount: 1, translations: names('Spor salonu') };
+const horeca: AdminCategoryDto = { id: CAT1, slug: 'horeca', isVisible: true, showInOrderForm: true, coverImageUrl: null, defaultUnit: 'M', sortOrder: 0, itemCount: 1, orderCount: 0, translations: names('Horeca') };
+const gym: AdminCategoryDto = { id: CAT2, slug: 'gym', isVisible: false, showInOrderForm: true, coverImageUrl: null, defaultUnit: 'M', sortOrder: 1, itemCount: 1, orderCount: 0, translations: names('Spor salonu') };
 const titles = (tr: string) => ({ 'nl-BE': { title: `${tr} NL`, description: null }, en: { title: `${tr} EN`, description: null }, tr: { title: tr, description: null } });
 const work = (id: string, title: string, categoryId: string | null, extra: Partial<AdminPortfolioItemDto> = {}): AdminPortfolioItemDto => ({
   id,
@@ -63,20 +63,29 @@ describe('categories page', () => {
     expect(screen.getByRole('button', { name: 'Kategoriyi ve eserlerini sitede göster: Spor salonu' })).toBeTruthy();
   });
 
-  it('adds a category; all three names are required', async () => {
+  it('adds a category with description, unit and switches; all three names are required', async () => {
     let sent: Record<string, unknown> = {};
     catalogApi({ 'POST /api/admin/categories': (init) => ((sent = JSON.parse(String(init?.body))), json(201, { ...horeca, id: 'cat3' })) });
     renderApp('/admin/categories');
     await user.click(await screen.findByRole('button', { name: 'Kategori ekle' }));
     const dialog = await screen.findByRole('dialog', { name: 'Yeni kategori' });
-    await user.type(within(dialog).getByLabelText(/Ad \(Türkçe\)/), 'Düğün');
+    const language = (name: string) => within(within(dialog).getByRole('group', { name }));
+    await user.type(language('Türkçe').getByLabelText(/^Ad/), 'Düğün');
     await user.click(within(dialog).getByRole('button', { name: 'Kategoriyi kaydet' }));
     await waitFor(() => expect(within(dialog).getAllByText('Bu alan zorunludur.')).toHaveLength(2));
-    await user.type(within(dialog).getByLabelText(/Ad \(Nederlands\)/), 'Bruiloften');
-    await user.type(within(dialog).getByLabelText(/Ad \(English\)/), 'Weddings');
+    await user.type(language('Nederlands').getByLabelText(/^Ad/), 'Bruiloften');
+    await user.type(language('English').getByLabelText(/^Ad/), 'Weddings');
+    await user.type(language('Türkçe').getByLabelText(/Kısa açıklama/), 'Düğün salonları için.');
+    await user.selectOptions(within(dialog).getByLabelText(/Varsayılan ölçü birimi/), 'M');
+    await user.click(within(dialog).getByRole('checkbox', { name: /Sipariş formunda göster/ }));
     await user.click(within(dialog).getByRole('button', { name: 'Kategoriyi kaydet' }));
     expect(await screen.findByText('Kategori kaydedildi.')).toBeTruthy();
-    expect(sent).toMatchObject({ translations: { 'nl-BE': { name: 'Bruiloften' }, en: { name: 'Weddings' }, tr: { name: 'Düğün' } } });
+    expect(sent).toMatchObject({
+      translations: { 'nl-BE': { name: 'Bruiloften' }, en: { name: 'Weddings' }, tr: { name: 'Düğün', description: 'Düğün salonları için.' } },
+      isVisible: true,
+      showInOrderForm: false,
+      defaultUnit: 'M',
+    });
   });
 
   it('asks where the works go when deleting a category that has works', async () => {

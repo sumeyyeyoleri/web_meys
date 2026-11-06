@@ -13,7 +13,7 @@ export interface OrderFile {
 /** Empty form; the country defaults to Belgium (in the site language). */
 export function initialValues(defaultCountry: string): OrderFormValues {
   return {
-    serviceId: '',
+    categoryId: '',
     width: '',
     height: '',
     unit: 'CM',

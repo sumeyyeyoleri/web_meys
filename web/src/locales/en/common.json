@@ -84,7 +84,6 @@
     "ORDER_INVALID_TRANSITION": "This status change is not (or no longer) possible.",
     "ORDER_QUOTE_REQUIRED": "Enter the quote amount.",
     "ORDER_NOT_ARCHIVABLE": "Only completed or cancelled orders can be archived.",
-    "SERVICE_IN_USE": "This service is used by orders. Deactivate it instead of deleting it.",
     "UPLOAD_TOO_MANY_FILES": "Too many files.",
     "UPLOAD_FILE_TOO_LARGE": "A file is too large.",
     "UPLOAD_INVALID_TYPE": "Only JPG, PNG and WebP images are allowed.",

@@ -84,7 +84,6 @@
     "ORDER_INVALID_TRANSITION": "Deze statuswijziging is niet (meer) mogelijk.",
     "ORDER_QUOTE_REQUIRED": "Vul het bedrag van de offerte in.",
     "ORDER_NOT_ARCHIVABLE": "Enkel afgeronde of geannuleerde bestellingen kunnen gearchiveerd worden.",
-    "SERVICE_IN_USE": "Deze dienst wordt gebruikt in bestellingen. Zet hem op inactief in plaats van hem te verwijderen.",
     "UPLOAD_TOO_MANY_FILES": "Te veel bestanden.",
     "UPLOAD_FILE_TOO_LARGE": "Een bestand is te groot.",
     "UPLOAD_INVALID_TYPE": "Enkel JPG-, PNG- en WebP-afbeeldingen zijn toegestaan.",

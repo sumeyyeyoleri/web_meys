@@ -39,7 +39,6 @@ describe('admin area', () => {
     ['get', '/api/admin/orders'],
     ['get', '/api/admin/portfolio'],
     ['post', '/api/admin/portfolio'],
-    ['get', '/api/admin/services'],
     ['get', '/api/admin/content'],
     ['put', '/api/admin/content'],
     ['get', '/api/admin/settings'],

@@ -10,7 +10,6 @@ import {
   type Locale,
   type CategoryInput,
   type PortfolioItemInput,
-  type ServiceInput,
   type SiteSettingsInput,
 } from '@painter/shared';
 import { AppError, notFound } from '../domain/errors';
@@ -108,11 +107,15 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     return category;
   }
 
-  async function requireService(id: string) {
-    const service = await repos.adminContent.findService(id);
-    if (!service) throw notFound('Service not found');
-    return service;
-  }
+  const categoryData = (input: CategoryInput) => ({
+    isVisible: input.isVisible,
+    showInOrderForm: input.showInOrderForm,
+    coverImageUrl: input.coverImageUrl ?? null,
+    defaultUnit: input.defaultUnit,
+  });
+
+  const categoryTranslations = (input: CategoryInput) =>
+    translationRows(input.translations).map((t) => ({ locale: t.locale, name: t.name, description: t.description ?? null }));
 
   const portfolioData = (input: PortfolioItemInput) => ({
     imageUrl: input.imageUrl,
@@ -128,9 +131,6 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
 
   const portfolioTranslations = (input: PortfolioItemInput) =>
     translationRows(input.translations).map((t) => ({ locale: t.locale, title: t.title, description: t.description ?? null }));
-
-  const serviceTranslations = (input: ServiceInput) =>
-    translationRows(input.translations).map((t) => ({ locale: t.locale, name: t.name, description: t.description ?? null }));
 
   return {
     /* ---------- Portfolio ---------- */
@@ -203,15 +203,17 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
       for (let n = 2; await repos.adminContent.slugTaken(slug); n += 1) slug = `${base}-${n}`;
       return transaction(async (tx) =>
         tx.adminContent.createCategory(
-          { slug, isVisible: input.isVisible, sortOrder: await tx.adminContent.nextCategorySortOrder() },
-          translationRows(input.translations),
+          { ...categoryData(input), slug, sortOrder: await tx.adminContent.nextCategorySortOrder() },
+          categoryTranslations(input),
         ),
       );
     },
 
     async updateCategory(id: string, input: CategoryInput) {
-      await requireCategory(id);
-      return transaction((tx) => tx.adminContent.updateCategory(id, { isVisible: input.isVisible }, translationRows(input.translations)));
+      const existing = await requireCategory(id);
+      const updated = await transaction((tx) => tx.adminContent.updateCategory(id, categoryData(input), categoryTranslations(input)));
+      if (existing.coverImageUrl !== updated.coverImageUrl) await releaseImage(existing.coverImageUrl);
+      return updated;
     },
 
     async setCategoryVisible(id: string, isVisible: boolean) {
@@ -219,75 +221,23 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
       return repos.adminContent.setCategoryVisible(id, isVisible);
     },
 
-    /** Works are never deleted with their category: they move to `moveTo` or become uncategorised. */
+    /**
+     * Works are never deleted with their category: they move to `moveTo` or become uncategorised.
+     * Orders lose the link but keep the category's name (`serviceLabel`).
+     */
     async deleteCategory(id: string, moveTo: string | undefined) {
-      await requireCategory(id);
+      const existing = await requireCategory(id);
       if (moveTo !== undefined && (moveTo === id || !(await repos.adminContent.findCategory(moveTo)))) {
         throw new AppError(400, 'VALIDATION_ERROR', 'Unknown target category', { moveTo: 'validation.invalidOption' });
       }
       await transaction((tx) => tx.adminContent.deleteCategory(id, moveTo ?? null));
+      await releaseImage(existing.coverImageUrl);
     },
 
     async moveCategory(id: string, direction: 'up' | 'down') {
       const moved = await transaction((tx) => tx.adminContent.moveCategory(id, direction));
       if (!moved) throw notFound('Category not found');
       return repos.adminContent.listCategories();
-    },
-
-    /* ---------- Services ---------- */
-
-    listServices() {
-      return repos.adminContent.listServices();
-    },
-
-    async createService(input: ServiceInput) {
-      return transaction(async (tx) =>
-        tx.adminContent.createService(
-          {
-            slug: slugify(input.translations.en.name),
-            imageUrl: input.imageUrl ?? null,
-            isActive: input.isActive,
-            isWallService: input.isWallService,
-            defaultUnit: input.defaultUnit,
-            sortOrder: await tx.adminContent.nextServiceSortOrder(),
-          },
-          serviceTranslations(input),
-        ),
-      );
-    },
-
-    async updateService(id: string, input: ServiceInput) {
-      const existing = await requireService(id);
-      const updated = await transaction((tx) =>
-        tx.adminContent.updateService(
-          id,
-          { imageUrl: input.imageUrl ?? null, isActive: input.isActive, isWallService: input.isWallService, defaultUnit: input.defaultUnit },
-          serviceTranslations(input),
-        ),
-      );
-      if (existing.imageUrl !== updated.imageUrl) await releaseImage(existing.imageUrl);
-      return updated;
-    },
-
-    async setServiceActive(id: string, isActive: boolean) {
-      await requireService(id);
-      return repos.adminContent.setServiceActive(id, isActive);
-    },
-
-    /** Services referenced by orders cannot be deleted (deactivate them instead). */
-    async deleteService(id: string) {
-      const existing = await requireService(id);
-      if (existing._count.orders > 0) {
-        throw new AppError(409, 'SERVICE_IN_USE', 'This service is used by orders. Deactivate it instead.');
-      }
-      await repos.adminContent.deleteService(id);
-      await releaseImage(existing.imageUrl);
-    },
-
-    async moveService(id: string, direction: 'up' | 'down') {
-      const moved = await transaction((tx) => tx.adminContent.moveService(id, direction));
-      if (!moved) throw notFound('Service not found');
-      return repos.adminContent.listServices();
     },
 
     /* ---------- Text blocks ---------- */

@@ -1,6 +1,6 @@
-import type { Category, CategoryTranslation, Service, ServiceTranslation, SiteSettings } from '@prisma/client';
-import { localeFromDb, type CategoryDto, type Locale, type PortfolioItemDto, type PublicSettingsDto, type ServiceDto } from '@painter/shared';
-import type { PublicPortfolioItem } from '../../repositories/content.repository';
+import type { Category, CategoryTranslation, SiteSettings } from '@prisma/client';
+import { localeFromDb, type CategoryDto, type CategoryRefDto, type Locale, type PortfolioItemDto, type PublicSettingsDto } from '@painter/shared';
+import type { PublicPortfolioItem, SiteCategory } from '../../repositories/content.repository';
 import { pickTranslation } from '../../domain/localization';
 import { toNumberOrNull } from './common';
 
@@ -27,21 +27,22 @@ export function toPublicSettingsDto(settings: SiteSettings, { emailAvailable, tr
   };
 }
 
-export function toServiceDto(service: Service & { translations: ServiceTranslation[] }, locale: Locale): ServiceDto {
-  const t = pickTranslation(service.translations, locale);
-  return {
-    id: service.id,
-    slug: service.slug,
-    name: t?.name ?? '',
-    description: t?.description ?? null,
-    imageUrl: service.imageUrl,
-    isWallService: service.isWallService,
-    defaultUnit: service.defaultUnit,
-  };
+export function toCategoryRefDto(category: Category & { translations: CategoryTranslation[] }, locale: Locale): CategoryRefDto {
+  return { id: category.id, slug: category.slug, name: pickTranslation(category.translations, locale)?.name ?? '' };
 }
 
-export function toCategoryDto(category: Category & { translations: CategoryTranslation[] }, locale: Locale): CategoryDto {
-  return { id: category.id, slug: category.slug, name: pickTranslation(category.translations, locale)?.name ?? '' };
+export function toCategoryDto(category: SiteCategory, locale: Locale): CategoryDto {
+  const t = pickTranslation(category.translations, locale);
+  return {
+    ...toCategoryRefDto(category, locale),
+    description: t?.description ?? null,
+    coverImageUrl: category.coverImageUrl,
+    defaultUnit: category.defaultUnit,
+    showOnSite: category.isVisible,
+    showInOrderForm: category.showInOrderForm,
+    // A hidden category's works are not on the site.
+    hasWorks: category.isVisible && category._count.items > 0,
+  };
 }
 
 export function toPortfolioItemDto(item: PublicPortfolioItem, locale: Locale): PortfolioItemDto {
@@ -50,7 +51,7 @@ export function toPortfolioItemDto(item: PublicPortfolioItem, locale: Locale): P
     id: item.id,
     title: t?.title ?? '',
     description: t?.description ?? null,
-    category: item.category ? toCategoryDto(item.category, locale) : null,
+    category: item.category ? toCategoryRefDto(item.category, locale) : null,
     imageUrl: item.imageUrl,
     width: toNumberOrNull(item.width),
     height: toNumberOrNull(item.height),

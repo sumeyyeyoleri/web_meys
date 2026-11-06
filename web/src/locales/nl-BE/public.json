@@ -89,14 +89,14 @@
   },
   "services": {
     "title": "Diensten",
-    "intro": "Elk werk wordt op maat gemaakt. Kies een dienst om meteen een aanvraag te starten — u krijgt altijd eerst een persoonlijke offerte.",
-    "request": "Deze dienst aanvragen",
-    "requestFor": "{{name}} aanvragen",
-    "wall": "Op de muur",
-    "empty": "Er zijn momenteel geen diensten beschikbaar.",
+    "intro": "Elk werk wordt op maat gemaakt. Kies een categorie om meteen een aanvraag te starten — u krijgt altijd eerst een persoonlijke offerte.",
+    "request": "Aanvragen",
+    "requestFor": "Aanvragen: {{name}}",
+    "empty": "Er zijn momenteel geen categorieën.",
     "customTitle": "Iets anders in gedachten?",
     "customBody": "Beschrijf uw eigen idee — ook ongewone vragen zijn welkom.",
-    "customCta": "Eigen aanvraag beschrijven"
+    "customCta": "Eigen aanvraag beschrijven",
+    "seeWorks": "Bekijk de werken"
   },
   "privacy": {
     "title": "Privacyverklaring",

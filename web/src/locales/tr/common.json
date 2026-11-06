@@ -84,7 +84,6 @@
     "ORDER_INVALID_TRANSITION": "Bu durum değişikliği yapılamıyor (artık mümkün değil).",
     "ORDER_QUOTE_REQUIRED": "Teklif tutarını girin.",
     "ORDER_NOT_ARCHIVABLE": "Yalnızca tamamlanmış veya iptal edilmiş siparişler arşivlenebilir.",
-    "SERVICE_IN_USE": "Bu hizmet siparişlerde kullanılıyor. Silmek yerine pasif yapın.",
     "UPLOAD_TOO_MANY_FILES": "Çok fazla dosya.",
     "UPLOAD_FILE_TOO_LARGE": "Bir dosya çok büyük.",
     "UPLOAD_INVALID_TYPE": "Yalnızca JPG, PNG ve WebP görselleri kabul edilir.",

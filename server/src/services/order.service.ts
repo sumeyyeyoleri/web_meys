@@ -83,12 +83,14 @@ function orderData(
   input: CreateOrderInput,
   reference: string,
   title: string,
+  serviceLabel: string | null,
 ): Prisma.OrderUncheckedCreateInput {
   return {
     reference,
     idempotencyKey: input.idempotencyKey,
     status: 'SUBMITTED',
-    serviceId: input.serviceId ?? null,
+    categoryId: input.categoryId ?? null,
+    serviceLabel,
     inspirationItemId: input.inspirationItemId ?? null,
     width: new Prisma.Decimal(input.width),
     height: new Prisma.Decimal(input.height),
@@ -183,10 +185,13 @@ export function createOrderService({ repos, transaction, storage, email, trackin
         }
         title = pickTranslation(item.translations, locale)?.title ?? '';
       }
-      if (input.serviceId) {
-        const service = await repos.content.findService(input.serviceId);
-        if (!service?.isActive) throw validationError({ serviceId: 'validation.invalidOption' });
-        title ||= pickTranslation(service.translations, locale)?.name ?? '';
+      // The chosen category (it replaced services); its name is stored with the order.
+      let serviceLabel: string | null = null;
+      if (input.categoryId) {
+        const category = await repos.content.findCategory(input.categoryId);
+        if (!category?.showInOrderForm) throw validationError({ categoryId: 'validation.invalidOption' });
+        serviceLabel = pickTranslation(category.translations, locale)?.name ?? null;
+        title ||= serviceLabel ?? '';
       }
       title ||= titleFromDescription(input.description);
 
@@ -195,7 +200,7 @@ export function createOrderService({ repos, transaction, storage, email, trackin
 
       try {
         const { orderId, link, adminRecipients } = await transaction(async (tx) => {
-          const order = await tx.orders.create(orderData(input, await uniqueReference(tx), title));
+          const order = await tx.orders.create(orderData(input, await uniqueReference(tx), title, serviceLabel));
           await tx.orders.createAttachments(
             images.map((image) => ({
               orderId: order.id,

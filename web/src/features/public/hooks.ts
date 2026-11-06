@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { CategoryDto, PortfolioItemDto, ServiceDto, SiteDto } from '@painter/shared';
+import type { CategoryDto, PortfolioItemDto, SiteDto } from '@painter/shared';
 import { api } from '../../lib/api';
 import { useLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
@@ -15,16 +15,10 @@ export function useSite() {
   });
 }
 
-export function useServices() {
-  const locale = useLocale();
-  return useQuery({
-    queryKey: queryKeys.services(locale),
-    queryFn: ({ signal }) => api.get<ServiceDto[]>('/api/services', { locale }, signal),
-    staleTime: FIVE_MINUTES,
-  });
-}
-
-/** Catalog filter categories: visible ones with at least one published work. */
+/**
+ * Categories shown on the site or in the order form. Catalog filters: `showOnSite && hasWorks`;
+ * services page: `showOnSite`; order form: `showInOrderForm`.
+ */
 export function useCategories() {
   const locale = useLocale();
   return useQuery({

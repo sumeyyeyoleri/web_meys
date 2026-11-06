@@ -14,7 +14,7 @@ function fieldErrors(result: z.ZodSafeParseResult<unknown>): Record<string, stri
 
 const validOrder = {
   idempotencyKey: '3f1c2b8e-4d5a-4c6b-9e7f-1a2b3c4d5e6f',
-  serviceId: '5b8f8c1e-2f3a-4b5c-8d7e-9f0a1b2c3d4e',
+  categoryId: '5b8f8c1e-2f3a-4b5c-8d7e-9f0a1b2c3d4e',
   width: 120,
   height: 80,
   unit: 'CM',
@@ -35,14 +35,14 @@ describe('order form', () => {
   it('accepts a complete order and normalises the email', () => {
     const result = createOrderSchema.parse(validOrder);
     expect(result.email).toBe('lotte@example.be');
-    expect(result.serviceId).toBe(validOrder.serviceId);
+    expect(result.categoryId).toBe(validOrder.categoryId);
   });
 
   it('keeps the service, email and extra address line optional', () => {
-    const result = createOrderSchema.safeParse({ ...validOrder, serviceId: '', email: '', addressExtra: '' });
+    const result = createOrderSchema.safeParse({ ...validOrder, categoryId: '', email: '', addressExtra: '' });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.serviceId).toBeUndefined();
+      expect(result.data.categoryId).toBeUndefined();
       expect(result.data.email).toBeUndefined();
       expect(result.data.addressExtra).toBeUndefined();
     }

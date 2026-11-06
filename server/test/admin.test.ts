@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -199,55 +200,31 @@ describe('order editing and stats', () => {
 describe('content management', () => {
   const translations = (name: string) => ({ 'nl-BE': { name }, en: { name }, tr: { name } });
 
-  it('blocks deleting a service that orders use, and allows deactivating it', async () => {
-    await createOrder(customer, { serviceId: ctx.ids.serviceId });
-    const res = await admin.delete(`/api/admin/services/${ctx.ids.serviceId}`).expect(409);
-    expect(res.body.error.code).toBe('SERVICE_IN_USE');
-    await admin.post(`/api/admin/services/${ctx.ids.serviceId}/active`).send({ value: false }).expect(200);
-    const publicServices = await customer.get('/api/services').expect(200);
-    expect(publicServices.body.map((s: { id: string }) => s.id)).not.toContain(ctx.ids.serviceId);
-  });
-
-  it('creates, reorders and deletes services; every language needs a name', async () => {
-    const missing = await admin
-      .post('/api/admin/services')
-      .send({ isActive: true, isWallService: false, translations: { ...translations('Fresco'), tr: { name: '' } } })
-      .expect(400);
-    expect(missing.body.error.fields).toEqual({ 'translations.tr.name': 'validation.required' });
-
-    const created = await admin
-      .post('/api/admin/services')
-      .send({ isActive: true, isWallService: false, translations: translations('Fresco') })
-      .expect(201);
-    const reordered = await admin.post('/api/admin/services/reorder').send({ id: created.body.id, direction: 'up' }).expect(200);
-    expect(reordered.body.map((s: { translations: { en: { name: string } } }) => s.translations.en.name)).toEqual([
-      'Canvas EN',
-      'Fresco',
-      'Mural EN',
-    ]);
-    await admin.delete(`/api/admin/services/${created.body.id}`).expect(204);
-  });
-
-  it("stores a service's default unit and offers it on the site", async () => {
-    const created = await admin
-      .post('/api/admin/services')
-      .send({ isActive: true, isWallService: true, defaultUnit: 'M', translations: translations('Rolluik') })
-      .expect(201);
-    expect(created.body).toMatchObject({ defaultUnit: 'M' });
-    const listed = (await customer.get('/api/services').expect(200)).body.find((s: { id: string }) => s.id === created.body.id);
-    expect(listed).toMatchObject({ defaultUnit: 'M', isWallService: true });
-    expect(typeof listed.slug).toBe('string');
-
-    const cleared = await admin
-      .put(`/api/admin/services/${created.body.id}`)
-      .send({ isActive: true, isWallService: true, defaultUnit: '', translations: translations('Rolluik') })
-      .expect(200);
-    expect(cleared.body.defaultUnit).toBeNull();
-    const bad = await admin
-      .post('/api/admin/services')
-      .send({ isActive: true, isWallService: false, defaultUnit: 'KM', translations: translations('X') })
-      .expect(400);
-    expect(bad.body.error.fields).toEqual({ defaultUnit: 'validation.invalidOption' });
+  it('lets the admin change an order\'s category; the stored name follows', async () => {
+    const order = await createOrder(customer, { categoryId: ctx.ids.categoryId });
+    const detail = (await admin.get(`/api/admin/orders/${order.id}`).expect(200)).body;
+    const update = {
+      categoryId: ctx.ids.wallCategoryId,
+      title: detail.title,
+      width: 2,
+      height: 3,
+      unit: 'M',
+      description: detail.description,
+      fullName: detail.contact.fullName,
+      email: detail.contact.email ?? '',
+      phone: detail.contact.phone,
+      communicationLocale: detail.contact.communicationLocale,
+      country: detail.projectAddress.country,
+      city: detail.projectAddress.city,
+      postalCode: detail.projectAddress.postalCode,
+      street: detail.projectAddress.street,
+      houseNumber: detail.projectAddress.houseNumber,
+      addressExtra: '',
+    };
+    const res = await admin.put(`/api/admin/orders/${order.id}`).send(update).expect(200);
+    expect(res.body).toMatchObject({ categoryId: ctx.ids.wallCategoryId, categoryName: 'Mural NL', previousServiceName: null });
+    const unknown = await admin.put(`/api/admin/orders/${order.id}`).send({ ...update, categoryId: randomUUID() }).expect(400);
+    expect(unknown.body.error.fields).toEqual({ categoryId: 'validation.invalidOption' });
   });
 
   it('manages portfolio items and reflects them on the public site', async () => {

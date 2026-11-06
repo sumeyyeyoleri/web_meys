@@ -2,14 +2,14 @@ import type { OrderStatus, Prisma, Role } from '@prisma/client';
 import type { Db } from './db';
 
 export const orderDetailInclude = {
-  service: { include: { translations: true } },
+  category: { include: { translations: true } },
   inspirationItem: { include: { translations: true } },
   attachments: { orderBy: { createdAt: 'asc' } },
   statusHistory: { orderBy: { createdAt: 'asc' } },
 } as const satisfies Prisma.OrderInclude;
 
 export const orderSummaryInclude = {
-  service: { include: { translations: true } },
+  category: { include: { translations: true } },
 } as const satisfies Prisma.OrderInclude;
 
 export type OrderWithDetail = Prisma.OrderGetPayload<{ include: typeof orderDetailInclude }>;

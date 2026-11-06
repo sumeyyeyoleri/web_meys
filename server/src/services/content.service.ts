@@ -33,16 +33,12 @@ export function createContentService({ repos }: { repos: Repositories }) {
       return result;
     },
 
-    listActiveServices() {
-      return repos.content.listActiveServices();
-    },
-
     listPortfolio(filter: { category?: string; featured?: boolean }) {
       return repos.content.listPublishedPortfolio(filter);
     },
 
     listCategories() {
-      return repos.content.listCategoriesWithWorks();
+      return repos.content.listSiteCategories();
     },
 
     async getPublishedPortfolioItem(id: string) {

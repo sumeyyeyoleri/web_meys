@@ -12,14 +12,14 @@ import { useErrorMessage } from '../../../components/ui/States';
 import { useToast } from '../../../components/ui/Toast';
 import { applyApiFieldErrors } from '../../../lib/form-errors';
 import { useLocale } from '../../../lib/i18n';
-import { useAdminServices, useUpdateOrder } from '../hooks';
+import { useAdminCategories, useUpdateOrder } from '../hooks';
 
 type Values = z.input<typeof adminOrderUpdateSchema>;
 const FIELDS = Object.keys(adminOrderUpdateSchema.shape) as Array<keyof Values>;
 
 function initial(order: AdminOrderDetailDto): Values {
   return {
-    serviceId: order.serviceId ?? '',
+    categoryId: order.categoryId ?? '',
     title: order.title,
     width: String(order.width),
     height: String(order.height),
@@ -46,7 +46,7 @@ export function EditOrderDialog({ order, open, onClose }: { order: AdminOrderDet
   const locale = useLocale();
   const toast = useToast();
   const errorMessage = useErrorMessage();
-  const services = useAdminServices();
+  const categories = useAdminCategories();
   const update = useUpdateOrder(order.id);
   const form = useForm<Values, unknown, z.output<typeof adminOrderUpdateSchema>>({
     resolver: zodResolver(adminOrderUpdateSchema),
@@ -70,14 +70,14 @@ export function EditOrderDialog({ order, open, onClose }: { order: AdminOrderDet
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
         {update.isError && !Object.keys(errors).length ? <FormAlert>{errorMessage(update.error)}</FormAlert> : null}
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label={to('form.service')} error={errors.serviceId?.message} optional>
+          <Field label={to('form.category')} error={errors.categoryId?.message} optional>
             {(p) => (
-              <Select {...p} {...r('serviceId')}>
-                <option value="">{t('edit.noService')}</option>
-                {services.data?.map((service) => (
-                  <option key={service.id} value={service.id}>
-                    {service.translations[locale]?.name || service.translations['nl-BE']?.name}
-                    {service.isActive ? '' : ` (${t('edit.inactive')})`}
+              <Select {...p} {...r('categoryId')}>
+                <option value="">{t('edit.noCategory')}</option>
+                {categories.data?.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.translations[locale]?.name || category.translations['nl-BE']?.name}
+                    {category.showInOrderForm ? '' : ` (${t('edit.notInForm')})`}
                   </option>
                 ))}
               </Select>
