@@ -33,7 +33,15 @@ export function createAdminRouter(services: Services, translationLimiter: Reques
   router.post('/portfolio/reorder', content.reorderPortfolio);
   router.put('/portfolio/:id', content.updatePortfolio);
   router.post('/portfolio/:id/featured', content.setPortfolioFeatured);
+  router.post('/portfolio/:id/published', content.setPortfolioPublished);
   router.delete('/portfolio/:id', content.deletePortfolio);
+
+  router.get('/categories', content.listCategories);
+  router.post('/categories', content.createCategory);
+  router.post('/categories/reorder', content.reorderCategories);
+  router.put('/categories/:id', content.updateCategory);
+  router.post('/categories/:id/visible', content.setCategoryVisible);
+  router.delete('/categories/:id', content.deleteCategory);
 
   router.get('/services', content.listServices);
   router.post('/services', content.createService);

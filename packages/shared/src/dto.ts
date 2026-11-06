@@ -20,6 +20,8 @@ export interface Paginated<T> {
 export interface UserDto {
   id: string;
   email: string;
+  /** Display name from "My account"; null when not set. */
+  name: string | null;
   preferredLocale: Locale;
   createdAt: string;
 }
@@ -297,6 +299,17 @@ export interface AdminPortfolioItemDto {
   allowSimilarRequest: boolean;
   sortOrder: number;
   translations: Translations<{ title: string; description: string | null }>;
+}
+
+export interface AdminCategoryDto {
+  id: string;
+  slug: string;
+  /** Hidden = the category and all its works are hidden on the site. */
+  isVisible: boolean;
+  sortOrder: number;
+  /** All works in it, published or not. */
+  itemCount: number;
+  translations: Translations<{ name: string }>;
 }
 
 export interface AdminServiceDto {

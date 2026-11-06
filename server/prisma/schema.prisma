@@ -64,6 +64,8 @@ model User {
   id              String   @id @default(uuid()) @db.Uuid
   /// Always stored lower-cased.
   email           String   @unique
+  /// Display name shown in the dashboard ("My account"); optional.
+  name            String?
   passwordHash    String
   /// Language of the dashboard and of the artist's emails (chosen in the dashboard; Turkish by default).
   preferredLocale Locale   @default(TR)

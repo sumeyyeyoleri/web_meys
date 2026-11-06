@@ -19,7 +19,7 @@ import {
 import { z } from 'zod';
 import { loadConfig } from '../src/config/env';
 import { generateToken, sha256 } from '../src/infrastructure/crypto';
-import { hashPassword, verifyPassword } from '../src/infrastructure/password-hasher';
+import { hashPassword } from '../src/infrastructure/password-hasher';
 import { createStorageDriver } from '../src/infrastructure/storage';
 import { generateArtwork } from './seed-data/art';
 import {
@@ -53,21 +53,20 @@ function writePublicMedia(key: string, svg: string): Promise<string> {
  * The artist's account. When ADMIN_PASSWORD in .env no longer matches, the password is
  * updated and every session ends — the way to reset it when SMTP is not configured.
  */
+/**
+ * Creates the artist's account from ADMIN_EMAIL / ADMIN_PASSWORD once. After that the seed never
+ * touches it: email and password are changed in "My account" (or, in an emergency, with
+ * `npm run admin:reset-password`).
+ */
 async function seedAdmin() {
   const existing = await prisma.user.findUnique({ where: { email: env.ADMIN_EMAIL } });
-  if (!existing) {
-    return prisma.user.create({
-      data: { email: env.ADMIN_EMAIL, passwordHash: await hashPassword(env.ADMIN_PASSWORD), preferredLocale: 'TR' },
-    });
-  }
-  if (!(await verifyPassword(existing.passwordHash, env.ADMIN_PASSWORD))) {
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: existing.id }, data: { passwordHash: await hashPassword(env.ADMIN_PASSWORD) } }),
-      prisma.session.deleteMany({ where: { userId: existing.id } }),
-    ]);
-    console.log('Admin password updated from ADMIN_PASSWORD; all admin sessions were signed out.');
-  }
-  return existing;
+  if (existing) return existing;
+  // The artist changed the sign-in email in "My account": keep that account, never add a second one.
+  const artist = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
+  if (artist) return artist;
+  return prisma.user.create({
+    data: { email: env.ADMIN_EMAIL, passwordHash: await hashPassword(env.ADMIN_PASSWORD), preferredLocale: 'TR' },
+  });
 }
 
 async function seedServices() {

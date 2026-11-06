@@ -5,6 +5,9 @@ type TranslationRow<T> = { locale: Locale } & T;
 
 const portfolioInclude = { translations: true, category: { select: { isVisible: true } } } as const;
 const serviceInclude = { translations: true, _count: { select: { orders: true } } } as const;
+const categoryInclude = { translations: true, _count: { select: { items: true } } } as const;
+
+export type AdminCategoryWithCount = Prisma.CategoryGetPayload<{ include: typeof categoryInclude }>;
 
 export type AdminServiceWithCount = Prisma.ServiceGetPayload<{ include: typeof serviceInclude }>;
 export type PortfolioWithTranslations = Prisma.PortfolioItemGetPayload<{ include: typeof portfolioInclude }>;
@@ -81,6 +84,65 @@ export function createAdminContentRepository(db: Db) {
       if (!ids) return false;
       for (const [sortOrder, itemId] of ids.entries()) {
         await db.portfolioItem.update({ where: { id: itemId }, data: { sortOrder } });
+      }
+      return true;
+    },
+
+    setPortfolioPublished(id: string, isPublished: boolean) {
+      return db.portfolioItem.update({ where: { id }, data: { isPublished }, include: portfolioInclude });
+    },
+
+    /* ---------- Catalog categories ---------- */
+
+    listCategories() {
+      return db.category.findMany({ include: categoryInclude, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+    },
+
+    findCategory(id: string) {
+      return db.category.findUnique({ where: { id }, include: categoryInclude });
+    },
+
+    slugTaken(slug: string) {
+      return db.category.count({ where: { slug } }).then((count) => count > 0);
+    },
+
+    async nextCategorySortOrder(): Promise<number> {
+      const result = await db.category.aggregate({ _max: { sortOrder: true } });
+      return (result._max.sortOrder ?? -1) + 1;
+    },
+
+    createCategory(data: { slug: string; isVisible: boolean; sortOrder: number }, translations: TranslationRow<{ name: string }>[]) {
+      return db.category.create({ data: { ...data, translations: { create: translations } }, include: categoryInclude });
+    },
+
+    async updateCategory(id: string, data: { isVisible: boolean }, translations: TranslationRow<{ name: string }>[]) {
+      await db.category.update({ where: { id }, data });
+      for (const t of translations) {
+        await db.categoryTranslation.upsert({
+          where: { categoryId_locale: { categoryId: id, locale: t.locale } },
+          create: { categoryId: id, ...t },
+          update: { name: t.name },
+        });
+      }
+      return db.category.findUniqueOrThrow({ where: { id }, include: categoryInclude });
+    },
+
+    setCategoryVisible(id: string, isVisible: boolean) {
+      return db.category.update({ where: { id }, data: { isVisible }, include: categoryInclude });
+    },
+
+    /** Moves the works to `moveTo` (or leaves them uncategorised), then deletes the category. */
+    async deleteCategory(id: string, moveTo: string | null) {
+      await db.portfolioItem.updateMany({ where: { categoryId: id }, data: { categoryId: moveTo } });
+      await db.category.delete({ where: { id } });
+    },
+
+    async moveCategory(id: string, direction: 'up' | 'down'): Promise<boolean> {
+      const rows = await db.category.findMany({ select: { id: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+      const ids = reorderIds(rows.map((r) => r.id), id, direction);
+      if (!ids) return false;
+      for (const [sortOrder, categoryId] of ids.entries()) {
+        await db.category.update({ where: { id: categoryId }, data: { sortOrder } });
       }
       return true;
     },

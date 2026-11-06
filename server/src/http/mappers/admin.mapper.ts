@@ -3,6 +3,7 @@ import {
   canArchive,
   LOCALES,
   localeToDb,
+  type AdminCategoryDto,
   type AdminOrderDetailDto,
   type AdminOrderSummaryDto,
   type AdminPortfolioItemDto,
@@ -12,7 +13,7 @@ import {
   type Locale,
   type Translations,
 } from '@painter/shared';
-import type { AdminServiceWithCount, PortfolioWithTranslations } from '../../repositories/admin-content.repository';
+import type { AdminCategoryWithCount, AdminServiceWithCount, PortfolioWithTranslations } from '../../repositories/admin-content.repository';
 import type { AdminOrderWithSummary, InternalNoteWithAuthor } from '../../repositories/admin-order.repository';
 import type { OrderWithDetail } from '../../repositories/order.repository';
 import { toIso, toIsoOrNull, toNumberOrNull } from './common';
@@ -66,6 +67,17 @@ export function toAdminPortfolioItemDto(item: PortfolioWithTranslations): AdminP
     allowSimilarRequest: item.allowSimilarRequest,
     sortOrder: item.sortOrder,
     translations: byLocale(item.translations, (t) => ({ title: t?.title ?? '', description: t?.description ?? null })),
+  };
+}
+
+export function toAdminCategoryDto(category: AdminCategoryWithCount): AdminCategoryDto {
+  return {
+    id: category.id,
+    slug: category.slug,
+    isVisible: category.isVisible,
+    sortOrder: category.sortOrder,
+    itemCount: category._count.items,
+    translations: byLocale(category.translations, (t) => ({ name: t?.name ?? '' })),
   };
 }
 

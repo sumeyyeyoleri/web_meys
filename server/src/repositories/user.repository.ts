@@ -16,6 +16,14 @@ export function createUserRepository(db: Db) {
       return db.user.update({ where: { id }, data: { passwordHash } });
     },
 
+    updateEmail(id: string, email: string) {
+      return db.user.update({ where: { id }, data: { email: email.toLowerCase() } });
+    },
+
+    updateName(id: string, name: string | null) {
+      return db.user.update({ where: { id }, data: { name } });
+    },
+
     updatePreferredLocale(id: string, preferredLocale: Locale) {
       return db.user.update({ where: { id }, data: { preferredLocale } });
     },

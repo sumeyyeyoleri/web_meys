@@ -298,3 +298,65 @@ describe('order detail', () => {
     expect(screen.queryByText(/e-postayla gönderildi/)).toBeNull();
   });
 });
+
+describe('my account', () => {
+  const field = (name: RegExp | string) => screen.getByLabelText(name, { selector: 'input' }) as HTMLInputElement;
+
+  it('is linked from the menu and saves the display name', async () => {
+    let sent: unknown;
+    adminApi({ 'PUT /api/admin/account/profile': (init) => ((sent = JSON.parse(String(init?.body))), json(200, { ...artist, name: 'Meyse' })) });
+    const { router } = renderApp('/admin');
+    const menu = (await screen.findAllByRole('navigation', { name: 'Panel menüsü' }))[0]!;
+    await screen.findByRole('heading', { level: 1, name: 'Genel bakış' });
+    await user.click(within(menu.parentElement!).getByRole('link', { name: 'Hesabım' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/account'));
+    await screen.findByRole('heading', { level: 1, name: 'Hesabım' });
+
+    await user.type(field(/^Ad/), 'Meyse');
+    await user.click(screen.getByRole('button', { name: 'Adı kaydet' }));
+    expect(await screen.findByText('Adınız kaydedildi.')).toBeTruthy();
+    expect(sent).toEqual({ name: 'Meyse' });
+  });
+
+  it('changes the sign-in email with the current password and shows a wrong password next to the field', async () => {
+    let attempts = 0;
+    adminApi({
+      'POST /api/admin/account/email': (init) => {
+        attempts += 1;
+        const body = JSON.parse(String(init?.body)) as { newEmail: string; currentPassword: string };
+        if (body.currentPassword !== 'right-password-1') {
+          return json(400, { error: { code: 'VALIDATION_ERROR', message: 'x', fields: { currentPassword: 'validation.currentPasswordWrong' } } });
+        }
+        return json(200, { ...artist, email: body.newEmail });
+      },
+    });
+    renderApp('/admin/account');
+    const section = await screen.findByRole('region', { name: 'Giriş e-postası' });
+    expect(within(section).getByText(artist.email)).toBeTruthy();
+
+    // Checked in the browser first: an invalid address never reaches the server.
+    await user.type(within(section).getByLabelText(/Yeni e-posta adresi/), 'not-an-email');
+    await user.type(within(section).getByLabelText(/Mevcut şifre/, { selector: 'input' }), 'wrong-password');
+    await user.click(within(section).getByRole('button', { name: 'E-postayı değiştir' }));
+    expect(attempts).toBe(0);
+
+    await user.clear(within(section).getByLabelText(/Yeni e-posta adresi/));
+    await user.type(within(section).getByLabelText(/Yeni e-posta adresi/), 'atelier@new.test');
+    await user.click(within(section).getByRole('button', { name: 'E-postayı değiştir' }));
+    expect(await within(section).findByText('Mevcut şifreniz yanlış.')).toBeTruthy();
+
+    await user.clear(within(section).getByLabelText(/Mevcut şifre/, { selector: 'input' }));
+    await user.type(within(section).getByLabelText(/Mevcut şifre/, { selector: 'input' }), 'right-password-1');
+    await user.click(within(section).getByRole('button', { name: 'E-postayı değiştir' }));
+    expect(await screen.findByText('Giriş e-postanız artık atelier@new.test.')).toBeTruthy();
+    expect(await within(section).findByText('atelier@new.test')).toBeTruthy();
+  });
+
+  it('keeps the password change on the same page, and the old address redirects there', async () => {
+    adminApi();
+    const { router } = renderApp('/admin/password');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/account'));
+    const section = await screen.findByRole('region', { name: 'Şifremi değiştir' });
+    expect(within(section).getByRole('button', { name: 'Şifreyi kaydet' })).toBeTruthy();
+  });
+});

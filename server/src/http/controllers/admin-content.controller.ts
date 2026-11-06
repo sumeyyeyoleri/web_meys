@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import {
+  categorySchema,
   contentUpdateSchema,
+  deleteCategorySchema,
   portfolioItemSchema,
   reorderSchema,
   serviceSchema,
@@ -10,9 +12,9 @@ import {
   type MediaUploadDto,
 } from '@painter/shared';
 import type { Services } from '../../container';
-import { toAdminPortfolioItemDto, toAdminServiceDto, toAdminSettingsDto } from '../mappers/admin.mapper';
+import { toAdminCategoryDto, toAdminPortfolioItemDto, toAdminServiceDto, toAdminSettingsDto } from '../mappers/admin.mapper';
 import { incomingFile } from '../middleware/media-upload';
-import { parseBody, parseIdParam } from '../middleware/validation';
+import { parseBody, parseIdParam, parseQuery } from '../middleware/validation';
 
 export function createAdminContentController({ adminContent, translation }: Services) {
   return {
@@ -32,6 +34,11 @@ export function createAdminContentController({ adminContent, translation }: Serv
       const id = parseIdParam(req);
       const { value } = parseBody(toggleSchema, req);
       res.json(toAdminPortfolioItemDto(await adminContent.setPortfolioFeatured(id, value)));
+    },
+    async setPortfolioPublished(req: Request, res: Response) {
+      const id = parseIdParam(req);
+      const { value } = parseBody(toggleSchema, req);
+      res.json(toAdminPortfolioItemDto(await adminContent.setPortfolioPublished(id, value)));
     },
     async deletePortfolio(req: Request, res: Response) {
       await adminContent.deletePortfolio(parseIdParam(req));
@@ -93,6 +100,32 @@ export function createAdminContentController({ adminContent, translation }: Serv
     async removeLogo(_req: Request, res: Response) {
       const { settings, smtpConfigured } = await adminContent.removeLogo();
       res.json(toAdminSettingsDto(settings, { emailAvailable: smtpConfigured, translationAvailable: translation.available }));
+    },
+
+    /* Catalog categories */
+    async listCategories(_req: Request, res: Response) {
+      res.json((await adminContent.listCategories()).map(toAdminCategoryDto));
+    },
+    async createCategory(req: Request, res: Response) {
+      res.status(201).json(toAdminCategoryDto(await adminContent.createCategory(parseBody(categorySchema, req))));
+    },
+    async updateCategory(req: Request, res: Response) {
+      const id = parseIdParam(req);
+      res.json(toAdminCategoryDto(await adminContent.updateCategory(id, parseBody(categorySchema, req))));
+    },
+    async setCategoryVisible(req: Request, res: Response) {
+      const id = parseIdParam(req);
+      const { value } = parseBody(toggleSchema, req);
+      res.json(toAdminCategoryDto(await adminContent.setCategoryVisible(id, value)));
+    },
+    async reorderCategories(req: Request, res: Response) {
+      const { id, direction } = parseBody(reorderSchema, req);
+      res.json((await adminContent.moveCategory(id, direction)).map(toAdminCategoryDto));
+    },
+    async deleteCategory(req: Request, res: Response) {
+      const id = parseIdParam(req);
+      await adminContent.deleteCategory(id, parseQuery(deleteCategorySchema, req).moveTo);
+      res.status(204).end();
     },
 
     /* Media */

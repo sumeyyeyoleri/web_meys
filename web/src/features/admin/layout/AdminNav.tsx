@@ -15,10 +15,15 @@ interface NavItem {
   unread?: boolean;
 }
 
-/** Sections of the dashboard (portfolio, services, texts and settings follow in phase 9b). */
+/** Sections of the dashboard. */
 const ITEMS: NavItem[] = [
   { to: '/admin', labelKey: 'nav.overview', icon: 'dashboard', end: true },
   { to: '/admin/orders', labelKey: 'nav.orders', icon: 'inbox', unread: true },
+  { to: '/admin/catalog', labelKey: 'nav.catalog', icon: 'image' },
+  { to: '/admin/categories', labelKey: 'nav.categories', icon: 'tag' },
+  { to: '/admin/services', labelKey: 'nav.services', icon: 'brush' },
+  { to: '/admin/texts', labelKey: 'nav.texts', icon: 'text' },
+  { to: '/admin/settings', labelKey: 'nav.settings', icon: 'settings' },
 ];
 
 const linkClass = (active: boolean) =>
@@ -65,9 +70,9 @@ export function AdminNav({ onNavigate }: { onNavigate?: () => void }) {
           </Link>
         </li>
         <li>
-          <NavLink to="/admin/password" onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
-            <Icon name="lock" />
-            {t('nav.password')}
+          <NavLink to="/admin/account" onClick={onNavigate} className={({ isActive }) => linkClass(isActive)}>
+            <Icon name="user" />
+            {t('nav.account')}
           </NavLink>
         </li>
         <li>

@@ -61,6 +61,8 @@ export function createApiRouter(container: Container, limiters: Record<RateLimit
 
   // Administration
   router.patch('/admin/me', requireAdmin, auth.updatePreferences);
+  router.put('/admin/account/profile', requireAdmin, auth.updateProfile);
+  router.post('/admin/account/email', requireAdmin, auth.changeEmail);
   router.use('/admin', createAdminRouter(container.services, limiters.translation));
 
   return router;

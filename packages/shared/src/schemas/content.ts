@@ -49,6 +49,20 @@ export const portfolioItemSchema = z.object({
 });
 export type PortfolioItemInput = z.infer<typeof portfolioItemSchema>;
 
+/* ---------- Catalog categories ---------- */
+
+export const categorySchema = z.object({
+  translations: perLocale(z.object({ name: requiredString(60) })),
+  isVisible: z.boolean().default(true),
+});
+export type CategoryInput = z.infer<typeof categorySchema>;
+
+/** Deleting a category: its works move to `moveTo`, or become uncategorised when it is empty. */
+export const deleteCategorySchema = z.object({
+  moveTo: z.preprocess(emptyToUndefined, uuidSchema.optional()),
+});
+export type DeleteCategoryInput = z.infer<typeof deleteCategorySchema>;
+
 /* ---------- Services ---------- */
 
 export const serviceTranslationSchema = z.object({

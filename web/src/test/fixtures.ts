@@ -70,6 +70,7 @@ export const services: ServiceDto[] = [
 export const adminUser: UserDto = {
   id: 'u1',
   email: 'atelier@example.com',
+  name: null,
   preferredLocale: 'nl-BE',
   createdAt: '2026-01-01T00:00:00.000Z',
 };

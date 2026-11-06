@@ -1,22 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  AdminOrderDetailDto,
-  AdminOrderSummaryDto,
-  AdminOrderUpdateInput,
-  AdminServiceDto,
-  AdminStatsDto,
-  AdminStatusChangeInput,
-  ChangePasswordInput,
-  InternalNoteDto,
-  Locale,
-  MessageDto,
-  MessageTranslationDto,
-  NotificationDto,
-  Paginated,
-  TrackingLinkDto,
-  UnreadCountDto,
-  UserDto,
-} from '@painter/shared';
+import type { AdminCategoryDto, AdminContentDto, AdminOrderDetailDto, AdminOrderSummaryDto, AdminOrderUpdateInput, AdminPortfolioItemDto, AdminProfileInput, AdminServiceDto, AdminSettingsDto, AdminStatsDto, AdminStatusChangeInput, CategoryInput, ChangeEmailInput, ChangePasswordInput, ContentUpdateInput, InternalNoteDto, Locale, MediaUploadDto, MessageDto, MessageTranslationDto, NotificationDto, Paginated, PortfolioItemInput, ServiceInput, SiteSettingsInput, TrackingLinkDto, UnreadCountDto, UserDto } from '@painter/shared';
 import { api } from '../../lib/api';
 import { setLocale, useLocale } from '../../lib/i18n';
 import { queryKeys } from '../../lib/query-keys';
@@ -162,6 +145,24 @@ export function useChangePassword() {
   return useMutation({ mutationFn: (input: ChangePasswordInput) => api.post('/api/auth/change-password', input) });
 }
 
+/** "My account": display name. */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: AdminProfileInput) => api.put<UserDto>('/api/admin/account/profile', input),
+    onSuccess: (user) => queryClient.setQueryData(queryKeys.me, { user }),
+  });
+}
+
+/** "My account": sign-in email (other devices are signed out). */
+export function useChangeEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ChangeEmailInput) => api.post<UserDto>('/api/admin/account/email', input),
+    onSuccess: (user) => queryClient.setQueryData(queryKeys.me, { user }),
+  });
+}
+
 /** Switches the dashboard language and remembers it for the artist (also used for their emails). */
 export function useSetAdminLocale() {
   const queryClient = useQueryClient();
@@ -207,5 +208,231 @@ export function useMarkAllNotificationsRead() {
   return useMutation({
     mutationFn: () => api.post('/api/notifications/read-all'),
     onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
+  });
+}
+
+/* ---------- Site settings (phase 9b) ---------- */
+
+/** The public site reads settings and texts through `/api/site`: refresh it after a change. */
+const refreshSite = (queryClient: ReturnType<typeof useQueryClient>) => queryClient.invalidateQueries({ queryKey: ['site'] });
+
+export function useAdminSettings() {
+  return useQuery({
+    queryKey: queryKeys.admin.settings,
+    queryFn: ({ signal }) => api.get<AdminSettingsDto>('/api/admin/settings', undefined, signal),
+  });
+}
+
+function useSettingsMutation<T>(mutationFn: (input: T) => Promise<AdminSettingsDto>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: (settings) => {
+      queryClient.setQueryData(queryKeys.admin.settings, settings);
+      void refreshSite(queryClient);
+    },
+  });
+}
+
+export function useUpdateSettings() {
+  return useSettingsMutation((input: SiteSettingsInput) => api.put<AdminSettingsDto>('/api/admin/settings', input));
+}
+
+export function useUploadLogo() {
+  return useSettingsMutation((file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return api.post<AdminSettingsDto>('/api/admin/settings/logo', body);
+  });
+}
+
+export function useRemoveLogo() {
+  return useSettingsMutation(() => api.delete<AdminSettingsDto>('/api/admin/settings/logo'));
+}
+
+/** Uploads one public image (catalog, services, welcome screen) and returns its URL. */
+export function useUploadMedia() {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData();
+      body.append('file', file);
+      return api.post<MediaUploadDto>('/api/admin/media', body);
+    },
+  });
+}
+
+/* ---------- Services (phase 9b) ---------- */
+
+/** After a service change: the dashboard list, the public services and the order form. */
+function useRefreshServices() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.admin.services });
+    void queryClient.invalidateQueries({ queryKey: ['services'] });
+  };
+}
+
+export function useSaveService(id: string | null) {
+  const refresh = useRefreshServices();
+  return useMutation({
+    mutationFn: (input: ServiceInput) =>
+      id ? api.put<AdminServiceDto>(`/api/admin/services/${id}`, input) : api.post<AdminServiceDto>('/api/admin/services', input),
+    onSuccess: refresh,
+  });
+}
+
+export function useServiceActions() {
+  const refresh = useRefreshServices();
+  return {
+    move: useMutation({
+      mutationFn: (input: { id: string; direction: 'up' | 'down' }) => api.post<AdminServiceDto[]>('/api/admin/services/reorder', input),
+      onSuccess: refresh,
+    }),
+    setActive: useMutation({
+      mutationFn: ({ id, value }: { id: string; value: boolean }) => api.post<AdminServiceDto>(`/api/admin/services/${id}/active`, { value }),
+      onSuccess: refresh,
+    }),
+    remove: useMutation({ mutationFn: (id: string) => api.delete(`/api/admin/services/${id}`), onSuccess: refresh }),
+  };
+}
+
+/* ---------- Catalog: categories and works (phase 9b) ---------- */
+
+/** After a catalog change: the dashboard lists and everything the public catalog shows. */
+function useRefreshCatalog() {
+  const queryClient = useQueryClient();
+  return () => {
+    for (const queryKey of [queryKeys.admin.portfolio, queryKeys.admin.categories, ['portfolio'], ['portfolio-item'], ['categories']]) {
+      void queryClient.invalidateQueries({ queryKey });
+    }
+  };
+}
+
+export function useAdminCategories() {
+  return useQuery({
+    queryKey: queryKeys.admin.categories,
+    queryFn: ({ signal }) => api.get<AdminCategoryDto[]>('/api/admin/categories', undefined, signal),
+  });
+}
+
+export function useSaveCategory(id: string | null) {
+  const refresh = useRefreshCatalog();
+  return useMutation({
+    mutationFn: (input: CategoryInput) =>
+      id ? api.put<AdminCategoryDto>(`/api/admin/categories/${id}`, input) : api.post<AdminCategoryDto>('/api/admin/categories', input),
+    onSuccess: refresh,
+  });
+}
+
+export function useCategoryActions() {
+  const refresh = useRefreshCatalog();
+  return {
+    move: useMutation({
+      mutationFn: (input: { id: string; direction: 'up' | 'down' }) => api.post<AdminCategoryDto[]>('/api/admin/categories/reorder', input),
+      onSuccess: refresh,
+    }),
+    setVisible: useMutation({
+      mutationFn: ({ id, value }: { id: string; value: boolean }) => api.post<AdminCategoryDto>(`/api/admin/categories/${id}/visible`, { value }),
+      onSuccess: refresh,
+    }),
+    /** Its works move to `moveTo`, or become uncategorised. */
+    remove: useMutation({
+      mutationFn: ({ id, moveTo }: { id: string; moveTo?: string }) =>
+        api.delete(`/api/admin/categories/${id}${moveTo ? `?moveTo=${encodeURIComponent(moveTo)}` : ''}`),
+      onSuccess: refresh,
+    }),
+  };
+}
+
+export function useAdminPortfolio() {
+  return useQuery({
+    queryKey: queryKeys.admin.portfolio,
+    queryFn: ({ signal }) => api.get<AdminPortfolioItemDto[]>('/api/admin/portfolio', undefined, signal),
+  });
+}
+
+export function useSavePortfolioItem(id: string | null) {
+  const refresh = useRefreshCatalog();
+  return useMutation({
+    mutationFn: (input: PortfolioItemInput) =>
+      id ? api.put<AdminPortfolioItemDto>(`/api/admin/portfolio/${id}`, input) : api.post<AdminPortfolioItemDto>('/api/admin/portfolio', input),
+    onSuccess: refresh,
+  });
+}
+
+/** Several photos at once: each becomes a draft work (title from the file name) in one category. */
+export function useBulkUpload() {
+  const refresh = useRefreshCatalog();
+  return useMutation({
+    mutationFn: async ({ files, categoryId, onProgress }: { files: File[]; categoryId: string | null; onProgress: (done: number) => void }) => {
+      const failed: Array<{ name: string; error: unknown }> = [];
+      for (const [index, file] of files.entries()) {
+        try {
+          const body = new FormData();
+          body.append('file', file);
+          const { url } = await api.post<{ url: string }>('/api/admin/media', body);
+          const title = titleFromFileName(file.name);
+          await api.post('/api/admin/portfolio', {
+            imageUrl: url,
+            categoryId,
+            isFeatured: false,
+            isPublished: false,
+            isSample: false,
+            allowSimilarRequest: true,
+            translations: { 'nl-BE': { title }, en: { title }, tr: { title } },
+          });
+        } catch (error) {
+          failed.push({ name: file.name, error });
+        }
+        onProgress(index + 1);
+      }
+      return { added: files.length - failed.length, failed };
+    },
+    onSettled: refresh,
+  });
+}
+
+/** "IMG_2041 kepenk-gent.jpg" → "IMG 2041 kepenk gent" (the artist edits it afterwards). */
+export function titleFromFileName(name: string): string {
+  const base = name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return (base || 'Foto').slice(0, 150);
+}
+
+export function usePortfolioActions() {
+  const refresh = useRefreshCatalog();
+  return {
+    move: useMutation({
+      mutationFn: (input: { id: string; direction: 'up' | 'down' }) => api.post<AdminPortfolioItemDto[]>('/api/admin/portfolio/reorder', input),
+      onSuccess: refresh,
+    }),
+    setFeatured: useMutation({
+      mutationFn: ({ id, value }: { id: string; value: boolean }) => api.post<AdminPortfolioItemDto>(`/api/admin/portfolio/${id}/featured`, { value }),
+      onSuccess: refresh,
+    }),
+    setPublished: useMutation({
+      mutationFn: ({ id, value }: { id: string; value: boolean }) => api.post<AdminPortfolioItemDto>(`/api/admin/portfolio/${id}/published`, { value }),
+      onSuccess: refresh,
+    }),
+    remove: useMutation({ mutationFn: (id: string) => api.delete(`/api/admin/portfolio/${id}`), onSuccess: refresh }),
+  };
+}
+
+/* ---------- Page texts (phase 9b) ---------- */
+
+export function useAdminContent() {
+  return useQuery({
+    queryKey: queryKeys.admin.content,
+    queryFn: ({ signal }) => api.get<AdminContentDto>('/api/admin/content', undefined, signal),
+  });
+}
+
+export function useUpdateContent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ContentUpdateInput) => api.put<AdminContentDto>('/api/admin/content', input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.admin.content });
+      void refreshSite(queryClient);
+    },
   });
 }

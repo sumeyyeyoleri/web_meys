@@ -18,9 +18,14 @@ admin dashboard for the artist (the only login, at `/admin/login`).
 ## Deployment notes
 
 - **Password reset requires SMTP.** The artist's "forgot password" link (`/admin/forgot-password`)
-  is sent by email, so it only works when the SMTP variables are set. Without SMTP, change
-  `ADMIN_PASSWORD` in `.env` and run the seed again (`npm run db:seed`): the seed updates the
-  password when it no longer matches and signs out every session.
+  is sent by email, so it only works when the SMTP variables are set.
+- **Emergency password reset (without SMTP).** Put a new password (at least 10 characters) in
+  `ADMIN_PASSWORD` in `server/.env` and run `npm run admin:reset-password`. It sets that password
+  for the artist's account (also after the sign-in email was changed in "My account"), signs out
+  every session and cancels unused reset links. It only runs when you start it by hand; the
+  password is never printed. Afterwards, sign in and choose a new password in "My account".
+- **The seed creates the artist's account only once** (from `ADMIN_EMAIL` / `ADMIN_PASSWORD`).
+  Running it again never changes the email or password the artist set in "My account".
 - **Message translation (optional, DeepL).** With `DEEPL_API_KEY` set, every message gets a
   "Translate" button (dashboard and tracking page). To get a key: create an account at
   [deepl.com/pro-api](https://www.deepl.com/pro-api) (the free "DeepL API Free" plan includes

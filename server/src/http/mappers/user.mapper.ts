@@ -6,6 +6,7 @@ export function toUserDto(user: AdminUser): UserDto {
   return {
     id: user.id,
     email: user.email,
+    name: user.name,
     preferredLocale: localeFromDb(user.preferredLocale),
     createdAt: toIso(user.createdAt),
   };

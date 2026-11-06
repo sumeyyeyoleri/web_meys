@@ -1,4 +1,4 @@
-import { localeFromDb, type ChangePasswordInput, type LoginInput, type ResetPasswordInput } from '@painter/shared';
+import { localeFromDb, type ChangeEmailInput, type ChangePasswordInput, type LoginInput, type ResetPasswordInput } from '@painter/shared';
 import { AppError } from '../domain/errors';
 import { generateToken, sha256 } from '../infrastructure/crypto';
 import { describeError, logger } from '../infrastructure/logger';
@@ -22,6 +22,15 @@ export function createAuthService({ repos, sessions, email }: Deps) {
   // Used to spend the same time on unknown emails as on wrong passwords.
   let dummyHash: Promise<string> | null = null;
   const getDummyHash = () => (dummyHash ??= hashPassword('timing-equaliser-not-a-real-password'));
+
+  async function requireCurrentPassword(userId: string, password: string) {
+    const user = await repos.users.findById(userId);
+    if (!user || !(await verifyPassword(user.passwordHash, password))) {
+      throw new AppError(400, 'VALIDATION_ERROR', 'Current password is incorrect', {
+        currentPassword: 'validation.currentPasswordWrong',
+      });
+    }
+  }
 
   return {
     /** Never reveals whether the email exists. */
@@ -70,15 +79,22 @@ export function createAuthService({ repos, sessions, email }: Deps) {
 
     /** Changes the password, ends every session, and returns a fresh session for the current device. */
     async changePassword(userId: string, input: ChangePasswordInput) {
-      const user = await repos.users.findById(userId);
-      if (!user || !(await verifyPassword(user.passwordHash, input.currentPassword))) {
-        throw new AppError(400, 'VALIDATION_ERROR', 'Current password is incorrect', {
-          currentPassword: 'validation.currentPasswordWrong',
-        });
-      }
+      await requireCurrentPassword(userId, input.currentPassword);
       await repos.users.updatePassword(userId, await hashPassword(input.newPassword));
       await sessions.destroyAllForUser(userId);
       return sessions.create(userId);
+    },
+
+    /** Changes the sign-in email like the password: ends every session, returns a fresh one for this device. */
+    async changeEmail(userId: string, input: ChangeEmailInput) {
+      await requireCurrentPassword(userId, input.currentPassword);
+      const owner = await repos.users.findByEmail(input.newEmail);
+      if (owner && owner.id !== userId) {
+        throw new AppError(409, 'VALIDATION_ERROR', 'This email address is already in use', { newEmail: 'validation.emailTaken' });
+      }
+      const user = await repos.users.updateEmail(userId, input.newEmail);
+      await sessions.destroyAllForUser(userId);
+      return { user, session: await sessions.create(userId) };
     },
   };
 }

@@ -1,3 +1,4 @@
+import sharp from 'sharp';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   ADMIN,
@@ -291,15 +292,41 @@ describe('content management', () => {
     expect(site.settings).toMatchObject({ welcomeEnabled: false, enabledLocales: ['nl-BE', 'en'], emailAvailable: true });
   });
 
-  it('uploads public media after checking the file signature', async () => {
+  it('uploads public media after checking the file signature, stored as WebP', async () => {
     const ok = await admin.post('/api/admin/media').attach('file', IMAGES.png, { filename: 'a.png', contentType: 'image/png' }).expect(201);
-    expect(ok.body.url).toMatch(/^\/media\/uploads\/[0-9a-f-]{36}\.png$/);
-    await customer.get(ok.body.url).expect(200);
+    expect(ok.body.url).toMatch(/^\/media\/uploads\/[0-9a-f-]{36}\.webp$/);
+    const served = await customer.get(ok.body.url).expect(200);
+    expect(served.headers['content-type']).toMatch(/image\/webp/);
     const spoofed = await admin
       .post('/api/admin/media')
       .attach('file', IMAGES.text, { filename: 'a.png', contentType: 'image/png' })
       .expect(400);
     expect(spoofed.body.error.fields).toEqual({ file: 'validation.fileType' });
+  });
+});
+
+describe('image optimisation', () => {
+  it('scales large photos down to 2400 px, keeps small ones, applies the rotation and drops metadata', async () => {
+    const big = await sharp({ create: { width: 3600, height: 1200, channels: 3, background: '#b4532a' } })
+      .jpeg()
+      .withMetadata({ orientation: 6, exif: { IFD0: { Copyright: 'secret-location' } } })
+      .toBuffer();
+    const res = await admin.post('/api/admin/media').attach('file', big, { filename: 'wall.jpg', contentType: 'image/jpeg' }).expect(201);
+    const stored = (await customer.get(res.body.url).buffer(true).expect(200)).body as Buffer;
+    const meta = await sharp(stored).metadata();
+    // Orientation 6 = rotated 90°: the stored image is upright (portrait) and at most 2400 px.
+    expect(meta).toMatchObject({ format: 'webp', width: 800, height: 2400 });
+    expect(meta.exif).toBeUndefined();
+    expect(meta.orientation).toBeUndefined();
+
+    const small = await sharp({ create: { width: 640, height: 480, channels: 3, background: '#2f5d62' } }).png().toBuffer();
+    const kept = await admin.post('/api/admin/media').attach('file', small, { filename: 'small.png', contentType: 'image/png' }).expect(201);
+    expect(await sharp((await customer.get(kept.body.url).buffer(true)).body as Buffer).metadata()).toMatchObject({ width: 640, height: 480 });
+  });
+
+  it('refuses a file with a valid signature that is not a readable image', async () => {
+    const res = await admin.post('/api/admin/media').attach('file', IMAGES.jpeg, { filename: 'broken.jpg', contentType: 'image/jpeg' }).expect(400);
+    expect(res.body.error.fields).toEqual({ file: 'validation.fileUnreadable' });
   });
 });
 

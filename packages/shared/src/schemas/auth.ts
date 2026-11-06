@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '../constants';
-import { emailSchema } from './common';
+import { emailSchema, optionalString } from './common';
 
 export const passwordSchema = z
   .string({ error: 'validation.required' })
@@ -49,3 +49,14 @@ export const changePasswordSchema = z
   })
   .superRefine(refinePasswordConfirmation('newPassword', 'newPasswordConfirm'));
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+/** "My account": the sign-in email can only be changed with the current password. */
+export const changeEmailSchema = z.object({
+  newEmail: emailSchema,
+  currentPassword: z.string({ error: 'validation.required' }).min(1, 'validation.required').max(PASSWORD_MAX_LENGTH),
+});
+export type ChangeEmailInput = z.infer<typeof changeEmailSchema>;
+
+/** "My account": the artist's display name (empty = none). */
+export const adminProfileSchema = z.object({ name: optionalString(80) });
+export type AdminProfileInput = z.infer<typeof adminProfileSchema>;

@@ -17,6 +17,9 @@ import {
   loginSchema,
   messageBodySchema,
   translateMessageSchema,
+  adminProfileSchema,
+  categorySchema,
+  changeEmailSchema,
   portfolioItemSchema,
   reorderSchema,
   resetPasswordSchema,
@@ -107,6 +110,7 @@ const schemas: Record<string, Json> = {
     properties: {
       id: { type: 'string', format: 'uuid' },
       email: str,
+      name: { type: ['string', 'null'], description: 'Display name from "My account"' },
       preferredLocale: locale,
       createdAt: dateTime,
     },
@@ -323,6 +327,17 @@ const schemas: Record<string, Json> = {
       allowSimilarRequest: bool,
       sortOrder: { type: 'integer' },
       translations: translations({ title: str, description: nstr }),
+    },
+  },
+  AdminCategory: {
+    type: 'object',
+    properties: {
+      id: str,
+      slug: str,
+      isVisible: { type: 'boolean', description: 'false = the category and all its works are hidden on the site' },
+      sortOrder: { type: 'integer' },
+      itemCount: { type: 'integer' },
+      translations: translations({ name: str }),
     },
   },
   AdminService: {
@@ -547,6 +562,18 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/me': {
         patch: { tags: ['Admin: orders'], summary: "The artist's dashboard language (also used for the artist's emails)", security: csrf, requestBody: body(adminPreferencesSchema), responses: { 200: ok('Updated', ref('User')), ...errors(400, 401, 403) } },
       },
+      '/api/admin/account/profile': {
+        put: { tags: ['Admin: account'], summary: 'My account: display name (empty = none)', security: csrf, requestBody: body(adminProfileSchema), responses: { 200: ok('Updated', ref('User')), ...errors(400, 401, 403) } },
+      },
+      '/api/admin/account/email': {
+        post: {
+          tags: ['Admin: account'],
+          summary: 'My account: sign-in email (current password required; signs out every other session, sets a fresh session cookie)',
+          security: csrf,
+          requestBody: body(changeEmailSchema),
+          responses: { 200: ok('Updated', ref('User')), ...errors(400, 401, 403, 409) },
+        },
+      },
       '/api/admin/stats': {
         get: { tags: ['Admin: orders'], summary: 'Dashboard overview', security: session, responses: { 200: ok('Stats', ref('AdminStats')), ...errors(401, 403) } },
       },
@@ -623,6 +650,29 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/portfolio/{id}/featured': {
         post: { tags: ['Admin: content'], summary: 'Toggle featured', security: csrf, parameters: [idParam], requestBody: body(toggleSchema), responses: { 200: ok('Updated', ref('AdminPortfolioItem')), ...errors(400, 401, 403, 404) } },
       },
+      '/api/admin/portfolio/{id}/published': {
+        post: { tags: ['Admin: content'], summary: 'Publish / unpublish a work', security: csrf, parameters: [idParam], requestBody: body(toggleSchema), responses: { 200: ok('Updated', ref('AdminPortfolioItem')), ...errors(400, 401, 403, 404) } },
+      },
+      '/api/admin/categories': {
+        get: { tags: ['Admin: content'], summary: 'All catalog categories with work counts', security: session, responses: { 200: ok('Categories', { type: 'array', items: ref('AdminCategory') }), ...errors(401, 403) } },
+        post: { tags: ['Admin: content'], summary: 'Create (name in NL/EN/TR required; the URL slug is made from the English name)', security: csrf, requestBody: body(categorySchema), responses: { 201: ok('Created', ref('AdminCategory')), ...errors(400, 401, 403) } },
+      },
+      '/api/admin/categories/reorder': {
+        post: { tags: ['Admin: content'], summary: 'Move one category up or down', security: csrf, requestBody: body(reorderSchema), responses: { 200: ok('Categories', { type: 'array', items: ref('AdminCategory') }), ...errors(400, 401, 403, 404) } },
+      },
+      '/api/admin/categories/{id}': {
+        put: { tags: ['Admin: content'], summary: 'Update names and visibility (the slug stays)', security: csrf, parameters: [idParam], requestBody: body(categorySchema), responses: { 200: ok('Updated', ref('AdminCategory')), ...errors(400, 401, 403, 404) } },
+        delete: {
+          tags: ['Admin: content'],
+          summary: 'Delete; its works move to `moveTo` or become uncategorised — works are never deleted',
+          security: csrf,
+          parameters: [idParam, { name: 'moveTo', in: 'query', schema: { type: 'string', format: 'uuid' } }],
+          responses: { 204: ok('Deleted'), ...errors(400, 401, 403, 404) },
+        },
+      },
+      '/api/admin/categories/{id}/visible': {
+        post: { tags: ['Admin: content'], summary: 'Show / hide the category and its works on the site', security: csrf, parameters: [idParam], requestBody: body(toggleSchema), responses: { 200: ok('Updated', ref('AdminCategory')), ...errors(400, 401, 403, 404) } },
+      },
       '/api/admin/services': {
         get: { tags: ['Admin: content'], summary: 'All services with order counts', security: session, responses: { 200: ok('Services', { type: 'array', items: ref('AdminService') }), ...errors(401, 403) } },
         post: { tags: ['Admin: content'], summary: 'Create', security: csrf, requestBody: body(serviceSchema), responses: { 201: ok('Created', ref('AdminService')), ...errors(400, 401, 403) } },
@@ -661,7 +711,7 @@ export function buildOpenApiSpec(): Json {
       '/api/admin/media': {
         post: {
           tags: ['Admin: content'],
-          summary: 'Upload a public image (portfolio/service)',
+          summary: 'Upload a public image (portfolio/service/welcome); optimised to WebP, at most 2400 px, metadata removed',
           security: csrf,
           requestBody: {
             required: true,

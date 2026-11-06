@@ -25,6 +25,7 @@ export const queryKeys = {
     order: (id: string) => ['admin', 'order', id] as const,
     messages: (id: string) => ['admin', 'messages', id] as const,
     portfolio: ['admin', 'portfolio'] as const,
+    categories: ['admin', 'categories'] as const,
     services: ['admin', 'services'] as const,
     content: ['admin', 'content'] as const,
     settings: ['admin', 'settings'] as const,

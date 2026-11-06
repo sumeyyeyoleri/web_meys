@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import {
   CONTENT_KEYS,
@@ -8,11 +8,13 @@ import {
   type ContentKey,
   type ContentUpdateInput,
   type Locale,
+  type CategoryInput,
   type PortfolioItemInput,
   type ServiceInput,
   type SiteSettingsInput,
 } from '@painter/shared';
 import { AppError, notFound } from '../domain/errors';
+import { optimizeImage } from '../infrastructure/image-optimizer';
 import { describeError, logger } from '../infrastructure/logger';
 import type { StorageDriver } from '../infrastructure/storage';
 import type { Repositories, TransactionRunner } from '../repositories';
@@ -32,6 +34,20 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '')
     .slice(0, 50);
   return `${base || 'item'}-${randomBytes(3).toString('hex')}`;
+}
+
+/** Readable URL value from a name, e.g. "Cafés & restaurants" → "cafes-restaurants". */
+function slugBase(text: string): string {
+  return (
+    text
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ı/g, 'i')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 50) || 'category'
+  );
 }
 
 function translationRows<T>(translations: Record<Locale, T>) {
@@ -84,6 +100,12 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
     if (input.categoryId && !(await repos.adminContent.categoryExists(input.categoryId))) {
       throw new AppError(400, 'VALIDATION_ERROR', 'Unknown category', { categoryId: 'validation.invalidOption' });
     }
+  }
+
+  async function requireCategory(id: string) {
+    const category = await repos.adminContent.findCategory(id);
+    if (!category) throw notFound('Category not found');
+    return category;
   }
 
   async function requireService(id: string) {
@@ -161,6 +183,55 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
       const moved = await transaction((tx) => tx.adminContent.movePortfolio(id, direction));
       if (!moved) throw notFound('Portfolio item not found');
       return repos.adminContent.listPortfolio();
+    },
+
+    async setPortfolioPublished(id: string, isPublished: boolean) {
+      await requirePortfolio(id);
+      return repos.adminContent.setPortfolioPublished(id, isPublished);
+    },
+
+    /* ---------- Catalog categories ---------- */
+
+    listCategories() {
+      return repos.adminContent.listCategories();
+    },
+
+    /** The URL slug comes from the English name (then Dutch) and never changes afterwards, so links keep working. */
+    async createCategory(input: CategoryInput) {
+      const base = slugBase(input.translations.en.name || input.translations['nl-BE'].name);
+      let slug = base;
+      for (let n = 2; await repos.adminContent.slugTaken(slug); n += 1) slug = `${base}-${n}`;
+      return transaction(async (tx) =>
+        tx.adminContent.createCategory(
+          { slug, isVisible: input.isVisible, sortOrder: await tx.adminContent.nextCategorySortOrder() },
+          translationRows(input.translations),
+        ),
+      );
+    },
+
+    async updateCategory(id: string, input: CategoryInput) {
+      await requireCategory(id);
+      return transaction((tx) => tx.adminContent.updateCategory(id, { isVisible: input.isVisible }, translationRows(input.translations)));
+    },
+
+    async setCategoryVisible(id: string, isVisible: boolean) {
+      await requireCategory(id);
+      return repos.adminContent.setCategoryVisible(id, isVisible);
+    },
+
+    /** Works are never deleted with their category: they move to `moveTo` or become uncategorised. */
+    async deleteCategory(id: string, moveTo: string | undefined) {
+      await requireCategory(id);
+      if (moveTo !== undefined && (moveTo === id || !(await repos.adminContent.findCategory(moveTo)))) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Unknown target category', { moveTo: 'validation.invalidOption' });
+      }
+      await transaction((tx) => tx.adminContent.deleteCategory(id, moveTo ?? null));
+    },
+
+    async moveCategory(id: string, direction: 'up' | 'down') {
+      const moved = await transaction((tx) => tx.adminContent.moveCategory(id, direction));
+      if (!moved) throw notFound('Category not found');
+      return repos.adminContent.listCategories();
     },
 
     /* ---------- Services ---------- */
@@ -277,7 +348,7 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
 
     /* ---------- Media ---------- */
 
-    /** Validates (incl. magic bytes) and stores a public portfolio/service image. */
+    /** Validates (incl. magic bytes), optimises for the web (WebP, at most 2400 px) and stores a public image. */
     async uploadImage(file: IncomingFile | undefined): Promise<string> {
       if (!file) {
         throw new AppError(400, 'VALIDATION_ERROR', 'An image file is required', { file: 'validation.required' });
@@ -293,7 +364,11 @@ export function createAdminContentService({ repos, transaction, storage, smtpCon
         throw error;
       }
       if (!image) throw new Error('Image validation returned no result');
-      return storage.putPublic(image.storageKey, image.buffer, image.mimeType);
+      const optimized = await optimizeImage(image.buffer);
+      if (!optimized) {
+        throw new AppError(400, 'UPLOAD_INVALID_TYPE', 'The image could not be read', { file: 'validation.fileUnreadable' });
+      }
+      return storage.putPublic(`${UPLOAD_PREFIX}/${randomUUID()}.webp`, optimized.buffer, optimized.mimeType);
     },
   };
 }

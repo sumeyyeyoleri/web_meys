@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 import {
+  adminProfileSchema,
+  changeEmailSchema,
   changePasswordSchema,
   forgotPasswordSchema,
   adminPreferencesSchema,
@@ -63,6 +65,21 @@ export function createAuthController({ services, config }: Container) {
       const { user } = getAuth(req);
       const { preferredLocale } = parseBody(adminPreferencesSchema, req);
       res.json(toUserDto(await services.users.updatePreferredLocale(user.id, localeToDb(preferredLocale))));
+    },
+
+    /** "My account": display name. */
+    async updateProfile(req: Request, res: Response) {
+      const { user } = getAuth(req);
+      const { name } = parseBody(adminProfileSchema, req);
+      res.json(toUserDto(await services.users.updateName(user.id, name ?? null)));
+    },
+
+    /** "My account": sign-in email; other devices are signed out, this one gets a fresh session. */
+    async changeEmail(req: Request, res: Response) {
+      const { user } = getAuth(req);
+      const result = await auth.changeEmail(user.id, parseBody(changeEmailSchema, req));
+      setSessionCookie(res, config, result.session.token, result.session.expiresAt);
+      res.json(toUserDto(result.user));
     },
 
     async changePassword(req: Request, res: Response) {

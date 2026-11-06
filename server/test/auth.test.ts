@@ -20,7 +20,7 @@ describe('artist login', () => {
   it('signs the artist in and returns no secrets', async () => {
     const client = await guest(ctx.app);
     const res = await client.post('/api/auth/login').send({ email: 'Admin@Test.Local', password: ADMIN.password }).expect(200);
-    expect(res.body).toEqual({ id: ctx.ids.adminId, email: ADMIN.email, preferredLocale: 'nl-BE', createdAt: expect.any(String) });
+    expect(res.body).toEqual({ id: ctx.ids.adminId, email: ADMIN.email, name: null, preferredLocale: 'nl-BE', createdAt: expect.any(String) });
     expect(JSON.stringify(res.body)).not.toMatch(/passwordHash|argon2/);
 
     const cookie = String(res.headers['set-cookie']);
@@ -186,5 +186,50 @@ describe('dashboard preferences', () => {
     const bad = await admin.patch('/api/admin/me').send({ preferredLocale: 'de' }).expect(400);
     expect(bad.body.error.fields).toEqual({ preferredLocale: 'validation.invalidOption' });
     await (await guest(ctx.app)).patch('/api/admin/me').send({ preferredLocale: 'tr' }).expect(401);
+  });
+});
+
+describe('my account', () => {
+  it('sets and clears the display name', async () => {
+    const admin = await signedIn(ctx.app, ADMIN);
+    const named = await admin.put('/api/admin/account/profile').send({ name: '  Meyse  ' }).expect(200);
+    expect(named.body).toMatchObject({ email: ADMIN.email, name: 'Meyse' });
+    expect((await admin.get('/api/auth/me').expect(200)).body.user.name).toBe('Meyse');
+
+    const tooLong = await admin.put('/api/admin/account/profile').send({ name: 'x'.repeat(81) }).expect(400);
+    expect(tooLong.body.error.fields).toEqual({ name: 'validation.tooLong' });
+    const cleared = await admin.put('/api/admin/account/profile').send({ name: '' }).expect(200);
+    expect(cleared.body.name).toBeNull();
+  });
+
+  it('changes the sign-in email with the current password and ends all other sessions', async () => {
+    const laptop = await signedIn(ctx.app, ADMIN);
+    const phone = await signedIn(ctx.app, ADMIN);
+
+    const wrong = await laptop.post('/api/admin/account/email').send({ newEmail: 'new@test.local', currentPassword: 'nope-nope-nope' }).expect(400);
+    expect(wrong.body.error.fields).toEqual({ currentPassword: 'validation.currentPasswordWrong' });
+    const invalid = await laptop.post('/api/admin/account/email').send({ newEmail: 'not-an-email', currentPassword: ADMIN.password }).expect(400);
+    expect(Object.keys(invalid.body.error.fields)).toEqual(['newEmail']);
+
+    const res = await laptop.post('/api/admin/account/email').send({ newEmail: 'Atelier@New.Test', currentPassword: ADMIN.password }).expect(200);
+    expect(res.body.email).toBe('atelier@new.test');
+    await laptop.get('/api/admin/orders').expect(200);
+    await phone.get('/api/admin/orders').expect(401);
+
+    await (await guest(ctx.app)).post('/api/auth/login').send(ADMIN).expect(401);
+    await (await guest(ctx.app)).post('/api/auth/login').send({ email: 'atelier@new.test', password: ADMIN.password }).expect(200);
+  });
+
+  it('refuses an email address that another account uses', async () => {
+    await ctx.prisma.user.create({ data: { email: 'taken@test.local', passwordHash: 'x' } });
+    const admin = await signedIn(ctx.app, ADMIN);
+    const res = await admin.post('/api/admin/account/email').send({ newEmail: 'taken@test.local', currentPassword: ADMIN.password }).expect(409);
+    expect(res.body.error.fields).toEqual({ newEmail: 'validation.emailTaken' });
+  });
+
+  it('requires a signed-in artist', async () => {
+    const client = await guest(ctx.app);
+    await client.put('/api/admin/account/profile').send({ name: 'X' }).expect(401);
+    await client.post('/api/admin/account/email').send({ newEmail: 'x@test.local', currentPassword: 'x' }).expect(401);
   });
 });
